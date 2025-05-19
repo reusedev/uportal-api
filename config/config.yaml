@@ -1,0 +1,41 @@
+server:
+  port: 8080
+  readTimeout: 10s
+  writeTimeout: 10s
+  mode: debug
+
+database:
+  driver: mysql
+  host: localhost
+  port: 3306
+  username: root
+  password: root
+  database: uportal
+  charset: utf8mb4
+  maxIdle: 10
+  maxOpen: 100
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+  poolSize: 10
+
+wechat:
+  miniProgram:
+    appId: "your_mini_program_appid"
+    appSecret: "your_mini_program_secret"
+  pay:
+    appId: "your_pay_appid"
+    mchId: "your_merchant_id"
+    mchApiKey: "your_merchant_api_key"
+    notifyUrl: "https://your.domain/api/v1/pay/notify"
+    certFile: "cert/apiclient_cert.pem"
+    keyFile: "cert/apiclient_key.pem"
+    rootCaFile: "cert/rootca.pem"
+
+jwt:
+  secret: your-secret-key-here
+  expireTime: 720h  # 30天
+  issuer: "uportal-api" 
