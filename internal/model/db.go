@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/reusedev/uportal-api/pkg/config"
-	"github.com/reusedev/uportal-api/pkg/logging"
+	"github.com/reusedev/uportal-api/pkg/logs"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -34,7 +34,7 @@ func InitDB() error {
 	// 配置GORM
 	gormConfig := &gorm.Config{
 		Logger: logger.New(
-			&gormLogger{logger: logging.DB()},
+			&gormLogger{logger: logs.DB()},
 			logger.Config{
 				SlowThreshold:             time.Second,
 				LogLevel:                  logger.Info,
@@ -72,7 +72,7 @@ func InitDB() error {
 	// 设置全局数据库连接
 	DB = db
 
-	logging.Business().Info("Database connected successfully")
+	logs.Business().Info("Database connected successfully")
 	return nil
 }
 

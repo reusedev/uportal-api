@@ -1,4 +1,4 @@
-package logging
+package logs
 
 import (
 	"fmt"
@@ -55,12 +55,12 @@ func Init(cfg *Config) error {
 		TimeKey:        "time",
 		LevelKey:       "level",
 		NameKey:        "logger",
+		MessageKey:     "msg",
 		CallerKey:      "caller",
 		FunctionKey:    zapcore.OmitKey,
-		MessageKey:     "msg",
 		StacktraceKey:  "stacktrace",
 		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
+		EncodeLevel:    zapcore.CapitalLevelEncoder,
 		EncodeTime:     zapcore.TimeEncoderOfLayout(time.DateTime),
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
@@ -114,6 +114,7 @@ func createLogger(logFile string, level zapcore.Level, encoderConfig zapcore.Enc
 	// 如果配置了控制台输出，创建控制台输出
 	var cores []zapcore.Core
 	if cfg.Console {
+		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		consoleEncoder := zapcore.NewConsoleEncoder(encoderConfig)
 		consoleCore := zapcore.NewCore(
 			consoleEncoder,

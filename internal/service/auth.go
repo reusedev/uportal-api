@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
-	"github.com/reusedev/uportal-api/pkg/logging"
+	"github.com/reusedev/uportal-api/pkg/logs"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -142,7 +142,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*model.User
 	err = model.UpdateLastLoginTime(s.db, user.UserID)
 	if err != nil {
 		// 仅记录错误，不影响登录流程
-		logging.Business().Warn("更新最后登录时间失败",
+		logs.Business().Warn("更新最后登录时间失败",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err),
 		)
@@ -158,7 +158,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*model.User
 	}
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
-		logging.Business().Warn("创建登录日志失败",
+		logs.Business().Warn("创建登录日志失败",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err),
 		)
@@ -248,7 +248,7 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 	}
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
-		logging.Business().Warn("创建登录日志失败",
+		logs.Business().Warn("创建登录日志失败",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err),
 		)

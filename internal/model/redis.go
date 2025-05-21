@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/reusedev/uportal-api/pkg/config"
-	"github.com/reusedev/uportal-api/pkg/logging"
+	"github.com/reusedev/uportal-api/pkg/logs"
 )
 
 var (
@@ -43,7 +43,7 @@ func InitRedis() error {
 	// 设置全局Redis客户端
 	RedisClient = client
 
-	logging.Business().Info("Redis connected successfully")
+	logs.Business().Info("Redis connected successfully")
 	return nil
 }
 

@@ -23,7 +23,7 @@ import (
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/config"
 	"github.com/reusedev/uportal-api/pkg/errors"
-	"github.com/reusedev/uportal-api/pkg/logging"
+	"github.com/reusedev/uportal-api/pkg/logs"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -432,7 +432,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, amount f
 		return nil, errors.New(errors.ErrCodeInternal, "创建订单失败", err)
 	}
 
-	logging.Business().Info("订单创建成功",
+	logs.Business().Info("订单创建成功",
 		zap.Int64("order_id", order.OrderID),
 		zap.Int64("user_id", userID),
 		zap.String("order_no", order.OrderNo),
@@ -490,7 +490,7 @@ func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, s
 		return errors.New(errors.ErrCodeInternal, "更新订单状态失败", err)
 	}
 
-	logging.Business().Info("订单状态更新成功",
+	logs.Business().Info("订单状态更新成功",
 		zap.Int64("order_id", orderID),
 		zap.String("order_no", order.OrderNo),
 		zap.String("old_status", string(order.Status)),

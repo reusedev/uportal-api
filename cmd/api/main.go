@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/reusedev/uportal-api/pkg/logs"
 	"log"
 	"net/http"
 	"os"
@@ -18,7 +19,6 @@ import (
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/internal/service"
 	"github.com/reusedev/uportal-api/pkg/config"
-	"github.com/reusedev/uportal-api/pkg/logging"
 )
 
 var (
@@ -40,7 +40,7 @@ func main() {
 	cfg := config.Get()
 
 	// 2. 初始化日志
-	if err := logging.Init(&logging.Config{
+	if err := logs.Init(&logs.Config{
 		LogDir:          cfg.Logging.LogDir,
 		BusinessLogFile: cfg.Logging.BusinessLogFile,
 		DBLogFile:       cfg.Logging.DBLogFile,
@@ -53,25 +53,25 @@ func main() {
 	}); err != nil {
 		panic(fmt.Sprintf("Init logger error: %v", err))
 	}
-	defer logging.Sync()
+	defer logs.Sync()
 
 	// 3. 初始化数据库
 	if err := model.InitDB(); err != nil {
-		logging.Business().Fatal("Init database error", zap.Error(err))
+		logs.Business().Fatal("Init database error", zap.Error(err))
 	}
 	defer model.CloseDB()
 
 	if doMigrate {
-		logging.Business().Info("执行数据库迁移...")
+		logs.Business().Info("执行数据库迁移...")
 		if err := model.Migrate(model.DB); err != nil {
-			logging.Business().Error("数据库迁移失败 ", zap.Error(err))
+			logs.Business().Error("数据库迁移失败 ", zap.Error(err))
 		}
 		log.Println("数据库迁移完成。")
 	}
 
 	// 4. 初始化Redis
 	if err := model.InitRedis(); err != nil {
-		logging.Business().Fatal("Init redis error", zap.Error(err))
+		logs.Business().Fatal("Init redis error", zap.Error(err))
 	}
 	defer model.CloseRedis()
 
@@ -81,9 +81,9 @@ func main() {
 
 	// 7. 注册中间件
 	// 注意：中间件的注册顺序很重要
-	engine.Use(middleware.Recovery(logging.Business())) // 恢复中间件应该最先注册
-	engine.Use(middleware.Logger(logging.Business()))   // 日志中间件
-	engine.Use(middleware.CORS())                       // CORS中间件
+	engine.Use(middleware.Recovery(logs.Business())) // 恢复中间件应该最先注册
+	engine.Use(middleware.Logger(logs.Business()))   // 日志中间件
+	engine.Use(middleware.CORS())                    // CORS中间件
 
 	// 8. 注册路由
 	registerRoutes(engine, model.DB, cfg)
@@ -99,7 +99,7 @@ func main() {
 	// 10. 优雅关闭
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logging.Business().Fatal("Server error", zap.Error(err))
+			logs.Business().Fatal("Server error", zap.Error(err))
 		}
 	}()
 
@@ -108,7 +108,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logging.Business().Info("Shutting down server...")
+	logs.Business().Info("Shutting down server...")
 }
 
 // registerRoutes 注册路由
@@ -120,7 +120,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	orderService := service.NewOrderService(db)
 	paymentService, err := service.NewPaymentService(db, model.RedisClient, orderService, cfg)
 	if err != nil {
-		logging.Business().Error("Init payment service error", zap.Error(err))
+		logs.Business().Error("Init payment service error", zap.Error(err))
 	}
 
 	// 初始化处理器
