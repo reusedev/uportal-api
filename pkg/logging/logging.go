@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -60,7 +61,7 @@ func Init(cfg *Config) error {
 		StacktraceKey:  "stacktrace",
 		LineEnding:     zapcore.DefaultLineEnding,
 		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeTime:     zapcore.TimeEncoderOfLayout(time.DateTime),
 		EncodeDuration: zapcore.SecondsDurationEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
@@ -105,7 +106,7 @@ func createLogger(logFile string, level zapcore.Level, encoderConfig zapcore.Enc
 
 	// 创建文件输出
 	fileCore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.NewConsoleEncoder(encoderConfig),
 		zapcore.AddSync(rotator),
 		level,
 	)
@@ -129,8 +130,8 @@ func createLogger(logFile string, level zapcore.Level, encoderConfig zapcore.Enc
 	// 创建日志记录器
 	logger := zap.New(core,
 		zap.AddCaller(),
-		zap.AddCallerSkip(1),
-		zap.AddStacktrace(zapcore.ErrorLevel),
+		zap.AddCallerSkip(0),
+		zap.AddStacktrace(zapcore.PanicLevel),
 	)
 
 	return logger, nil
