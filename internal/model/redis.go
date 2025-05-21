@@ -3,11 +3,11 @@ package model
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/reusedev/uportal-api/config"
+	"github.com/reusedev/uportal-api/pkg/config"
+	"github.com/reusedev/uportal-api/pkg/logging"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 
 // InitRedis 初始化Redis连接
 func InitRedis() error {
-	cfg := config.GlobalConfig.Redis
+	cfg := config.Get().Redis
 
 	// 创建Redis客户端
 	client := redis.NewClient(&redis.Options{
@@ -43,7 +43,7 @@ func InitRedis() error {
 	// 设置全局Redis客户端
 	RedisClient = client
 
-	log.Println("Redis connected successfully")
+	logging.Business().Info("Redis connected successfully")
 	return nil
 }
 

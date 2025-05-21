@@ -32,6 +32,18 @@ type Config struct {
 		MaxOpen  int    `mapstructure:"maxOpen"`
 	} `mapstructure:"database"`
 
+	Logging struct {
+		LogDir          string `mapstructure:"logDir"`
+		BusinessLogFile string `mapstructure:"businessLogFile"`
+		DBLogFile       string `mapstructure:"dbLogFile"`
+		Level           string `mapstructure:"level"`
+		Console         bool   `mapstructure:"console"`
+		MaxSize         int    `mapstructure:"maxSize"`
+		MaxBackups      int    `mapstructure:"maxBackups"`
+		MaxAge          int    `mapstructure:"maxAge"`
+		Compress        bool   `mapstructure:"compress"`
+	} `mapstructure:"logging"`
+
 	JWT struct {
 		Secret     string `mapstructure:"secret"`
 		ExpireTime string `mapstructure:"expireTime"`

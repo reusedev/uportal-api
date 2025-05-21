@@ -2,10 +2,11 @@ package model
 
 import (
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/reusedev/uportal-api/config"
+	"github.com/reusedev/uportal-api/pkg/config"
+	"github.com/reusedev/uportal-api/pkg/logging"
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -18,7 +19,7 @@ var (
 
 // InitDB 初始化数据库连接
 func InitDB() error {
-	cfg := config.GlobalConfig.Database
+	cfg := config.Get().Database
 
 	// 构建DSN
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
@@ -32,7 +33,15 @@ func InitDB() error {
 
 	// 配置GORM
 	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.New(
+			&gormLogger{logger: logging.DB()},
+			logger.Config{
+				SlowThreshold:             time.Second,
+				LogLevel:                  logger.Info,
+				IgnoreRecordNotFoundError: true,
+				Colorful:                  false,
+			},
+		),
 		NowFunc: func() time.Time {
 			return time.Now().Local()
 		},
@@ -62,7 +71,7 @@ func InitDB() error {
 	// 设置全局数据库连接
 	DB = db
 
-	log.Println("Database connected successfully")
+	logging.Business().Info("Database connected successfully")
 	return nil
 }
 
@@ -76,4 +85,13 @@ func CloseDB() error {
 		return sqlDB.Close()
 	}
 	return nil
+}
+
+// gormLogger 实现 gorm.Logger 接口
+type gormLogger struct {
+	logger *zap.Logger
+}
+
+func (l *gormLogger) Printf(format string, args ...interface{}) {
+	l.logger.Sugar().Infof(format, args...)
 }

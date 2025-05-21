@@ -3,15 +3,15 @@ package service
 import (
 	"context"
 	stderrors "errors"
-	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
-
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
+	"github.com/reusedev/uportal-api/pkg/logging"
+	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // AuthService 认证服务
@@ -55,60 +55,45 @@ type ThirdPartyLoginRequest struct {
 
 // Register 用户注册
 func (s *AuthService) Register(ctx context.Context, req *RegisterRequest) (*model.User, error) {
-	var user *model.User
-	err := s.db.Transaction(func(tx *gorm.DB) error {
-		// 验证手机号或邮箱至少提供一个
-		if req.Phone == "" && req.Email == "" {
-			return errors.New(errors.ErrCodeInvalidParams, "手机号或邮箱至少提供一个", nil)
-		}
-
-		// 检查手机号是否已存在
-		if req.Phone != "" {
-			exists, err := s.checkPhoneExists(ctx, req.Phone)
-			if err != nil {
-				return err
-			}
-			if exists {
-				return errors.New(errors.ErrCodeInvalidParams, "手机号已被注册", nil)
-			}
-		}
-
-		// 检查邮箱是否已存在
-		if req.Email != "" {
-			exists, err := s.checkEmailExists(ctx, req.Email)
-			if err != nil {
-				return err
-			}
-			if exists {
-				return errors.New(errors.ErrCodeInvalidParams, "邮箱已被注册", nil)
-			}
-		}
-
-		// 加密密码
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	// 检查手机号或邮箱是否已存在
+	if req.Phone != "" {
+		exists, err := s.checkPhoneExists(ctx, req.Phone)
 		if err != nil {
-			return errors.New(errors.ErrCodeInternal, "密码加密失败", err)
+			return nil, err
 		}
-
-		// 创建用户
-		user = &model.User{
-			Phone:        req.Phone,
-			Email:        req.Email,
-			PasswordHash: string(hashedPassword),
-			Nickname:     req.Nickname,
-			Status:       1,
+		if exists {
+			return nil, errors.ErrPhoneExists
 		}
+	}
 
-		err = tx.Create(user).Error
+	if req.Email != "" {
+		exists, err := s.checkEmailExists(ctx, req.Email)
 		if err != nil {
-			return errors.New(errors.ErrCodeInternal, "创建用户失败", err)
+			return nil, err
 		}
+		if exists {
+			return nil, errors.ErrEmailExists
+		}
+	}
 
-		return nil
-	})
-
+	// 生成密码哈希
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(errors.ErrCodeInternal, "生成密码哈希失败", err)
+	}
+
+	// 创建用户
+	user := &model.User{
+		Phone:        req.Phone,
+		Email:        req.Email,
+		PasswordHash: string(passwordHash),
+		Nickname:     req.Nickname,
+		Status:       1,
+	}
+
+	err = model.CreateUser(s.db, user)
+	if err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "创建用户失败", err)
 	}
 
 	return user, nil
@@ -156,7 +141,10 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*model.User
 	err = model.UpdateLastLoginTime(s.db, user.UserID)
 	if err != nil {
 		// 仅记录错误，不影响登录流程
-		log.Printf("更新最后登录时间失败: %v", err)
+		logging.Business().Warn("更新最后登录时间失败",
+			zap.Int64("user_id", user.UserID),
+			zap.Error(err),
+		)
 	}
 
 	// 记录登录日志
@@ -169,7 +157,10 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*model.User
 	}
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
-		log.Printf("创建登录日志失败: %v", err)
+		logging.Business().Warn("创建登录日志失败",
+			zap.Int64("user_id", user.UserID),
+			zap.Error(err),
+		)
 	}
 
 	return user, token, nil
@@ -256,7 +247,10 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 	}
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
-		log.Printf("创建登录日志失败: %v", err)
+		logging.Business().Warn("创建登录日志失败",
+			zap.Int64("user_id", user.UserID),
+			zap.Error(err),
+		)
 	}
 
 	return user, token, nil
@@ -304,28 +298,19 @@ func (s *AuthService) GetUserByID(ctx context.Context, id int64) (*model.User, e
 
 // UpdateUser 更新用户信息
 func (s *AuthService) UpdateUser(ctx context.Context, id int64, updates map[string]interface{}) error {
-	// 如果更新密码，需要加密
-	if password, ok := updates["password"].(string); ok {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			return errors.New(errors.ErrCodeInternal, "Failed to encrypt password", err)
-		}
-		updates["password"] = string(hashedPassword)
+	err := model.UpdateUser(s.db, id, updates)
+	if err != nil {
+		return errors.New(errors.ErrCodeInternal, "更新用户信息失败", err)
 	}
-
-	if err := model.UpdateUser(s.db, id, updates); err != nil {
-		return errors.New(errors.ErrCodeInternal, "Failed to update user", err)
-	}
-
 	return nil
 }
 
-// ChangePassword 修改用户密码
+// ChangePassword 修改密码
 func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error {
 	// 获取用户信息
 	user, err := model.GetUserByID(s.db, userID)
 	if err != nil {
-		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+		if err == gorm.ErrRecordNotFound {
 			return errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
 		}
 		return errors.New(errors.ErrCodeInternal, "查询用户失败", err)
@@ -337,16 +322,17 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassw
 		return errors.New(errors.ErrCodeUnauthorized, "旧密码错误", nil)
 	}
 
-	// 加密新密码
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	// 生成新密码哈希
+	newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		return errors.New(errors.ErrCodeInternal, "密码加密失败", err)
+		return errors.New(errors.ErrCodeInternal, "生成密码哈希失败", err)
 	}
 
 	// 更新密码
-	if err := model.UpdateUser(s.db, userID, map[string]interface{}{
-		"password_hash": string(hashedPassword),
-	}); err != nil {
+	err = model.UpdateUser(s.db, userID, map[string]interface{}{
+		"password_hash": string(newPasswordHash),
+	})
+	if err != nil {
 		return errors.New(errors.ErrCodeInternal, "更新密码失败", err)
 	}
 

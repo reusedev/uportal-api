@@ -37,14 +37,8 @@ func (h *PaymentHandler) CreateWxPayOrder(c *gin.Context) {
 		return
 	}
 
-	// 获取充值方案描述
-	description := "充值订单"
-	if order.Plan != nil {
-		description = order.Plan.Description
-	}
-
 	// 创建支付订单
-	resp, err := h.paymentService.CreateWxPayOrder(c.Request.Context(), orderID, description, order.AmountPaid)
+	resp, err := h.paymentService.CreateWxPayOrder(c.Request.Context(), orderID, order.ProductName, order.Amount)
 	if err != nil {
 		response.Error(c, err)
 		return

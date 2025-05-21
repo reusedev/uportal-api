@@ -15,6 +15,17 @@ database:
   maxIdle: 10
   maxOpen: 100
 
+logging:
+  logDir: logs
+  businessLogFile: business.log
+  dbLogFile: db.log
+  level: info
+  console: true
+  maxSize: 100    # 单个日志文件最大尺寸，单位MB
+  maxBackups: 10  # 保留的旧日志文件最大数量
+  maxAge: 30      # 保留的旧日志文件最大天数
+  compress: true  # 是否压缩旧日志文件
+
 redis:
   host: localhost
   port: 6379
@@ -36,6 +47,6 @@ wechat:
     rootCaFile: "cert/rootca.pem"
 
 jwt:
-  secret: your-secret-key-here
-  expireTime: 720h  # 30天
-  issuer: "uportal-api" 
+  secret: your-secret-key
+  expireTime: 24h
+  issuer: uportal-api 

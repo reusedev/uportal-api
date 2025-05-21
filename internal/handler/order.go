@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/internal/service"
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"github.com/reusedev/uportal-api/pkg/response"
@@ -21,18 +22,25 @@ func NewOrderHandler(orderService *service.OrderService) *OrderHandler {
 	}
 }
 
+// CreateOrderRequest 创建订单请求
+type CreateOrderRequest struct {
+	ProductID   string  `json:"product_id" binding:"required"`
+	ProductName string  `json:"product_name" binding:"required"`
+	Amount      float64 `json:"amount" binding:"required,gt=0"`
+}
+
 // CreateOrder 创建订单
 func (h *OrderHandler) CreateOrder(c *gin.Context) {
-	var req service.CreateOrderRequest
+	var req CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
 
 	// 从上下文获取用户ID
-	req.UserID = c.GetInt64("user_id")
+	userID := c.GetInt64("user_id")
 
-	order, err := h.orderService.CreateOrder(c.Request.Context(), &req)
+	order, err := h.orderService.CreateOrder(c.Request.Context(), userID, req.Amount, req.ProductID, req.ProductName)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -55,18 +63,33 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 		return
 	}
 
+	// 验证订单所属用户
+	userID := c.GetInt64("user_id")
+	if order.UserID != userID {
+		response.Error(c, errors.New(errors.ErrCodeForbidden, "无权查看此订单", nil))
+		return
+	}
+
 	response.Success(c, order)
+}
+
+// ListOrdersRequest 获取订单列表请求
+type ListOrdersRequest struct {
+	Page     int    `form:"page" binding:"required,min=1"`
+	PageSize int    `form:"page_size" binding:"required,min=1,max=100"`
+	UserID   int64  `form:"user_id"`
+	Status   string `form:"status"`
 }
 
 // ListOrders 获取订单列表（管理员接口）
 func (h *OrderHandler) ListOrders(c *gin.Context) {
-	var req service.ListOrdersRequest
+	var req ListOrdersRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
 
-	orders, total, err := h.orderService.ListOrders(c.Request.Context(), &req)
+	orders, total, err := h.orderService.ListOrders(c.Request.Context(), req.Page, req.PageSize, req.UserID, req.Status)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -111,13 +134,19 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 		return
 	}
 
-	err = h.orderService.CancelOrder(c.Request.Context(), orderID)
+	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, model.OrderStatusCancelled, nil)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
 	response.Success(c, nil)
+}
+
+// UpdateOrderStatusRequest 更新订单状态请求
+type UpdateOrderStatusRequest struct {
+	Status      model.OrderStatus      `json:"status" binding:"required"`
+	PaymentInfo map[string]interface{} `json:"payment_info"`
 }
 
 // UpdateOrderStatus 更新订单状态（管理员接口）
@@ -128,17 +157,13 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Status        int8   `json:"status" binding:"required,oneof=0 1 2 3 4"`
-		TransactionID string `json:"transaction_id" binding:"required_if=status 1"`
-	}
-
+	var req UpdateOrderStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
 
-	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, req.Status)
+	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, req.Status, req.PaymentInfo)
 	if err != nil {
 		response.Error(c, err)
 		return
