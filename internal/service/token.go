@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	stderrors "errors"
-	"github.com/reusedev/uportal-api/types"
 
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
@@ -126,10 +125,8 @@ type CreateRechargePlanRequest struct {
 // CreateRechargePlan 创建充值套餐
 func (s *TokenService) CreateRechargePlan(ctx context.Context, req *CreateRechargePlanRequest) (*model.RechargePlan, error) {
 	plan := &model.RechargePlan{
-		Name:        req.Name,
-		TokenAmount: req.TokenAmount,
+		TokenAmount: int(req.TokenAmount),
 		Price:       req.Price,
-		Discount:    req.Discount,
 		Description: req.Description,
 		Status:      1,
 	}
@@ -221,14 +218,9 @@ func (s *TokenService) GetUserTokenBalance(ctx context.Context, userID int64) (i
 	return balance, nil
 }
 
-// GetUserTokenRecords 获取用户Token记录
-func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID int64, page, pageSize int) ([]*types.TokenRecord, int64, error) {
-	offset := (page - 1) * pageSize
-	records, total, err := model.GetTokenRecords(s.db, userID, offset, pageSize)
-	if err != nil {
-		return nil, 0, errors.New(errors.ErrCodeInternal, "获取Token记录失败", err)
-	}
-	return records, total, nil
+// GetUserTokenRecords 获取用户的代币记录列表
+func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID int64, page, pageSize int) ([]*model.TokenRecord, int64, error) {
+	return model.GetTokenRecords(s.db, userID, (page-1)*pageSize, pageSize)
 }
 
 // ConsumeToken 消费Token
@@ -277,7 +269,7 @@ func (s *TokenService) GetRechargeAmount(ctx context.Context, planID int64) (flo
 		return 0, errors.New(errors.ErrCodeInvalidParams, "充值套餐未启用", nil)
 	}
 
-	return plan.Price * plan.Discount, nil
+	return plan.Price, nil
 }
 
 // GetConsumptionAmount 获取服务消费Token数量

@@ -1,18 +1,17 @@
 package model
 
 import (
-	"github.com/reusedev/uportal-api/types"
 	"gorm.io/gorm"
 )
 
 // CreateOrder 创建订单
-func CreateOrder(db *gorm.DB, order *types.RechargeOrder) error {
+func CreateOrder(db *gorm.DB, order *RechargeOrder) error {
 	return db.Create(order).Error
 }
 
 // GetOrder 获取订单
-func GetOrder(db *gorm.DB, orderID int64) (*types.RechargeOrder, error) {
-	var order types.RechargeOrder
+func GetOrder(db *gorm.DB, orderID int64) (*RechargeOrder, error) {
+	var order RechargeOrder
 	err := db.Preload("User").Preload("Plan").First(&order, orderID).Error
 	if err != nil {
 		return nil, err
@@ -22,15 +21,15 @@ func GetOrder(db *gorm.DB, orderID int64) (*types.RechargeOrder, error) {
 
 // UpdateOrder 更新订单
 func UpdateOrder(db *gorm.DB, orderID int64, updates map[string]interface{}) error {
-	return db.Model(&types.RechargeOrder{}).Where("order_id = ?", orderID).Updates(updates).Error
+	return db.Model(&RechargeOrder{}).Where("order_id = ?", orderID).Updates(updates).Error
 }
 
 // ListOrders 获取订单列表
-func ListOrders(db *gorm.DB, userID int64, offset, limit int) ([]*types.RechargeOrder, int64, error) {
-	var orders []*types.RechargeOrder
+func ListOrders(db *gorm.DB, userID int64, offset, limit int) ([]*RechargeOrder, int64, error) {
+	var orders []*RechargeOrder
 	var total int64
 
-	query := db.Model(&types.RechargeOrder{})
+	query := db.Model(&RechargeOrder{})
 	if userID > 0 {
 		query = query.Where("user_id = ?", userID)
 	}

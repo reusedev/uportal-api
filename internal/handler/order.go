@@ -138,7 +138,7 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, req.Status, req.TransactionID)
+	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, req.Status)
 	if err != nil {
 		response.Error(c, err)
 		return

@@ -1,32 +1,8 @@
 package model
 
 import (
-	"time"
-
-	"github.com/reusedev/uportal-api/types"
 	"gorm.io/gorm"
 )
-
-// PaymentNotifyRecord 支付回调通知记录
-type PaymentNotifyRecord struct {
-	RecordID      int64                `gorm:"column:record_id;primaryKey;autoIncrement" json:"record_id"`
-	OrderID       int64                `gorm:"column:order_id;uniqueIndex:uk_order_transaction" json:"order_id"`
-	TransactionID string               `gorm:"column:transaction_id;uniqueIndex:uk_order_transaction" json:"transaction_id"`
-	NotifyType    string               `gorm:"column:notify_type" json:"notify_type"`
-	NotifyTime    time.Time            `gorm:"column:notify_time" json:"notify_time"`
-	ProcessStatus int8                 `gorm:"column:process_status;default:0" json:"process_status"`
-	RetryCount    int                  `gorm:"column:retry_count;default:0" json:"retry_count"`
-	ErrorMessage  string               `gorm:"column:error_message" json:"error_message"`
-	ProcessTime   *time.Time           `gorm:"column:process_time" json:"process_time"`
-	CreatedAt     time.Time            `gorm:"column:created_at;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt     time.Time            `gorm:"column:updated_at;default:CURRENT_TIMESTAMP" json:"updated_at"`
-	Order         *types.RechargeOrder `gorm:"foreignKey:OrderID" json:"order,omitempty"`
-}
-
-// TableName 指定表名
-func (PaymentNotifyRecord) TableName() string {
-	return "payment_notify_records"
-}
 
 // CreateNotifyRecord 创建通知记录
 func CreateNotifyRecord(db *gorm.DB, record *PaymentNotifyRecord) error {

@@ -22,7 +22,6 @@ import (
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/config"
 	"github.com/reusedev/uportal-api/pkg/errors"
-	"github.com/reusedev/uportal-api/types"
 	"gorm.io/gorm"
 )
 
@@ -128,7 +127,7 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, orderID int64, de
 	}
 
 	// 更新订单状态为支付中
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, 2, "") // 2表示支付中
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, 2)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +270,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 	}
 
 	// 更新订单状态
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, 1, *transaction.TransactionId)
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, 1)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("update order status error: %v", err)
@@ -396,7 +395,7 @@ func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) err
 	}
 
 	// 更新订单状态为已取消
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, 4, "") // 4表示已取消
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, 4)
 	if err != nil {
 		return err
 	}
@@ -405,6 +404,6 @@ func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) err
 }
 
 // GetOrder 获取订单信息
-func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*types.RechargeOrder, error) {
+func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*model.RechargeOrder, error) {
 	return s.orderSvc.GetOrder(ctx, orderID)
 }

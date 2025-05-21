@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/reusedev/uportal-api/types"
+	"github.com/reusedev/uportal-api/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -22,19 +22,6 @@ type TokenConsumptionRule struct {
 // TableName 指定表名
 func (TokenConsumptionRule) TableName() string {
 	return "token_consume_rules"
-}
-
-// RechargePlan 充值套餐
-type RechargePlan struct {
-	ID          int64     `gorm:"primaryKey" json:"id"`
-	Name        string    `gorm:"size:50;not null;comment:套餐名称" json:"name"`
-	TokenAmount int64     `gorm:"not null;comment:Token数量" json:"token_amount"`
-	Price       float64   `gorm:"not null;comment:价格" json:"price"`
-	Discount    float64   `gorm:"not null;default:1.0;comment:折扣" json:"discount"`
-	Description string    `gorm:"size:200;comment:套餐描述" json:"description"`
-	Status      int       `gorm:"not null;default:1;comment:状态 1-启用 2-禁用" json:"status"`
-	CreatedAt   time.Time `gorm:"not null" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"not null" json:"updated_at"`
 }
 
 // CreateTokenConsumptionRule 创建Token消费规则
@@ -133,22 +120,30 @@ func ListRechargePlans(db *gorm.DB, offset, limit int) ([]*RechargePlan, int64, 
 	return plans, total, nil
 }
 
-// CreateTokenRecord 创建Token记录
-func CreateTokenRecord(db *gorm.DB, record *types.TokenRecord) error {
+// CreateTokenRecord 创建代币记录
+func CreateTokenRecord(db *gorm.DB, record *TokenRecord) error {
 	return db.Create(record).Error
 }
 
-// GetTokenRecords 获取用户的Token记录
-func GetTokenRecords(db *gorm.DB, userID int64, offset, limit int) ([]*types.TokenRecord, int64, error) {
-	var records []*types.TokenRecord
+// GetTokenRecords 获取用户的代币记录列表
+func GetTokenRecords(db *gorm.DB, userID int64, offset, limit int) ([]*TokenRecord, int64, error) {
+	var records []*TokenRecord
 	var total int64
 
-	err := db.Model(&types.TokenRecord{}).Where("user_id = ?", userID).Count(&total).Error
+	err := db.Model(&TokenRecord{}).Where("user_id = ?", userID).Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	err = db.Where("user_id = ?", userID).Order("created_at DESC").Offset(offset).Limit(limit).Find(&records).Error
+	err = db.Where("user_id = ?", userID).
+		Preload("User").
+		Preload("Task").
+		Preload("Feature").
+		Preload("Order").
+		Preload("Admin").
+		Order("change_time DESC").
+		Offset(offset).Limit(limit).
+		Find(&records).Error
 	if err != nil {
 		return nil, 0, err
 	}
@@ -158,7 +153,7 @@ func GetTokenRecords(db *gorm.DB, userID int64, offset, limit int) ([]*types.Tok
 
 // GetUserTokenBalance 获取用户Token余额
 func GetUserTokenBalance(db *gorm.DB, userID int64) (int64, error) {
-	var user types.User
+	var user User
 	err := db.Select("token_balance").First(&user, userID).Error
 	if err != nil {
 		return 0, err
@@ -166,10 +161,27 @@ func GetUserTokenBalance(db *gorm.DB, userID int64) (int64, error) {
 	return int64(user.TokenBalance), nil
 }
 
-// UpdateUserTokenBalance 更新用户Token余额
-func UpdateUserTokenBalance(db *gorm.DB, userID int64, amount int64) error {
-	return db.Model(&types.User{}).Where("user_id = ?", userID).
-		Update("token_balance", gorm.Expr("token_balance + ?", amount)).Error
+// UpdateUserTokenBalance 更新用户代币余额
+func UpdateUserTokenBalance(db *gorm.DB, userID int64, changeAmount int) error {
+	var user User
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// 获取用户当前余额
+		err := tx.First(&user, userID).Error
+		if err != nil {
+			return err
+		}
+
+		// 更新用户余额
+		newBalance := user.TokenBalance + changeAmount
+		if newBalance < 0 {
+			return errors.New(errors.ErrCodeInsufficientBalance, "代币余额不足", nil)
+		}
+
+		return tx.Model(&User{}).Where("user_id = ?", userID).
+			Update("token_balance", newBalance).Error
+	})
+
+	return err
 }
 
 // ConsumeToken 消费Token
@@ -187,13 +199,13 @@ func ConsumeToken(db *gorm.DB, userID int64, amount int64, serviceType string, d
 		}
 
 		// 更新用户余额
-		err = UpdateUserTokenBalance(tx, userID, -amount)
+		err = UpdateUserTokenBalance(tx, userID, -int(amount))
 		if err != nil {
 			return err
 		}
 
 		// 创建Token记录
-		record := &types.TokenRecord{
+		record := &TokenRecord{
 			UserID:       userID,
 			ChangeAmount: -int(amount),
 			BalanceAfter: int(balance - amount),
@@ -215,13 +227,13 @@ func AddToken(db *gorm.DB, userID int64, amount int64, recordType int, orderID s
 		}
 
 		// 更新用户余额
-		err = UpdateUserTokenBalance(tx, userID, amount)
+		err = UpdateUserTokenBalance(tx, userID, int(amount))
 		if err != nil {
 			return err
 		}
 
 		// 创建Token记录
-		record := &types.TokenRecord{
+		record := &TokenRecord{
 			UserID:       userID,
 			ChangeAmount: int(amount),
 			BalanceAfter: int(balance + amount),
@@ -251,4 +263,73 @@ func getChangeType(recordType int) string {
 	default:
 		return "OTHER"
 	}
+}
+
+// CreateTokenConsumptionRecord 创建代币消费记录
+func CreateTokenConsumptionRecord(db *gorm.DB, userID int64, featureID int, amount int, remark string) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		// 获取用户当前余额
+		var user User
+		err := tx.First(&user, userID).Error
+		if err != nil {
+			return err
+		}
+
+		// 检查余额是否足够
+		if user.TokenBalance < amount {
+			return errors.New(errors.ErrCodeInsufficientBalance, "代币余额不足", nil)
+		}
+
+		// 更新用户余额
+		newBalance := user.TokenBalance - amount
+		err = tx.Model(&User{}).Where("user_id = ?", userID).
+			Update("token_balance", newBalance).Error
+		if err != nil {
+			return err
+		}
+
+		// 创建消费记录
+		record := &TokenRecord{
+			UserID:       userID,
+			ChangeAmount: -amount,
+			BalanceAfter: newBalance,
+			ChangeType:   "consume",
+			FeatureID:    &featureID,
+			Remark:       remark,
+		}
+
+		return tx.Create(record).Error
+	})
+}
+
+// CreateTokenRewardRecord 创建代币奖励记录
+func CreateTokenRewardRecord(db *gorm.DB, userID int64, taskID int, amount int, remark string) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		// 获取用户当前余额
+		var user User
+		err := tx.First(&user, userID).Error
+		if err != nil {
+			return err
+		}
+
+		// 更新用户余额
+		newBalance := user.TokenBalance + amount
+		err = tx.Model(&User{}).Where("user_id = ?", userID).
+			Update("token_balance", newBalance).Error
+		if err != nil {
+			return err
+		}
+
+		// 创建奖励记录
+		record := &TokenRecord{
+			UserID:       userID,
+			ChangeAmount: amount,
+			BalanceAfter: newBalance,
+			ChangeType:   "reward",
+			TaskID:       &taskID,
+			Remark:       remark,
+		}
+
+		return tx.Create(record).Error
+	})
 }

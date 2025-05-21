@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,27 +19,37 @@ import (
 	"github.com/reusedev/uportal-api/internal/middleware"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/internal/service"
+	pkgconfig "github.com/reusedev/uportal-api/pkg/config"
 )
+
+var (
+	cfg    string
+	zapLog *zap.Logger
+)
+
+func init() {
+	flag.StringVar(&cfg, "config", "config.yaml", "config file")
+}
 
 func main() {
 	// 1. 加载配置
-	if err := config.LoadConfig(""); err != nil {
+	if err := config.LoadConfig(cfg); err != nil {
 		log.Fatalf("Load config error: %v", err)
 	}
 
 	// 2. 初始化日志
-	logger := initLogger()
-	defer logger.Sync()
+	zapLog = initLogger()
+	defer zapLog.Sync()
 
 	// 3. 初始化数据库
 	if err := model.InitDB(); err != nil {
-		logger.Fatal("Init database error", zap.Error(err))
+		zapLog.Fatal("Init database error", zap.Error(err))
 	}
 	defer model.CloseDB()
 
 	// 4. 初始化Redis
 	if err := model.InitRedis(); err != nil {
-		logger.Fatal("Init redis error", zap.Error(err))
+		zapLog.Fatal("Init redis error", zap.Error(err))
 	}
 	defer model.CloseRedis()
 
@@ -48,8 +59,8 @@ func main() {
 
 	// 6. 注册中间件
 	// 注意：中间件的注册顺序很重要
-	engine.Use(middleware.Recovery(logger)) // 恢复中间件应该最先注册
-	engine.Use(middleware.Logger(logger))   // 日志中间件
+	engine.Use(middleware.Recovery(zapLog)) // 恢复中间件应该最先注册
+	engine.Use(middleware.Logger(zapLog))   // 日志中间件
 	engine.Use(middleware.CORS())           // CORS中间件
 
 	// 7. 注册路由
@@ -66,7 +77,7 @@ func main() {
 	// 9. 优雅关闭
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatal("Server error", zap.Error(err))
+			zapLog.Fatal("Server error", zap.Error(err))
 		}
 	}()
 
@@ -75,7 +86,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logger.Info("Shutting down server...")
+	zapLog.Info("Shutting down server...")
 }
 
 // initLogger 初始化日志
@@ -128,47 +139,43 @@ func initLogger() *zap.Logger {
 }
 
 // registerRoutes 注册路由
-func registerRoutes(r *gin.Engine, db *gorm.DB) {
+func registerRoutes(engine *gin.Engine, db *gorm.DB) {
 	// 初始化服务
 	authService := service.NewAuthService(db)
 	adminService := service.NewAdminService(db)
 	tokenService := service.NewTokenService(db)
 	orderService := service.NewOrderService(db)
+	paymentService, err := service.NewPaymentService(db, model.RedisClient, orderService, pkgconfig.Get())
+	if err != nil {
+		zapLog.Fatal("Init payment service error", zap.Error(err))
+	}
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
 	adminHandler := handler.NewAdminHandler(adminService)
 	tokenHandler := handler.NewTokenHandler(tokenService)
 	orderHandler := handler.NewOrderHandler(orderService)
+	paymentHandler := handler.NewPaymentHandler(paymentService)
 
 	// 注册路由
-	api := r.Group("/api/v1")
+	api := engine.Group("/api/v1")
 	{
 		// 认证相关路由
 		handler.RegisterAuthRoutes(api, authHandler)
 
-		// 需要认证的路由
-		auth := api.Group("")
-		auth.Use(middleware.Auth())
-		{
-			// 用户相关路由
-			handler.RegisterUserRoutes(auth, authHandler)
+		// 管理员相关路由
+		admin := api.Group("/admin", middleware.AuthMiddleware())
+		handler.RegisterAdminUserRoutes(admin, adminHandler)
 
-			// Token相关路由
-			handler.RegisterTokenRoutes(auth, tokenHandler)
+		// Token相关路由
+		token := api.Group("/token", middleware.Auth())
+		handler.RegisterTokenRoutes(token, tokenHandler)
 
-			// 订单相关路由
-			handler.RegisterOrderRoutes(auth, orderHandler, middleware.Auth())
+		// 订单相关路由
+		order := api.Group("/orders", middleware.Auth())
+		handler.RegisterOrderRoutes(order, orderHandler, middleware.Auth())
 
-			// 管理员路由
-			admin := auth.Group("/admin")
-			admin.Use(middleware.AdminAuth())
-			{
-				// 用户管理
-				handler.RegisterAdminUserRoutes(admin, adminHandler)
-				// Token管理
-				handler.RegisterAdminTokenRoutes(admin, tokenHandler)
-			}
-		}
+		// 支付相关路由
+		handler.RegisterPaymentRoutes(api, paymentHandler, middleware.Auth())
 	}
 }
