@@ -28,15 +28,6 @@ type CreateConsumptionRuleRequest struct {
 
 // CreateConsumptionRule 创建Token消费规则
 func (s *TokenService) CreateConsumptionRule(ctx context.Context, req *CreateConsumptionRuleRequest) (*model.TokenConsumptionRule, error) {
-	// 检查服务类型是否已存在
-	_, err := model.GetTokenConsumptionRuleByService(s.db, req.ServiceType)
-	if err == nil {
-		return nil, errors.New(errors.ErrCodeInvalidParams, "服务类型已存在", nil)
-	}
-	if !stderrors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.New(errors.ErrCodeInternal, "查询服务类型失败", err)
-	}
-
 	rule := &model.TokenConsumptionRule{
 		ServiceType: req.ServiceType,
 		TokenAmount: req.TokenAmount,
@@ -44,16 +35,17 @@ func (s *TokenService) CreateConsumptionRule(ctx context.Context, req *CreateCon
 		Status:      1,
 	}
 
-	err = model.CreateTokenConsumptionRule(s.db, rule)
+	err := model.CreateTokenConsumptionRule(s.db, rule)
 	if err != nil {
-		return nil, errors.New(errors.ErrCodeInternal, "创建消费规则失败", err)
+		return nil, err
 	}
-
 	return rule, nil
 }
 
 // UpdateConsumptionRuleRequest 更新消费规则请求
 type UpdateConsumptionRuleRequest struct {
+	ID          int64  `json:"id" binding:"required,min=1"`
+	ServiceType string `json:"service_type" binding:"required,max=50"`
 	TokenAmount int64  `json:"token_amount" binding:"required,min=1"`
 	Description string `json:"description" binding:"required,max=200"`
 	Status      int    `json:"status" binding:"required,oneof=1 2"`
@@ -71,17 +63,13 @@ func (s *TokenService) UpdateConsumptionRule(ctx context.Context, id int64, req 
 	}
 
 	updates := map[string]interface{}{
+		"service_type": req.ServiceType,
 		"token_amount": req.TokenAmount,
 		"description":  req.Description,
 		"status":       req.Status,
 	}
 
-	err = model.UpdateTokenConsumptionRule(s.db, id, updates)
-	if err != nil {
-		return errors.New(errors.ErrCodeInternal, "更新消费规则失败", err)
-	}
-
-	return nil
+	return model.UpdateTokenConsumptionRule(s.db, id, updates)
 }
 
 // DeleteConsumptionRule 删除Token消费规则
@@ -101,6 +89,12 @@ func (s *TokenService) DeleteConsumptionRule(ctx context.Context, id int64) erro
 	}
 
 	return nil
+}
+
+// ListConsumptionRulesRequest 获取Token消费规则列表请求
+type ListConsumptionRulesRequest struct {
+	Offset int `json:"offset" binding:"required,min=0"`
+	Limit  int `json:"limit" binding:"required,min=1"`
 }
 
 // ListConsumptionRules 获取Token消费规则列表
@@ -124,10 +118,12 @@ type CreateRechargePlanRequest struct {
 
 // CreateRechargePlan 创建充值套餐
 func (s *TokenService) CreateRechargePlan(ctx context.Context, req *CreateRechargePlanRequest) (*model.RechargePlan, error) {
+	// 将 string 转换为 *string
+	description := req.Description
 	plan := &model.RechargePlan{
-		TokenAmount: int(req.TokenAmount),
+		TokenAmount: int(req.TokenAmount), // 转换为 int
 		Price:       req.Price,
-		Description: req.Description,
+		Description: &description,
 		Status:      1,
 	}
 
@@ -160,12 +156,12 @@ func (s *TokenService) UpdateRechargePlan(ctx context.Context, id int64, req *Up
 		return errors.New(errors.ErrCodeInternal, "查询充值套餐失败", err)
 	}
 
+	// 将 string 转换为 *string
+	description := req.Description
 	updates := map[string]interface{}{
-		"name":         req.Name,
-		"token_amount": req.TokenAmount,
+		"token_amount": int(req.TokenAmount), // 转换为 int
 		"price":        req.Price,
-		"discount":     req.Discount,
-		"description":  req.Description,
+		"description":  &description,
 		"status":       req.Status,
 	}
 
@@ -228,22 +224,16 @@ func (s *TokenService) ConsumeToken(ctx context.Context, userID int64, serviceTy
 	// 获取消费规则
 	rule, err := model.GetTokenConsumptionRuleByService(s.db, serviceType)
 	if err != nil {
-		if stderrors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New(errors.ErrCodeNotFound, "服务类型不存在或未启用", nil)
-		}
-		return errors.New(errors.ErrCodeInternal, "获取消费规则失败", err)
+		return err
+	}
+
+	// 检查规则状态
+	if rule.Status != 1 {
+		return errors.New(errors.ErrCodeInvalidParams, "该服务已禁用", nil)
 	}
 
 	// 消费Token
-	err = model.ConsumeToken(s.db, userID, rule.TokenAmount, serviceType, rule.Description)
-	if err != nil {
-		if stderrors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New(errors.ErrCodeInsufficientBalance, "Token余额不足", nil)
-		}
-		return errors.New(errors.ErrCodeInternal, "消费Token失败", err)
-	}
-
-	return nil
+	return model.ConsumeToken(s.db, userID, rule.TokenAmount, serviceType, rule.Description)
 }
 
 // AddToken 增加Token
@@ -272,15 +262,11 @@ func (s *TokenService) GetRechargeAmount(ctx context.Context, planID int64) (flo
 	return plan.Price, nil
 }
 
-// GetConsumptionAmount 获取服务消费Token数量
+// GetConsumptionAmount 获取服务消耗的Token数量
 func (s *TokenService) GetConsumptionAmount(ctx context.Context, serviceType string) (int64, error) {
 	rule, err := model.GetTokenConsumptionRuleByService(s.db, serviceType)
 	if err != nil {
-		if stderrors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, errors.New(errors.ErrCodeNotFound, "服务类型不存在或未启用", nil)
-		}
-		return 0, errors.New(errors.ErrCodeInternal, "获取消费规则失败", err)
+		return 0, err
 	}
-
 	return rule.TokenAmount, nil
 }

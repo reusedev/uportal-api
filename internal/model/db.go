@@ -21,8 +21,8 @@ var (
 func InitDB() error {
 	cfg := config.Get().Database
 
-	// 构建DSN
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
+	// 构建DSN，添加外键约束检查参数
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local&foreign_key_checks=1",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,
@@ -45,6 +45,7 @@ func InitDB() error {
 		NowFunc: func() time.Time {
 			return time.Now().Local()
 		},
+		DisableForeignKeyConstraintWhenMigrating: false, // 确保启用外键约束
 	}
 
 	// 连接数据库

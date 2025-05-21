@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -22,18 +21,24 @@ import (
 )
 
 var (
-	cfg string
+	configPath string
 )
 
 func init() {
-	flag.StringVar(&cfg, "config", "config.yaml", "config file")
+	flag.StringVar(&configPath, "config", "config/config.yaml", "config file path")
 }
 
 func main() {
-	// 1. 加载配置
+	// 1. 解析命令行参数
+	flag.Parse()
+
+	// 2. 加载配置
+	if err := config.LoadConfig(configPath); err != nil {
+		panic(fmt.Sprintf("Load config error: %v", err))
+	}
 	cfg := config.Get()
 
-	// 2. 初始化日志
+	// 3. 初始化日志
 	if err := logging.Init(&logging.Config{
 		LogDir:          cfg.Logging.LogDir,
 		BusinessLogFile: cfg.Logging.BusinessLogFile,
@@ -49,40 +54,45 @@ func main() {
 	}
 	defer logging.Sync()
 
-	// 3. 初始化数据库
+	// 4. 初始化数据库
 	if err := model.InitDB(); err != nil {
 		logging.Business().Fatal("Init database error", zap.Error(err))
 	}
 	defer model.CloseDB()
 
-	// 4. 初始化Redis
+	// 4.1 执行数据库迁移
+	if err := model.Migrate(model.DB); err != nil {
+		logging.Business().Fatal("Database migration error", zap.Error(err))
+	}
+
+	// 5. 初始化Redis
 	if err := model.InitRedis(); err != nil {
 		logging.Business().Fatal("Init redis error", zap.Error(err))
 	}
 	defer model.CloseRedis()
 
-	// 5. 创建Gin引擎
+	// 6. 创建Gin引擎
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.New()
 
-	// 6. 注册中间件
+	// 7. 注册中间件
 	// 注意：中间件的注册顺序很重要
 	engine.Use(middleware.Recovery(logging.Business())) // 恢复中间件应该最先注册
 	engine.Use(middleware.Logger(logging.Business()))   // 日志中间件
 	engine.Use(middleware.CORS())                       // CORS中间件
 
-	// 7. 注册路由
+	// 8. 注册路由
 	registerRoutes(engine, model.DB, cfg)
 
-	// 8. 启动服务器
+	// 9. 启动服务器
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      engine,
-		ReadTimeout:  parseDuration(cfg.Server.ReadTimeout),
-		WriteTimeout: parseDuration(cfg.Server.WriteTimeout),
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
-	// 9. 优雅关闭
+	// 10. 优雅关闭
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logging.Business().Fatal("Server error", zap.Error(err))
@@ -137,13 +147,4 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 支付相关路由
 		handler.RegisterPaymentRoutes(api, paymentHandler, middleware.Auth())
 	}
-}
-
-// parseDuration 工具函数
-func parseDuration(s string) time.Duration {
-	d, err := time.ParseDuration(s)
-	if err != nil {
-		return 10 * time.Second // 默认10秒
-	}
-	return d
 }

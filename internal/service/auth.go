@@ -81,13 +81,14 @@ func (s *AuthService) Register(ctx context.Context, req *RegisterRequest) (*mode
 	if err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "生成密码哈希失败", err)
 	}
+	passwordHashStr := string(passwordHash)
 
 	// 创建用户
 	user := &model.User{
-		Phone:        req.Phone,
-		Email:        req.Email,
-		PasswordHash: string(passwordHash),
-		Nickname:     req.Nickname,
+		Phone:        &req.Phone,
+		Email:        &req.Email,
+		PasswordHash: &passwordHashStr,
+		Nickname:     &req.Nickname,
 		Status:       1,
 	}
 
@@ -121,7 +122,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*model.User
 	}
 
 	// 验证密码
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(req.Password))
 	if err != nil {
 		return nil, "", errors.New(errors.ErrCodeUnauthorized, "密码错误", nil)
 	}
@@ -151,9 +152,9 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*model.User
 	logEntry := &model.UserLoginLog{
 		UserID:        user.UserID,
 		LoginMethod:   "password",
-		LoginPlatform: req.Platform,
-		IPAddress:     req.IP,
-		DeviceInfo:    req.UserAgent,
+		LoginPlatform: &req.Platform,
+		IPAddress:     &req.IP,
+		DeviceInfo:    &req.UserAgent,
 	}
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
@@ -204,8 +205,8 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 
 		// 不存在关联，创建新用户
 		user = &model.User{
-			Nickname:  req.Nickname,
-			AvatarURL: req.AvatarURL,
+			Nickname:  &req.Nickname,
+			AvatarURL: &req.AvatarURL,
 			Status:    1,
 		}
 
@@ -241,9 +242,9 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 	logEntry := &model.UserLoginLog{
 		UserID:        user.UserID,
 		LoginMethod:   req.Provider,
-		LoginPlatform: req.Platform,
-		IPAddress:     req.IP,
-		DeviceInfo:    req.UserAgent,
+		LoginPlatform: &req.Platform,
+		IPAddress:     &req.IP,
+		DeviceInfo:    &req.UserAgent,
 	}
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
@@ -317,7 +318,7 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	}
 
 	// 验证旧密码
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword))
+	err = bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(oldPassword))
 	if err != nil {
 		return errors.New(errors.ErrCodeUnauthorized, "旧密码错误", nil)
 	}
@@ -327,10 +328,11 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	if err != nil {
 		return errors.New(errors.ErrCodeInternal, "生成密码哈希失败", err)
 	}
+	passwordHashStr := string(newPasswordHash)
 
 	// 更新密码
 	err = model.UpdateUser(s.db, userID, map[string]interface{}{
-		"password_hash": string(newPasswordHash),
+		"password_hash": passwordHashStr,
 	})
 	if err != nil {
 		return errors.New(errors.ErrCodeInternal, "更新密码失败", err)

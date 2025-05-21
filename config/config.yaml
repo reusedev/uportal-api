@@ -1,52 +1,61 @@
+# 服务器配置
 server:
-  port: 8080
-  readTimeout: 10s
-  writeTimeout: 10s
-  mode: debug
+  port: 8080                # 服务器端口
+  mode: debug              # 运行模式：debug/release
+  readTimeout: 10s         # 读取超时时间
+  writeTimeout: 10s        # 写入超时时间
 
+# 数据库配置
 database:
-  driver: mysql
-  host: localhost
-  port: 3306
-  username: root
-  password: root
-  database: uportal
-  charset: utf8mb4
-  maxIdle: 10
-  maxOpen: 100
+  driver: mysql            # 数据库驱动
+  host: localhost          # 数据库主机
+  port: 3306              # 数据库端口
+  username: root           # 数据库用户名
+  password:            # 数据库密码
+  database: uportal       # 数据库名称
+  charset: utf8mb4        # 字符集
+  maxIdle: 10             # 最大空闲连接数
+  maxOpen: 100            # 最大打开连接数
 
+# 日志配置
 logging:
-  logDir: logs
-  businessLogFile: business.log
-  dbLogFile: db.log
-  level: info
-  console: true
-  maxSize: 100    # 单个日志文件最大尺寸，单位MB
-  maxBackups: 10  # 保留的旧日志文件最大数量
-  maxAge: 30      # 保留的旧日志文件最大天数
-  compress: true  # 是否压缩旧日志文件
+  logDir: logs            # 日志目录
+  businessLogFile: business.log  # 业务日志文件名
+  dbLogFile: db.log       # 数据库日志文件名
+  level: info             # 日志级别：debug/info/warn/error
+  console: true           # 是否输出到控制台
+  maxSize: 100            # 单个日志文件最大尺寸(MB)
+  maxBackups: 10          # 保留的旧日志文件最大数量
+  maxAge: 30              # 保留的旧日志文件最大天数
+  compress: true          # 是否压缩旧日志文件
 
-redis:
-  host: localhost
-  port: 6379
-  password: ""
-  db: 0
-  poolSize: 10
-
-wechat:
-  miniProgram:
-    appId: "your_mini_program_appid"
-    appSecret: "your_mini_program_secret"
-  pay:
-    appId: "your_pay_appid"
-    mchId: "your_merchant_id"
-    mchApiKey: "your_merchant_api_key"
-    notifyUrl: "https://your.domain/api/v1/pay/notify"
-    certFile: "cert/apiclient_cert.pem"
-    keyFile: "cert/apiclient_key.pem"
-    rootCaFile: "cert/rootca.pem"
-
+# JWT配置
 jwt:
-  secret: your-secret-key
-  expireTime: 24h
-  issuer: uportal-api 
+  secret: your-secret-key # JWT密钥，请在生产环境中修改
+  expireTime: 24h         # JWT过期时间
+  issuer: uportal-api     # JWT签发者
+
+# Redis配置
+redis:
+  host: localhost         # Redis主机
+  port: 6379              # Redis端口
+  password: ""            # Redis密码
+  db: 0                   # Redis数据库编号
+  poolSize: 10            # Redis连接池大小
+
+# 微信配置
+wechat:
+  # 小程序配置
+  miniProgram:
+    appId: "your_mini_program_appid"     # 小程序AppID
+    appSecret: "your_mini_program_secret" # 小程序AppSecret
+
+  # 支付配置
+  pay:
+    appId: "your_pay_appid"              # 支付AppID
+    mchId: "your_merchant_id"            # 商户号
+    mchApiKey: "your_merchant_api_key"   # 商户API密钥
+    notifyUrl: "https://your.domain/api/v1/pay/notify"  # 支付回调通知地址
+    certFile: "cert/apiclient_cert.pem"  # 证书文件路径
+    keyFile: "cert/apiclient_key.pem"    # 密钥文件路径
+    rootCaFile: "cert/rootca.pem"        # 根证书文件路径 

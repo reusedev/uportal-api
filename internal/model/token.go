@@ -210,7 +210,7 @@ func ConsumeToken(db *gorm.DB, userID int64, amount int64, serviceType string, d
 			ChangeAmount: -int(amount),
 			BalanceAfter: int(balance - amount),
 			ChangeType:   "CONSUME",
-			Remark:       description,
+			Remark:       &description,
 			ChangeTime:   time.Now(),
 		}
 		return CreateTokenRecord(tx, record)
@@ -238,7 +238,7 @@ func AddToken(db *gorm.DB, userID int64, amount int64, recordType int, orderID s
 			ChangeAmount: int(amount),
 			BalanceAfter: int(balance + amount),
 			ChangeType:   getChangeType(recordType),
-			Remark:       description,
+			Remark:       &description,
 			ChangeTime:   time.Now(),
 		}
 		if orderID != "" {
@@ -295,7 +295,7 @@ func CreateTokenConsumptionRecord(db *gorm.DB, userID int64, featureID int, amou
 			BalanceAfter: newBalance,
 			ChangeType:   "consume",
 			FeatureID:    &featureID,
-			Remark:       remark,
+			Remark:       &remark,
 		}
 
 		return tx.Create(record).Error
@@ -327,7 +327,7 @@ func CreateTokenRewardRecord(db *gorm.DB, userID int64, taskID int, amount int, 
 			BalanceAfter: newBalance,
 			ChangeType:   "reward",
 			TaskID:       &taskID,
-			Remark:       remark,
+			Remark:       &remark,
 		}
 
 		return tx.Create(record).Error
