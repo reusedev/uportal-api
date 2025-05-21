@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,23 +23,23 @@ import (
 
 var (
 	configPath string
+	doMigrate  bool
 )
 
 func init() {
 	flag.StringVar(&configPath, "config", "config/config.yaml", "config file path")
+	flag.BoolVar(&doMigrate, "migrate", false, "执行数据库迁移")
+	flag.Parse()
 }
 
 func main() {
-	// 1. 解析命令行参数
-	flag.Parse()
-
-	// 2. 加载配置
+	// 1. 加载配置
 	if err := config.LoadConfig(configPath); err != nil {
 		panic(fmt.Sprintf("Load config error: %v", err))
 	}
 	cfg := config.Get()
 
-	// 3. 初始化日志
+	// 2. 初始化日志
 	if err := logging.Init(&logging.Config{
 		LogDir:          cfg.Logging.LogDir,
 		BusinessLogFile: cfg.Logging.BusinessLogFile,
@@ -54,18 +55,21 @@ func main() {
 	}
 	defer logging.Sync()
 
-	// 4. 初始化数据库
+	// 3. 初始化数据库
 	if err := model.InitDB(); err != nil {
 		logging.Business().Fatal("Init database error", zap.Error(err))
 	}
 	defer model.CloseDB()
 
-	// 4.1 执行数据库迁移
-	if err := model.Migrate(model.DB); err != nil {
-		logging.Business().Fatal("Database migration error", zap.Error(err))
+	if doMigrate {
+		logging.Business().Info("执行数据库迁移...")
+		if err := model.Migrate(model.DB); err != nil {
+			logging.Business().Error("数据库迁移失败 ", zap.Error(err))
+		}
+		log.Println("数据库迁移完成。")
 	}
 
-	// 5. 初始化Redis
+	// 4. 初始化Redis
 	if err := model.InitRedis(); err != nil {
 		logging.Business().Fatal("Init redis error", zap.Error(err))
 	}
@@ -116,7 +120,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	orderService := service.NewOrderService(db)
 	paymentService, err := service.NewPaymentService(db, model.RedisClient, orderService, cfg)
 	if err != nil {
-		logging.Business().Fatal("Init payment service error", zap.Error(err))
+		logging.Business().Error("Init payment service error", zap.Error(err))
 	}
 
 	// 初始化处理器

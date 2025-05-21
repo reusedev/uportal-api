@@ -49,8 +49,7 @@ func Migrate(db *gorm.DB) error {
 		refTable string
 		refKey   string
 	}{
-		// 注释掉 "orders" 的约束，因为 Order 模型（internal/model/order.go）中已通过 GORM 标签自动添加外键约束
-		// {"orders", "user_id", "users", "user_id"},
+		{"orders", "user_id", "users", "user_id"},
 		{"user_auth", "user_id", "users", "user_id"},
 		{"user_login_log", "user_id", "users", "user_id"},
 		{"recharge_orders", "user_id", "users", "user_id"},
