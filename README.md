@@ -210,9 +210,3 @@ sudo systemctl start uportal-api
 ## 许可证
 
 MIT License
-
-## 联系方式
-
-- 项目维护者：[Your Name]
-- 邮箱：[Your Email]
-- 项目地址：[GitHub Repository URL] 
