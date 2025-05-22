@@ -1,0 +1,36 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, coverage reports, and result files
+*.test
+*.out
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.coverprofile
+
+# Dependency directories (vendor directories)
+vendor/
+
+# Go workspace file
+go.work
+
+# Go module files
+go.sum
+
+# IDEs and editor specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files and directories
+.DS_Store
+
+# Log files
+*.log
+
+# Lock files
+*.lock

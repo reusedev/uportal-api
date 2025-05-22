@@ -169,6 +169,29 @@ type PaymentNotifyRecord struct {
 	Order         *RechargeOrder `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order,omitempty"`
 }
 
+// TaskCompletionRecord 任务完成记录
+type TaskCompletionRecord struct {
+	ID          int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	UserID      int64     `gorm:"column:user_id;not null" json:"user_id"`
+	TaskID      int       `gorm:"column:task_id;not null" json:"task_id"`
+	TokenReward int       `gorm:"column:token_reward;not null" json:"token_reward"`
+	CompletedAt time.Time `gorm:"column:completed_at;not null;default:CURRENT_TIMESTAMP" json:"completed_at"`
+	CreatedAt   time.Time `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"`
+}
+
+// Notification 通知
+type Notification struct {
+	ID        int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	UserID    int64     `gorm:"column:user_id;not null" json:"user_id"`
+	Type      string    `gorm:"column:type;not null;size:32" json:"type"`
+	Title     string    `gorm:"column:title;not null;size:128" json:"title"`
+	Content   string    `gorm:"column:content;not null;type:text" json:"content"`
+	Status    int8      `gorm:"column:status;not null;default:0" json:"status"`
+	CreatedAt time.Time `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"`
+}
+
 // TableName 指定表名
 func (User) TableName() string {
 	return "users"
@@ -216,4 +239,12 @@ func (SystemConfig) TableName() string {
 
 func (PaymentNotifyRecord) TableName() string {
 	return "payment_notify_records"
+}
+
+func (TaskCompletionRecord) TableName() string {
+	return "task_completion_records"
+}
+
+func (Notification) TableName() string {
+	return "notifications"
 }

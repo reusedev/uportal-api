@@ -201,3 +201,30 @@ CREATE TABLE `payment_notify_records` (
     KEY `idx_process_status` (`process_status`),
     CONSTRAINT `fk_payment_notify_order` FOREIGN KEY (`order_id`) REFERENCES `recharge_orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付回调通知记录表';
+
+-- 任务完成记录表
+CREATE TABLE IF NOT EXISTS task_completion_records (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    task_id INT NOT NULL COMMENT '任务ID',
+    token_reward INT NOT NULL COMMENT '获得的代币奖励',
+    completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '完成时间',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_task (user_id, task_id),
+    INDEX idx_completed_at (completed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务完成记录表';
+
+-- 通知表
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    type VARCHAR(32) NOT NULL COMMENT '通知类型',
+    title VARCHAR(128) NOT NULL COMMENT '通知标题',
+    content TEXT NOT NULL COMMENT '通知内容',
+    status TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0-未读，1-已读',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_status (user_id, status),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
