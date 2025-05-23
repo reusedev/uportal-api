@@ -9,8 +9,8 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/reusedev/uportal-api/internal/config"
 	"github.com/reusedev/uportal-api/internal/model"
+	"github.com/reusedev/uportal-api/pkg/config"
 	"github.com/reusedev/uportal-api/pkg/errors"
 )
 
@@ -470,13 +470,8 @@ func (s *TaskService) sendTaskCompletionNotification(ctx context.Context, userID
 		return
 	}
 
-	// 如果配置了消息推送，可以在这里添加推送逻辑
-	// 例如：推送消息到消息队列，由消息服务处理推送
-	if s.config.Notification.Enabled {
-		// 这里可以添加具体的推送逻辑
-		// 例如：推送到消息队列
-		// s.messageQueue.Publish("notifications", notification)
-	}
+	// TODO: 如果需要消息推送，可以在这里添加推送逻辑
+	// 例如：推送到消息队列，由消息服务处理推送
 }
 
 // getLastTaskCompletion 获取最后一次任务完成时间

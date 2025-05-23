@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/reusedev/uportal-api/pkg/logs"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/reusedev/uportal-api/pkg/logs"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -118,6 +119,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	adminService := service.NewAdminService(db)
 	tokenService := service.NewTokenService(db)
 	orderService := service.NewOrderService(db)
+	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
 	paymentService, err := service.NewPaymentService(db, model.RedisClient, orderService, cfg)
 	if err != nil {
 		logs.Business().Error("Init payment service error", zap.Error(err))
@@ -129,6 +131,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	tokenHandler := handler.NewTokenHandler(tokenService)
 	orderHandler := handler.NewOrderHandler(orderService)
 	paymentHandler := handler.NewPaymentHandler(paymentService)
+	taskHandler := handler.NewTaskHandler(taskService)
 
 	// 注册路由
 	api := engine.Group("/api/v1")
@@ -136,9 +139,14 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 认证相关路由
 		handler.RegisterAuthRoutes(api, authHandler)
 
+		// 用户相关路由（需要认证）
+		user := api.Group("", middleware.Auth())
+		handler.RegisterUserRoutes(user, authHandler)
+
 		// 管理员相关路由
 		admin := api.Group("/admin", middleware.AuthMiddleware())
 		handler.RegisterAdminUserRoutes(admin, adminHandler)
+		handler.RegisterAdminTokenRoutes(admin, tokenHandler)
 
 		// Token相关路由
 		token := api.Group("/token", middleware.Auth())
@@ -150,5 +158,29 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 		// 支付相关路由
 		handler.RegisterPaymentRoutes(api, paymentHandler, middleware.Auth())
+
+		// 任务相关路由
+		tasks := api.Group("/tasks")
+		{
+			// 管理员接口
+			adminTasks := tasks.Group("/admin", middleware.AdminAuth())
+			{
+				adminTasks.POST("", taskHandler.CreateTask)
+				adminTasks.PUT("/:task_id", taskHandler.UpdateTask)
+				adminTasks.DELETE("/:task_id", taskHandler.DeleteTask)
+				adminTasks.GET("/:task_id", taskHandler.GetTask)
+				adminTasks.GET("", taskHandler.ListTasks)
+				adminTasks.GET("/statistics/:task_id", taskHandler.GetTaskStatistics)
+			}
+
+			// 用户接口
+			userTasks := tasks.Group("", middleware.Auth())
+			{
+				userTasks.GET("/available", taskHandler.GetAvailableTasks)
+				userTasks.POST("/complete", taskHandler.CompleteTask)
+				userTasks.GET("/records", taskHandler.GetUserTaskRecords)
+				userTasks.GET("/statistics", taskHandler.GetUserTaskStatistics)
+			}
+		}
 	}
 }
