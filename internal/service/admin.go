@@ -3,9 +3,13 @@ package service
 import (
 	"context"
 	stderrors "errors"
+	"time"
 
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
+	"github.com/reusedev/uportal-api/pkg/jwt"
+	"github.com/reusedev/uportal-api/pkg/logs"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -184,4 +188,161 @@ func (s *AdminService) ListAdminUsers(ctx context.Context, params *ListAdminUser
 	}
 
 	return admins, total, nil
+}
+
+// AdminLoginRequest 管理员登录请求
+type AdminLoginRequest struct {
+	Username  string `json:"username" binding:"required"`
+	Password  string `json:"password" binding:"required"`
+	Platform  string `json:"-"` // 登录平台，从请求头获取
+	IP        string `json:"-"` // 登录IP，从请求头获取
+	UserAgent string `json:"-"` // 设备信息，从请求头获取
+}
+
+// CreateAdminRequest 创建管理员请求
+type CreateAdminRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=32"`
+	Password string `json:"password" binding:"required,min=6,max=32"`
+	Role     string `json:"role" binding:"required,oneof=admin super_admin"`
+}
+
+// UpdateAdminRequest 更新管理员请求
+type UpdateAdminRequest struct {
+	Password string `json:"password" binding:"omitempty,min=6,max=32"`
+	Role     string `json:"role" binding:"omitempty,oneof=admin super_admin"`
+	Status   *int8  `json:"status" binding:"omitempty,oneof=0 1"`
+}
+
+// Login 管理员登录
+func (s *AdminService) Login(ctx context.Context, req *AdminLoginRequest) (*model.AdminUser, string, error) {
+	var admin model.AdminUser
+	err := s.db.Where("username = ?", req.Username).First(&admin).Error
+	if err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, "", errors.New(errors.ErrCodeUnauthorized, "用户名或密码错误", nil)
+		}
+		return nil, "", errors.New(errors.ErrCodeInternal, "查询管理员失败", err)
+	}
+
+	// 验证密码
+	err = bcrypt.CompareHashAndPassword([]byte(admin.PasswordHash), []byte(req.Password))
+	if err != nil {
+		return nil, "", errors.New(errors.ErrCodeUnauthorized, "用户名或密码错误", nil)
+	}
+
+	// 检查状态
+	if admin.Status != 1 {
+		return nil, "", errors.New(errors.ErrCodeForbidden, "账号已被禁用", nil)
+	}
+
+	// 生成JWT token
+	token, err := jwt.GenerateToken(int64(admin.AdminID), true)
+	if err != nil {
+		return nil, "", errors.New(errors.ErrCodeInternal, "生成token失败", err)
+	}
+
+	// 更新最后登录时间
+	now := time.Now()
+	if err := s.db.Model(&admin).Update("last_login_at", now).Error; err != nil {
+		// 仅记录错误，不影响登录流程
+		logs.Business().Warn("更新管理员最后登录时间失败",
+			zap.Int("admin_id", admin.AdminID),
+			zap.Error(err),
+		)
+	}
+
+	return &admin, token, nil
+}
+
+// CreateAdmin 创建管理员
+func (s *AdminService) CreateAdmin(ctx context.Context, req *CreateAdminRequest) (*model.AdminUser, error) {
+	// 检查用户名是否已存在
+	var count int64
+	if err := s.db.Model(&model.AdminUser{}).Where("username = ?", req.Username).Count(&count).Error; err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "检查用户名失败", err)
+	}
+	if count > 0 {
+		return nil, errors.New(errors.ErrCodeInvalidParams, "用户名已存在", nil)
+	}
+
+	// 生成密码哈希
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "生成密码哈希失败", err)
+	}
+
+	// 创建管理员
+	admin := &model.AdminUser{
+		Username:     req.Username,
+		PasswordHash: string(passwordHash),
+		Role:         req.Role,
+		Status:       1,
+	}
+
+	if err := s.db.Create(admin).Error; err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "创建管理员失败", err)
+	}
+
+	return admin, nil
+}
+
+// UpdateAdmin 更新管理员信息
+func (s *AdminService) UpdateAdmin(ctx context.Context, id int, req *UpdateAdminRequest) error {
+	// 检查管理员是否存在
+	var admin model.AdminUser
+	if err := s.db.First(&admin, id).Error; err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New(errors.ErrCodeNotFound, "管理员不存在", nil)
+		}
+		return errors.New(errors.ErrCodeInternal, "查询管理员失败", err)
+	}
+
+	// 不允许修改超级管理员的角色
+	if admin.Role == "super_admin" && req.Role != "" && req.Role != "super_admin" {
+		return errors.New(errors.ErrCodeForbidden, "不能修改超级管理员的角色", nil)
+	}
+
+	updates := make(map[string]interface{})
+	if req.Password != "" {
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return errors.New(errors.ErrCodeInternal, "生成密码哈希失败", err)
+		}
+		updates["password_hash"] = string(passwordHash)
+	}
+	if req.Role != "" {
+		updates["role"] = req.Role
+	}
+	if req.Status != nil {
+		updates["status"] = *req.Status
+	}
+
+	if err := s.db.Model(&admin).Updates(updates).Error; err != nil {
+		return errors.New(errors.ErrCodeInternal, "更新管理员失败", err)
+	}
+
+	return nil
+}
+
+// DeleteAdmin 删除管理员
+func (s *AdminService) DeleteAdmin(ctx context.Context, id int) error {
+	// 检查管理员是否存在
+	var admin model.AdminUser
+	if err := s.db.First(&admin, id).Error; err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New(errors.ErrCodeNotFound, "管理员不存在", nil)
+		}
+		return errors.New(errors.ErrCodeInternal, "查询管理员失败", err)
+	}
+
+	// 不允许删除超级管理员
+	if admin.Role == "super_admin" {
+		return errors.New(errors.ErrCodeForbidden, "不能删除超级管理员", nil)
+	}
+
+	if err := s.db.Delete(&admin).Error; err != nil {
+		return errors.New(errors.ErrCodeInternal, "删除管理员失败", err)
+	}
+
+	return nil
 }

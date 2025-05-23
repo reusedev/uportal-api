@@ -187,6 +187,120 @@ func (h *AdminHandler) ListAdminUsers(c *gin.Context) {
 	response.ListResponse(c, admins, total, req.Page, req.PageSize)
 }
 
+// AdminLoginRequest 管理员登录请求
+type AdminLoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// CreateAdminRequest 创建管理员请求
+type CreateAdminRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=32"`
+	Password string `json:"password" binding:"required,min=6,max=32"`
+	Role     string `json:"role" binding:"required,oneof=admin super_admin"`
+}
+
+// UpdateAdminRequest 更新管理员请求
+type UpdateAdminRequest struct {
+	Password string `json:"password" binding:"omitempty,min=6,max=32"`
+	Role     string `json:"role" binding:"omitempty,oneof=admin super_admin"`
+	Status   *int8  `json:"status" binding:"omitempty,oneof=0 1"`
+}
+
+// Login 管理员登录
+func (h *AdminHandler) Login(c *gin.Context) {
+	var req AdminLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	// 获取客户端信息
+	loginReq := &service.AdminLoginRequest{
+		Username:  req.Username,
+		Password:  req.Password,
+		Platform:  c.GetHeader("X-Platform"),
+		IP:        c.ClientIP(),
+		UserAgent: c.GetHeader("User-Agent"),
+	}
+
+	admin, token, err := h.adminService.Login(c.Request.Context(), loginReq)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"admin": admin,
+		"token": token,
+	})
+}
+
+// CreateAdmin 创建管理员
+func (h *AdminHandler) CreateAdmin(c *gin.Context) {
+	var req CreateAdminRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	admin, err := h.adminService.CreateAdmin(c.Request.Context(), &service.CreateAdminRequest{
+		Username: req.Username,
+		Password: req.Password,
+		Role:     req.Role,
+	})
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, admin)
+}
+
+// UpdateAdmin 更新管理员信息
+func (h *AdminHandler) UpdateAdmin(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的管理员ID", err))
+		return
+	}
+
+	var req UpdateAdminRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	err = h.adminService.UpdateAdmin(c.Request.Context(), id, &service.UpdateAdminRequest{
+		Password: req.Password,
+		Role:     req.Role,
+		Status:   req.Status,
+	})
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// DeleteAdmin 删除管理员
+func (h *AdminHandler) DeleteAdmin(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的管理员ID", err))
+		return
+	}
+
+	err = h.adminService.DeleteAdmin(c.Request.Context(), id)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, nil)
+}
+
 // RegisterUserListRoutes 注册用户列表路由（普通用户可访问）
 func RegisterUserListRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	users := r.Group("/users")
@@ -199,11 +313,15 @@ func RegisterUserListRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	}
 }
 
-// RegisterAdminManagementRoutes 注册管理员专用的用户管理路由
+// RegisterAdminManagementRoutes 注册管理员管理路由
 func RegisterAdminManagementRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	// 管理员管理路由
-	admins := r.Group("/admins")
+	admins := r.Group("/auth")
 	{
-		admins.GET("", h.ListAdminUsers) // 获取管理员列表
+		admins.POST("/login", h.Login)       // 管理员登录
+		admins.GET("", h.ListAdminUsers)     // 获取管理员列表
+		admins.POST("create", h.CreateAdmin) // 创建管理员
+		admins.PUT("/:id", h.UpdateAdmin)    // 更新管理员信息
+		admins.DELETE("/:id", h.DeleteAdmin) // 删除管理员
 	}
 }
