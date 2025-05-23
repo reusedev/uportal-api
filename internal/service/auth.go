@@ -311,7 +311,7 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	// 获取用户信息
 	user, err := model.GetUserByID(s.db, userID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
 		}
 		return errors.New(errors.ErrCodeInternal, "查询用户失败", err)

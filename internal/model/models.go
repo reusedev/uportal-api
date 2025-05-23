@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"time"
 
 	"gorm.io/gorm"
@@ -21,6 +22,24 @@ type User struct {
 	UpdatedAt    time.Time      `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`             // 记录更新时间
 	LastLoginAt  *time.Time     `gorm:"column:last_login_at" json:"last_login_at"`                               // 最后登录时间
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	UserAuths    []UserAuth     `gorm:"foreignKey:UserID" json:"-"` // 第三方认证信息（不直接序列化）
+}
+
+// MarshalJSON 自定义 JSON 序列化方法
+func (u User) MarshalJSON() ([]byte, error) {
+	type Alias User // 创建别名以避免递归调用
+	providers := make([]string, 0, len(u.UserAuths))
+	for _, auth := range u.UserAuths {
+		providers = append(providers, auth.Provider)
+	}
+
+	return json.Marshal(struct {
+		Alias
+		Auths []string `json:"auths"`
+	}{
+		Alias: Alias(u),
+		Auths: providers,
+	})
 }
 
 // AdminUser 管理员用户表结构体

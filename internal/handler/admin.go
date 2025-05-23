@@ -24,10 +24,10 @@ func NewAdminHandler(adminService *service.AdminService) *AdminHandler {
 // ListUsersRequest 获取用户列表请求
 type ListUsersRequest struct {
 	Page     int    `form:"page" binding:"required,min=1"`
-	PageSize int    `form:"page_size" binding:"required,min=1,max=100"`
-	Username string `form:"username"`
+	Limit    int    `form:"limit" binding:"required,min=1,max=100"`
+	NickName string `form:"nickname"`
 	Email    string `form:"email"`
-	Type     string `form:"type"`
+	Phone    string `form:"phone"`
 	Status   *int   `form:"status"`
 }
 
@@ -41,10 +41,10 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 
 	users, total, err := h.adminService.ListUsers(c.Request.Context(), &service.ListUsersParams{
 		Page:     req.Page,
-		PageSize: req.PageSize,
-		Username: req.Username,
+		Limit:    req.Limit,
+		NickName: req.NickName,
 		Email:    req.Email,
-		Type:     req.Type,
+		Phone:    req.Phone,
 		Status:   req.Status,
 	})
 	if err != nil {
@@ -52,7 +52,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, users, total, req.Page, req.PageSize)
+	response.ListResponse(c, users, total, req.Page, req.Limit)
 }
 
 // GetUser 获取用户详情
@@ -155,14 +155,55 @@ func (h *AdminHandler) ResetPassword(c *gin.Context) {
 	response.Success(c, nil)
 }
 
-// RegisterAdminUserRoutes 注册管理员用户管理路由
-func RegisterAdminUserRoutes(r *gin.RouterGroup, h *AdminHandler) {
+// ListAdminUsersRequest 获取管理员列表请求
+type ListAdminUsersRequest struct {
+	Page     int    `form:"page" binding:"required,min=1"`
+	PageSize int    `form:"page_size" binding:"required,min=1,max=100"`
+	Username string `form:"username"`
+	Role     string `form:"role"`
+	Status   *int   `form:"status"`
+}
+
+// ListAdminUsers 获取管理员列表
+func (h *AdminHandler) ListAdminUsers(c *gin.Context) {
+	var req ListAdminUsersRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "Invalid request parameters", err))
+		return
+	}
+
+	admins, total, err := h.adminService.ListAdminUsers(c.Request.Context(), &service.ListAdminUsersParams{
+		Page:     req.Page,
+		PageSize: req.PageSize,
+		Username: req.Username,
+		Role:     req.Role,
+		Status:   req.Status,
+	})
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.ListResponse(c, admins, total, req.Page, req.PageSize)
+}
+
+// RegisterUserListRoutes 注册用户列表路由（普通用户可访问）
+func RegisterUserListRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	users := r.Group("/users")
 	{
-		users.GET("", h.ListUsers)
-		users.GET("/:id", h.GetUser)
-		users.PUT("/:id", h.UpdateUser)
-		users.DELETE("/:id", h.DeleteUser)
-		users.POST("/:id/reset-password", h.ResetPassword)
+		users.GET("/list", h.ListUsers)                    // 获取用户列表
+		users.GET("/:id", h.GetUser)                       // 获取用户详情
+		users.PUT("/:id", h.UpdateUser)                    // 更新用户信息
+		users.DELETE("/:id", h.DeleteUser)                 // 删除用户
+		users.POST("/:id/reset-password", h.ResetPassword) // 重置用户密码
+	}
+}
+
+// RegisterAdminManagementRoutes 注册管理员专用的用户管理路由
+func RegisterAdminManagementRoutes(r *gin.RouterGroup, h *AdminHandler) {
+	// 管理员管理路由
+	admins := r.Group("/admins")
+	{
+		admins.GET("", h.ListAdminUsers) // 获取管理员列表
 	}
 }

@@ -459,7 +459,7 @@ func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, s
 	// 获取订单信息
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New(errors.ErrCodeNotFound, "订单不存在", nil)
 		}
 		return errors.New(errors.ErrCodeInternal, "查询订单失败", err)

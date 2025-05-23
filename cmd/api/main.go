@@ -142,10 +142,11 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 用户相关路由（需要认证）
 		user := api.Group("", middleware.Auth())
 		handler.RegisterUserRoutes(user, authHandler)
+		handler.RegisterUserListRoutes(user, adminHandler)
 
 		// 管理员相关路由
 		admin := api.Group("/admin", middleware.AuthMiddleware())
-		handler.RegisterAdminUserRoutes(admin, adminHandler)
+		handler.RegisterAdminManagementRoutes(admin, adminHandler)
 		handler.RegisterAdminTokenRoutes(admin, tokenHandler)
 
 		// Token相关路由

@@ -14,6 +14,13 @@ type Response struct {
 	Data    interface{} `json:"data,omitempty"` // 响应数据
 }
 
+type ResponseList struct {
+	Code    int         `json:"code"`           // 错误码
+	Message string      `json:"message"`        // 错误信息
+	Data    interface{} `json:"data,omitempty"` // 响应数据
+	Count   int64       `json:"count"`
+}
+
 // Success 返回成功响应
 func Success(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, Response{
@@ -48,15 +55,11 @@ type List struct {
 
 // ListResponse 返回分页列表
 func ListResponse(c *gin.Context, data interface{}, total int64, page, pageSize int) {
-	c.JSON(http.StatusOK, Response{
+	c.JSON(http.StatusOK, ResponseList{
 		Code:    errors.ErrCodeSuccess,
 		Message: "success",
-		Data: List{
-			Total:    total,
-			Page:     page,
-			PageSize: pageSize,
-			Data:     data,
-		},
+		Data:    data,
+		Count:   total,
 	})
 }
 
