@@ -168,11 +168,10 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 }
 
 // RegisterAuthRoutes 注册认证相关路由
-func RegisterAuthRoutes(r *gin.RouterGroup, h *AuthHandler) {
+func RegisterAuthRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	// 公开路由
-	r.POST("/login", h.Login)
-	r.POST("/register", h.Register)
-	r.POST("/third-party-login", h.ThirdPartyLogin)
+	r.POST("/auth/login", h.Login)
+	r.POST("/managers/create", h.CreateAdmin)
 }
 
 // RegisterUserRoutes 注册用户相关路由

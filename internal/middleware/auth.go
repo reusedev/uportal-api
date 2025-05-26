@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -110,7 +111,7 @@ func AdminAuth() gin.HandlerFunc {
 		}
 
 		// 将用户ID存入上下文
-		c.Set("user_id", claims.UserID)
+		c.Set(consts.UserId, claims.UserID)
 		c.Next()
 	}
 }

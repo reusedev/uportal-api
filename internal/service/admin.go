@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	stderrors "errors"
+	"strings"
 	"time"
 
 	"github.com/reusedev/uportal-api/internal/model"
@@ -31,7 +32,6 @@ type ListUsersParams struct {
 	Page     int
 	Limit    int
 	NickName string
-	Email    string
 	Phone    string
 	Status   *int
 }
@@ -43,9 +43,6 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 	// 添加查询条件
 	if params.NickName != "" {
 		query = query.Where("nickname LIKE ?", "%"+params.NickName+"%")
-	}
-	if params.Email != "" {
-		query = query.Where("email LIKE ?", "%"+params.Email+"%")
 	}
 	if params.Phone != "" {
 		query = query.Where("phone LIKE ?", "%"+params.Phone+"%")
@@ -126,10 +123,17 @@ func (s *AdminService) DeleteUser(ctx context.Context, id int64) error {
 }
 
 // ResetPassword 重置用户密码
-func (s *AdminService) ResetPassword(ctx context.Context, id int64, password string) error {
+func (s *AdminService) ResetPassword(ctx context.Context, id int64, password, oldPassword string) error {
 	// 检查用户是否存在
-	if _, err := model.GetUserByID(s.db, id); err != nil {
+	adminUser, err := model.GetAdinUserByID(s.db, id)
+	if err != nil {
 		return errors.New(errors.ErrCodeNotFound, "User not found", err)
+	}
+
+	// 验证密码
+	err = bcrypt.CompareHashAndPassword([]byte(adminUser.PasswordHash), []byte(oldPassword))
+	if err != nil {
+		return errors.New(errors.ErrCodeUnauthorized, "用户名或密码错误", err)
 	}
 
 	// 加密密码
@@ -139,8 +143,8 @@ func (s *AdminService) ResetPassword(ctx context.Context, id int64, password str
 	}
 
 	// 更新密码
-	if err := model.UpdateUser(s.db, id, map[string]interface{}{
-		"password": string(hashedPassword),
+	if err = model.UpdateAdminUser(s.db, id, map[string]interface{}{
+		"password_hash": string(hashedPassword),
 	}); err != nil {
 		return errors.New(errors.ErrCodeInternal, "Failed to reset password", err)
 	}
@@ -204,11 +208,12 @@ type CreateAdminRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=32"`
 	Password string `json:"password" binding:"required,min=6,max=32"`
 	Role     string `json:"role" binding:"required,oneof=admin super_admin"`
+	Status   *int8  `json:"status" binding:"omitempty,oneof=0 1"`
 }
 
 // UpdateAdminRequest 更新管理员请求
 type UpdateAdminRequest struct {
-	Password string `json:"password" binding:"omitempty,min=6,max=32"`
+	UserName string `json:"username" binding:"required,min=3,max=32"`
 	Role     string `json:"role" binding:"omitempty,oneof=admin super_admin"`
 	Status   *int8  `json:"status" binding:"omitempty,oneof=0 1"`
 }
@@ -236,7 +241,7 @@ func (s *AdminService) Login(ctx context.Context, req *AdminLoginRequest) (*mode
 	}
 
 	// 生成JWT token
-	token, err := jwt.GenerateToken(int64(admin.AdminID), true)
+	token, err := jwt.GenerateToken(int64(admin.AdminID), strings.Contains(admin.Role, "super"))
 	if err != nil {
 		return nil, "", errors.New(errors.ErrCodeInternal, "生成token失败", err)
 	}
@@ -276,7 +281,7 @@ func (s *AdminService) CreateAdmin(ctx context.Context, req *CreateAdminRequest)
 		Username:     req.Username,
 		PasswordHash: string(passwordHash),
 		Role:         req.Role,
-		Status:       1,
+		Status:       *req.Status,
 	}
 
 	if err := s.db.Create(admin).Error; err != nil {
@@ -287,7 +292,7 @@ func (s *AdminService) CreateAdmin(ctx context.Context, req *CreateAdminRequest)
 }
 
 // UpdateAdmin 更新管理员信息
-func (s *AdminService) UpdateAdmin(ctx context.Context, id int, req *UpdateAdminRequest) error {
+func (s *AdminService) UpdateAdmin(ctx context.Context, id string, req *UpdateAdminRequest) error {
 	// 检查管理员是否存在
 	var admin model.AdminUser
 	if err := s.db.First(&admin, id).Error; err != nil {
@@ -298,17 +303,13 @@ func (s *AdminService) UpdateAdmin(ctx context.Context, id int, req *UpdateAdmin
 	}
 
 	// 不允许修改超级管理员的角色
-	if admin.Role == "super_admin" && req.Role != "" && req.Role != "super_admin" {
-		return errors.New(errors.ErrCodeForbidden, "不能修改超级管理员的角色", nil)
-	}
+	//if admin.Role == "super_admin" && req.Role != "" && req.Role != "super_admin" {
+	//	return errors.New(errors.ErrCodeForbidden, "不能修改超级管理员的角色", nil)
+	//}
 
 	updates := make(map[string]interface{})
-	if req.Password != "" {
-		passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return errors.New(errors.ErrCodeInternal, "生成密码哈希失败", err)
-		}
-		updates["password_hash"] = string(passwordHash)
+	if req.UserName != "" {
+		updates["username"] = req.UserName
 	}
 	if req.Role != "" {
 		updates["role"] = req.Role
@@ -325,7 +326,7 @@ func (s *AdminService) UpdateAdmin(ctx context.Context, id int, req *UpdateAdmin
 }
 
 // DeleteAdmin 删除管理员
-func (s *AdminService) DeleteAdmin(ctx context.Context, id int) error {
+func (s *AdminService) DeleteAdmin(ctx context.Context, id string) error {
 	// 检查管理员是否存在
 	var admin model.AdminUser
 	if err := s.db.First(&admin, id).Error; err != nil {

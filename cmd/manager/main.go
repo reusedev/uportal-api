@@ -115,47 +115,37 @@ func main() {
 // registerRoutes 注册路由
 func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// 初始化服务
-	authService := service.NewAuthService(db)
+	//authService := service.NewAuthService(db)
 	adminService := service.NewAdminService(db)
 	tokenService := service.NewTokenService(db)
-	orderService := service.NewOrderService(db)
 	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
-	paymentService, err := service.NewPaymentService(db, model.RedisClient, orderService, cfg)
-	if err != nil {
-		logs.Business().Error("Init payment service error", zap.Error(err))
-	}
 
 	// 初始化处理器
-	authHandler := handler.NewAuthHandler(authService)
+	//authHandler := handler.NewAuthHandler(authService)
 	adminHandler := handler.NewAdminHandler(adminService)
 	tokenHandler := handler.NewTokenHandler(tokenService)
-	orderHandler := handler.NewOrderHandler(orderService)
-	paymentHandler := handler.NewPaymentHandler(paymentService)
 	taskHandler := handler.NewTaskHandler(taskService)
 
 	// 注册路由
-	api := engine.Group("/api/v1")
+	api := engine.Group("/admin")
 	{
-		// 用户相关路由（需要认证）
-		user := api.Group("", middleware.Auth())
-		handler.RegisterUserRoutes(user, authHandler)
-		handler.RegisterUserManagerRoutes(user, adminHandler)
-
-		// 管理员相关路由
-		admin := api.Group("/admin", middleware.AuthMiddleware())
-		//handler.RegisterAdminManagementRoutes(admin, adminHandler)
-		handler.RegisterAdminTokenRoutes(admin, tokenHandler)
+		// 管理员用户
+		{
+			// 认证相关
+			handler.RegisterAuthRoutes(api, adminHandler)
+			// 管理员相关
+			admin := api.Group("/admin", middleware.AdminAuth())
+			handler.RegisterAdminManagementRoutes(admin, adminHandler)
+		}
+		// 客户端用户
+		{
+			user := api.Group("/users", middleware.AdminAuth())
+			handler.RegisterUserManagerRoutes(user, adminHandler)
+		}
 
 		// Token相关路由
 		token := api.Group("/token", middleware.Auth())
 		handler.RegisterTokenRoutes(token, tokenHandler)
-
-		// 订单相关路由
-		order := api.Group("/orders", middleware.Auth())
-		handler.RegisterOrderRoutes(order, orderHandler, middleware.Auth())
-
-		// 支付相关路由
-		handler.RegisterPaymentRoutes(api, paymentHandler, middleware.Auth())
 
 		// 任务相关路由
 		tasks := api.Group("/tasks")
