@@ -95,7 +95,7 @@ func (h *OrderHandler) ListOrders(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, orders, total, req.Page, req.PageSize)
+	response.ListResponse(c, orders, total)
 }
 
 // GetUserOrders 获取用户订单列表
@@ -110,7 +110,7 @@ func (h *OrderHandler) GetUserOrders(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, orders, total, page, pageSize)
+	response.ListResponse(c, orders, total)
 }
 
 // CancelOrder 取消订单

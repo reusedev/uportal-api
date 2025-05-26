@@ -1,9 +1,11 @@
 package handler
 
 import (
-	"github.com/reusedev/uportal-api/pkg/consts"
 	"strconv"
 	"time"
+
+	"github.com/reusedev/uportal-api/pkg/constants"
+	"github.com/reusedev/uportal-api/pkg/consts"
 
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/internal/service"
@@ -13,7 +15,9 @@ import (
 
 // AdminHandler 管理员处理器
 type AdminHandler struct {
-	adminService *service.AdminService
+	adminService       *service.AdminService
+	loginLogService    *service.UserLoginLogService
+	tokenRecordService *service.TokenRecordService
 }
 
 // NewAdminHandler 创建管理员处理器
@@ -63,7 +67,7 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, users, total, req.Page, req.Limit)
+	response.ListResponse(c, users, total)
 }
 
 // GetUser 获取用户详情
@@ -88,6 +92,59 @@ type UpdateUserRequest struct {
 	Email  string `json:"email" binding:"omitempty,email"`
 	Type   string `json:"type" binding:"omitempty,oneof=user admin"`
 	Status *int   `json:"status" binding:"omitempty,oneof=0 1"`
+}
+
+// ListUserLoginLogsRequest 获取用户登录日志请求
+type ListUserLoginLogsRequest struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+	Page      int    `json:"page" binding:"required,min=1"`
+	Limit     int    `json:"limit" binding:"required,min=1,max=100"`
+	UserId    string `json:"user_id"`
+}
+
+// ListUserLoginLogs 获取用户登录日志列表
+func (h *AdminHandler) ListUserLoginLogs(c *gin.Context) {
+	// 解析请求体
+	var req ListUserLoginLogsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	// 构建服务层请求
+	serviceReq := &service.ListUserLoginLogsRequest{
+		PageNum:  req.Page,
+		PageSize: req.Limit,
+		UserID:   req.UserId,
+	}
+	// 解析时间
+	if req.StartTime != "" {
+		startTime, err := time.Parse(constants.TimeFormatDateTime, req.StartTime)
+		if err != nil {
+			response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的开始时间", err))
+			return
+		}
+		serviceReq.StartTime = &startTime
+	}
+
+	if req.EndTime != "" {
+		endTime, err := time.Parse(constants.TimeFormatDateTime, req.EndTime)
+		if err != nil {
+			response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的结束时间", err))
+			return
+		}
+		serviceReq.EndTime = &endTime
+	}
+
+	// 调用服务
+	resp, err := h.loginLogService.ListUserLoginLogs(c.Request.Context(), serviceReq)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.ListResponse(c, resp.List, resp.Total)
 }
 
 // TokenAdjustUser 调整用户代币
@@ -207,7 +264,7 @@ func (h *AdminHandler) ListAdminUsers(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, admins, total, req.Page, req.Limit)
+	response.ListResponse(c, admins, total)
 }
 
 // AdminLoginRequest 管理员登录请求
@@ -325,14 +382,72 @@ func (h *AdminHandler) DeleteAdmin(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// ListTokenRecordsRequest 获取代币记录请求
+type ListTokenRecordsRequest struct {
+	UserID     string `json:"user_id"`
+	ChangeType string `json:"change_type"`
+	StartTime  string `json:"start_time"`
+	EndTime    string `json:"end_time"`
+	Page       int    `json:"page" binding:"required,min=1"`
+	Limit      int    `json:"limit" binding:"required,min=1,max=100"`
+}
+
+// ListTokenRecords 获取用户代币记录列表
+func (h *AdminHandler) ListTokenRecords(c *gin.Context) {
+	// 解析请求体
+	var req ListTokenRecordsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	// 构建服务层请求
+	serviceReq := &service.ListTokenRecordsRequest{
+		UserID:     req.UserID,
+		ChangeType: req.ChangeType,
+		PageNum:    req.Page,
+		PageSize:   req.Limit,
+	}
+
+	// 解析时间
+	if req.StartTime != "" {
+		startTime, err := time.Parse(constants.TimeFormatDateTime, req.StartTime)
+		if err != nil {
+			response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的开始时间", err))
+			return
+		}
+		serviceReq.StartTime = &startTime
+	}
+
+	if req.EndTime != "" {
+		endTime, err := time.Parse(constants.TimeFormatDateTime, req.EndTime)
+		if err != nil {
+			response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的结束时间", err))
+			return
+		}
+		serviceReq.EndTime = &endTime
+	}
+
+	// 调用服务
+	resp, err := h.tokenRecordService.ListTokenRecords(c.Request.Context(), serviceReq)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.ListResponse(c, resp.List, resp.Total)
+}
+
 // RegisterUserManagerRoutes 注册用户列表路由（普通用户可访问）
 func RegisterUserManagerRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	users := r.Group("/users")
 	{
-		users.POST("/list", h.ListUsers)                // 获取用户列表
-		users.GET("/:id", h.GetUser)                    // 获取用户详情
-		users.POST("/operate", h.UpdateUser)            // 更新用户状态
-		users.POST("/tokens/adjust", h.TokenAdjustUser) // 调整用户代币
+		users.POST("/list", h.ListUsers)                 // 获取用户列表
+		users.GET("/:id", h.GetUser)                     // 获取用户详情
+		users.POST("/operate", h.UpdateUser)             // 更新用户状态
+		users.POST("/tokens/adjust", h.TokenAdjustUser)  // 调整用户代币
+		users.POST("/login-logs", h.ListUserLoginLogs)   // 获取用户登录日志
+		users.POST("/token-records", h.ListTokenRecords) // 获取用户代币记录
 	}
 }
 

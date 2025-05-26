@@ -82,6 +82,12 @@ const (
 	ErrCodeInvalidAmount       = 4001 // 无效的金额
 	ErrCodeTaskNotAvailable    = 4002 // 任务不可用
 	ErrCodeTaskLimitExceeded   = 4003 // 任务次数超限
+
+	// 系统级错误码 (10000-10099)
+	ErrCodeSystemError     = 10000
+	ErrCodeDatabaseError   = 10005
+	ErrCodeRedisError      = 10006
+	ErrCodeThirdPartyError = 10007
 )
 
 // 预定义错误

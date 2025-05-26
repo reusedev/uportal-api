@@ -54,7 +54,7 @@ type List struct {
 }
 
 // ListResponse 返回分页列表
-func ListResponse(c *gin.Context, data interface{}, total int64, page, pageSize int) {
+func ListResponse(c *gin.Context, data interface{}, total int64) {
 	c.JSON(http.StatusOK, ResponseList{
 		Code:    errors.ErrCodeSuccess,
 		Message: "success",

@@ -87,7 +87,7 @@ func (h *TokenHandler) ListConsumptionRules(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, rules, total, page, pageSize)
+	response.ListResponse(c, rules, total)
 }
 
 // CreateRechargePlan 创建充值套餐
@@ -158,7 +158,7 @@ func (h *TokenHandler) ListRechargePlans(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, plans, total, page, pageSize)
+	response.ListResponse(c, plans, total)
 }
 
 // GetUserTokenBalance 获取用户Token余额
@@ -185,7 +185,7 @@ func (h *TokenHandler) GetUserTokenRecords(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, records, total, page, pageSize)
+	response.ListResponse(c, records, total)
 }
 
 // GetRechargeAmount 计算充值金额
