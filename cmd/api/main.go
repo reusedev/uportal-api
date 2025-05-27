@@ -160,16 +160,6 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 任务相关路由
 		tasks := api.Group("/tasks")
 		{
-			// 管理员接口
-			adminTasks := tasks.Group("/admin", middleware.AdminAuth())
-			{
-				adminTasks.POST("", taskHandler.CreateTask)
-				adminTasks.PUT("/:task_id", taskHandler.UpdateTask)
-				adminTasks.DELETE("/:task_id", taskHandler.DeleteTask)
-				adminTasks.GET("/:task_id", taskHandler.GetTask)
-				adminTasks.GET("", taskHandler.ListTasks)
-				adminTasks.GET("/statistics/:task_id", taskHandler.GetTaskStatistics)
-			}
 
 			// 用户接口
 			userTasks := tasks.Group("", middleware.Auth())

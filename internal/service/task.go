@@ -32,16 +32,24 @@ func NewTaskService(db *gorm.DB, redis *redis.Client, logger *zap.Logger, config
 	}
 }
 
+type ListTaskRequest struct {
+	Page     int    `json:"page" binding:"required"`
+	Limit    int    `json:"limit" binding:"required"`
+	Status   *int   `json:"status"`    // 可选，任务状态
+	TaskName string `json:"task_name"` // 可选，任务名称模糊查询
+}
+
 // CreateTaskRequest 创建任务请求
 type CreateTaskRequest struct {
-	TaskName        string     `json:"task_name" binding:"required"`
-	Description     string     `json:"description"`
-	TokenReward     int        `json:"token_reward" binding:"required"`
-	DailyLimit      int        `json:"daily_limit"`
-	IntervalSeconds int        `json:"interval_seconds"`
-	ValidFrom       *time.Time `json:"valid_from"`
-	ValidTo         *time.Time `json:"valid_to"`
-	Repeatable      bool       `json:"repeatable"`
+	TaskName        string `json:"task_name" binding:"required"`
+	Description     string `json:"task_desc" binding:"required"`
+	TokenReward     int    `json:"token_reward" binding:"required"`
+	DailyLimit      int    `json:"daily_limit" binding:"required"`
+	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
+	ValidFrom       string `json:"valid_from" binding:"required"`
+	ValidTo         string `json:"valid_to" binding:"required"`
+	Repeatable      *int8  `json:"repeatable" binding:"required"`
+	Status          *int8  `json:"status" binding:"required"`
 }
 
 // CreateTask 创建任务
@@ -52,12 +60,14 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		TokenReward:     req.TokenReward,
 		DailyLimit:      req.DailyLimit,
 		IntervalSeconds: req.IntervalSeconds,
-		ValidFrom:       req.ValidFrom,
-		ValidTo:         req.ValidTo,
-		Repeatable:      boolToInt8(req.Repeatable),
-		Status:          1, // 默认启用
+		Repeatable:      *req.Repeatable,
+		Status:          *req.Status, // 默认启用
 	}
+	from, _ := time.Parse(time.DateTime, req.ValidFrom)
+	to, _ := time.Parse(time.DateTime, req.ValidTo)
 
+	task.ValidFrom = &from
+	task.ValidTo = &to
 	if err := s.db.Create(task).Error; err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "创建任务失败", err)
 	}
@@ -67,34 +77,23 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 
 // UpdateTaskRequest 更新任务请求
 type UpdateTaskRequest struct {
-	TaskName        string     `json:"task_name"`
-	Description     string     `json:"description"`
-	TokenReward     int        `json:"token_reward"`
-	DailyLimit      int        `json:"daily_limit"`
-	IntervalSeconds int        `json:"interval_seconds"`
-	ValidFrom       *time.Time `json:"valid_from"`
-	ValidTo         *time.Time `json:"valid_to"`
-	Repeatable      bool       `json:"repeatable"`
-	Status          int8       `json:"status"`
+	TaskId      int    `json:"id" binding:"required"`
+	TaskName    string `json:"task_name" binding:"required"`
+	TokenReward int    `json:"token_reward" binding:"required"`
+	Status      *int8  `json:"status" binding:"required"`
 }
 
 // UpdateTask 更新任务
-func (s *TaskService) UpdateTask(ctx context.Context, taskID int, req *UpdateTaskRequest) (*model.RewardTask, error) {
-	task, err := s.GetTask(ctx, taskID)
+func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*model.RewardTask, error) {
+	task, err := s.GetTask(ctx, req.TaskId)
 	if err != nil {
 		return nil, err
 	}
 
 	updates := map[string]interface{}{
-		"task_name":        req.TaskName,
-		"task_desc":        req.Description,
-		"token_reward":     req.TokenReward,
-		"daily_limit":      req.DailyLimit,
-		"interval_seconds": req.IntervalSeconds,
-		"valid_from":       req.ValidFrom,
-		"valid_to":         req.ValidTo,
-		"repeatable":       boolToInt8(req.Repeatable),
-		"status":           req.Status,
+		"task_name":    req.TaskName,
+		"token_reward": req.TokenReward,
+		"status":       *req.Status,
 	}
 
 	if err := s.db.Model(task).Updates(updates).Error; err != nil {
@@ -125,13 +124,16 @@ func (s *TaskService) GetTask(ctx context.Context, taskID int) (*model.RewardTas
 }
 
 // ListTasks 获取任务列表
-func (s *TaskService) ListTasks(ctx context.Context, page, pageSize int, status *int) ([]*model.RewardTask, int64, error) {
+func (s *TaskService) ListTasks(ctx context.Context, page, pageSize int, status *int, taskName string) ([]*model.RewardTask, int64, error) {
 	var tasks []*model.RewardTask
 	var total int64
 
 	query := s.db.Model(&model.RewardTask{})
 	if status != nil {
 		query = query.Where("status = ?", *status)
+	}
+	if taskName != "" {
+		query = query.Where("task_name LIKE ?", "%"+taskName+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {

@@ -40,19 +40,13 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 
 // UpdateTask 更新任务
 func (h *TaskHandler) UpdateTask(c *gin.Context) {
-	taskID, err := utils.GetIntParam(c, "task_id")
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的任务ID", err))
-		return
-	}
-
 	var req service.UpdateTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
 
-	task, err := h.taskService.UpdateTask(c.Request.Context(), taskID, &req)
+	task, err := h.taskService.UpdateTask(c.Request.Context(), &req)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -96,20 +90,19 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 
 // ListTasks 获取任务列表
 func (h *TaskHandler) ListTasks(c *gin.Context) {
-	page := utils.GetPage(c)
-	pageSize := utils.GetPageSize(c)
-	status, _ := utils.GetIntQuery(c, "status", 0)
+	var req service.ListTaskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
 
-	tasks, total, err := h.taskService.ListTasks(c.Request.Context(), page, pageSize, &status)
+	tasks, total, err := h.taskService.ListTasks(c.Request.Context(), req.Page, req.Limit, req.Status, req.TaskName)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Success(c, gin.H{
-		"list":  tasks,
-		"total": total,
-	})
+	response.ListResponse(c, tasks, total)
 }
 
 // GetAvailableTasks 获取用户可用的任务列表
@@ -187,4 +180,11 @@ func (h *TaskHandler) GetUserTaskStatistics(c *gin.Context) {
 	}
 
 	response.Success(c, stats)
+}
+
+// RegisterRewardTaskRoutes 注册代币任务配置路由
+func RegisterRewardTaskRoutes(r *gin.RouterGroup, h *TaskHandler) {
+	r.POST("/list", h.ListTasks)
+	r.POST("/create", h.CreateTask)
+	r.PUT("/edit", h.UpdateTask)
 }

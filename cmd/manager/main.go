@@ -119,12 +119,14 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	adminService := service.NewAdminService(db)
 	tokenService := service.NewTokenService(db)
 	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
+	configService := service.NewSystemConfigService(db)
 
 	// 初始化处理器
 	//authHandler := handler.NewAuthHandler(authService)
 	adminHandler := handler.NewAdminHandler(adminService)
 	tokenHandler := handler.NewTokenHandler(tokenService)
 	taskHandler := handler.NewTaskHandler(taskService)
+	configHandler := handler.NewSystemConfigHandler(configService)
 
 	// 注册路由
 	api := engine.Group("/admin")
@@ -143,6 +145,17 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 			handler.RegisterUserManagerRoutes(user, adminHandler)
 		}
 
+		// 系统配置
+		{
+			configs := api.Group("/configs", middleware.AdminAuth())
+			handler.RegisterSystemConfigRoutes(configs, configHandler)
+		}
+		// 代币管理
+		{
+			reward := api.Group("/rewards-tasks", middleware.AdminAuth())
+			handler.RegisterRewardTaskRoutes(reward, taskHandler)
+		}
+
 		// Token相关路由
 		token := api.Group("/token", middleware.Auth())
 		handler.RegisterTokenRoutes(token, tokenHandler)
@@ -150,17 +163,6 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 任务相关路由
 		tasks := api.Group("/tasks")
 		{
-			// 管理员接口
-			adminTasks := tasks.Group("/admin", middleware.AdminAuth())
-			{
-				adminTasks.POST("", taskHandler.CreateTask)
-				adminTasks.PUT("/:task_id", taskHandler.UpdateTask)
-				adminTasks.DELETE("/:task_id", taskHandler.DeleteTask)
-				adminTasks.GET("/:task_id", taskHandler.GetTask)
-				adminTasks.GET("", taskHandler.ListTasks)
-				adminTasks.GET("/statistics/:task_id", taskHandler.GetTaskStatistics)
-			}
-
 			// 用户接口
 			userTasks := tasks.Group("", middleware.Auth())
 			{

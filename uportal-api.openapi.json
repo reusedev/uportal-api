@@ -1,0 +1,281 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "uportal-api",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/admin/configs": {
+      "get": {
+        "summary": "获取系统配置",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              },
+              "examples": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "examples": [
+                        0
+                      ]
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "config_key": {
+                            "type": "string",
+                            "examples": [
+                              "TOKEN_EXCHANGE_RATE"
+                            ]
+                          },
+                          "config_value": {
+                            "type": "string",
+                            "examples": [
+                              "0.01"
+                            ]
+                          },
+                          "description": {
+                            "type": "string",
+                            "examples": [
+                              "代币兑换人民币的比例，单位元/代币"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/admin/configs/edit": {
+      "post": {
+        "summary": "更新系统配置",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "config_key": {
+                    "type": "string",
+                    "examples": [
+                      "TOKEN_EXCHANGE_RATE"
+                    ]
+                  },
+                  "config_value": {
+                    "type": "string",
+                    "examples": [
+                      "0.02"
+                    ]
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "description",
+                  "config_value",
+                  "config_key"
+                ]
+              },
+              "examples": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "examples": [
+                        0
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "examples": [
+                        "系统配置更新成功"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/admin/configs/create": {
+      "post": {
+        "summary": "新增系统配置",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "config_key": {
+                    "type": "string",
+                    "examples": [
+                      "TOKEN_EXCHANGE_RATE"
+                    ]
+                  },
+                  "config_value": {
+                    "type": "string",
+                    "examples": [
+                      "0.02"
+                    ]
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "description",
+                  "config_value",
+                  "config_key"
+                ]
+              },
+              "examples": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "examples": [
+                        0
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "examples": [
+                        "success"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/admin/configs/delete": {
+      "post": {
+        "summary": "删除系统配置",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "config_key": {
+                    "type": "string",
+                    "examples": [
+                      "TOKEN_EXCHANGE_RATE"
+                    ]
+                  }
+                },
+                "required": [
+                  "config_key"
+                ]
+              },
+              "examples": {}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "examples": [
+                        0
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "examples": [
+                        "系统配置删除成功"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}
