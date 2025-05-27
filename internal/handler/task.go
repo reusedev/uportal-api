@@ -187,4 +187,7 @@ func RegisterRewardTaskRoutes(r *gin.RouterGroup, h *TaskHandler) {
 	r.POST("/list", h.ListTasks)
 	r.POST("/create", h.CreateTask)
 	r.PUT("/edit", h.UpdateTask)
+	r.POST("/consumption-rules/list", h.ListConsumptionRules)    // 获取代币消耗规则列表
+	r.POST("/consumption-rules/create", h.CreateConsumptionRule) // 创建代币消耗规则
+	r.POST("/consumption-rules/update", h.UpdateConsumptionRule) // 更新代币消耗规则
 }

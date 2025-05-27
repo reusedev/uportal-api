@@ -97,16 +97,6 @@ type ListConsumptionRulesRequest struct {
 	Limit  int `json:"limit" binding:"required,min=1"`
 }
 
-// ListConsumptionRules 获取Token消费规则列表
-func (s *TokenService) ListConsumptionRules(ctx context.Context, page, pageSize int) ([]*model.TokenConsumptionRule, int64, error) {
-	offset := (page - 1) * pageSize
-	rules, total, err := model.ListTokenConsumptionRules(s.db, offset, pageSize)
-	if err != nil {
-		return nil, 0, errors.New(errors.ErrCodeInternal, "获取消费规则列表失败", err)
-	}
-	return rules, total, nil
-}
-
 // CreateRechargePlanRequest 创建充值套餐请求
 type CreateRechargePlanRequest struct {
 	Name        string  `json:"name" binding:"required,max=50"`
