@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"time"
 
@@ -145,6 +146,72 @@ func (s *TaskService) ListTasks(ctx context.Context, page, pageSize int, status 
 	}
 
 	return tasks, total, nil
+}
+
+// ListConsumptionRules 获取代币消耗规则列表
+func (s *TaskService) ListConsumptionRules(ctx context.Context, page, pageSize int) ([]*model.TokenConsumeRule, int64, error) {
+	offset := (page - 1) * pageSize
+	rules, total, err := model.ListTokenConsumptionRules(s.db, offset, pageSize)
+	if err != nil {
+		return nil, 0, errors.New(errors.ErrCodeInternal, "获取代币消耗规则列表失败", err)
+	}
+	return rules, total, nil
+}
+
+// UpdateConsumptionRule 更新Token消费规则
+func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *UpdateConsumptionRuleRequest) error {
+	// 检查规则是否存在
+	_, err := model.GetTokenConsumptionRule(s.db, id)
+	if err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New(errors.ErrCodeNotFound, "消费规则不存在", nil)
+		}
+		return errors.New(errors.ErrCodeInternal, "查询消费规则失败", err)
+	}
+
+	updates := map[string]interface{}{}
+	if req.FeatureName != "" {
+		updates["feature_name"] = req.FeatureName
+	}
+	if req.FeatureDesc != "" {
+		updates["feature_desc"] = req.FeatureDesc
+	}
+	if req.TokenCost != nil {
+		updates["token_cost"] = req.TokenCost
+	}
+	if req.FeatureCode != "" {
+		updates["feature_code"] = req.FeatureCode
+	}
+	if req.Status != nil {
+		updates["status"] = *req.Status
+	}
+
+	return model.UpdateTokenConsumptionRule(s.db, id, updates)
+}
+
+type CreateConsumptionRuleRequest struct {
+	FeatureName string `json:"feature_name"`
+	FeatureDesc string `json:"feature_desc"`
+	TokenCost   *int   `json:"token_cost,omitempty"`
+	FeatureCode string `json:"feature_code"`
+	Status      *int8  `json:"status"`
+}
+
+// CreateConsumptionRule 创建Token消费规则
+func (s *TaskService) CreateConsumptionRule(ctx context.Context, req *CreateConsumptionRuleRequest) (*model.TokenConsumeRule, error) {
+	rule := &model.TokenConsumeRule{
+		FeatureName: req.FeatureName,
+		FeatureDesc: &req.FeatureDesc,
+		TokenCost:   *req.TokenCost,
+		FeatureCode: &req.FeatureCode,
+		Status:      *req.Status,
+	}
+
+	err := model.CreateTokenConsumptionRule(s.db, rule)
+	if err != nil {
+		return nil, err
+	}
+	return rule, nil
 }
 
 // GetAvailableTasks 获取用户可用的任务列表

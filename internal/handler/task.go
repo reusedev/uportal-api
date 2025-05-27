@@ -182,6 +182,95 @@ func (h *TaskHandler) GetUserTaskStatistics(c *gin.Context) {
 	response.Success(c, stats)
 }
 
+// ListConsumptionRulesRequest 获取代币消耗规则列表请求
+type ListConsumptionRulesRequest struct {
+	Page     int  `json:"page" binding:"required,min=1"`
+	PageSize int  `json:"limit" binding:"required,min=1,max=100"`
+	Status   *int `json:"status,omitempty"` // 可选的状态过滤
+}
+
+// ListConsumptionRules 获取代币消耗规则列表
+func (h *TaskHandler) ListConsumptionRules(c *gin.Context) {
+	var req ListConsumptionRulesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	rules, total, err := h.taskService.ListConsumptionRules(c.Request.Context(), req.Page, req.PageSize)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.ListResponse(c, rules, total)
+}
+
+// CreateConsumptionRuleRequest 创建代币消耗规则请求
+type CreateConsumptionRuleRequest struct {
+	FeatureName string `json:"feature_name"`
+	FeatureDesc string `json:"feature_desc"`
+	TokenCost   *int   `json:"token_cost,omitempty"`
+	FeatureCode string `json:"feature_code"`
+	Status      *int8  `json:"status"`
+}
+
+// CreateConsumptionRule 创建代币消耗规则
+func (h *TaskHandler) CreateConsumptionRule(c *gin.Context) {
+	var req CreateConsumptionRuleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	rule, err := h.taskService.CreateConsumptionRule(c.Request.Context(), &service.CreateConsumptionRuleRequest{
+		FeatureName: req.FeatureName,
+		FeatureDesc: req.FeatureDesc,
+		TokenCost:   req.TokenCost,
+		FeatureCode: req.FeatureCode,
+		Status:      req.Status,
+	})
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, rule)
+}
+
+// UpdateConsumptionRuleRequest 更新代币消耗规则请求
+type UpdateConsumptionRuleRequest struct {
+	FeatureId   int    `json:"feature_id" binding:"required,min=1"`
+	FeatureName string `json:"feature_name"`
+	FeatureDesc string `json:"feature_desc"`
+	TokenCost   *int64 `json:"token_cost,omitempty"`
+	FeatureCode string `json:"feature_code"`
+	Status      *int8  `json:"status"`
+}
+
+// UpdateConsumptionRule 更新代币消耗规则
+func (h *TaskHandler) UpdateConsumptionRule(c *gin.Context) {
+	var req UpdateConsumptionRuleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	err := h.taskService.UpdateConsumptionRule(c.Request.Context(), req.FeatureId, &service.UpdateConsumptionRuleRequest{
+		FeatureName: req.FeatureName,
+		FeatureDesc: req.FeatureDesc,
+		TokenCost:   req.TokenCost,
+		FeatureCode: req.FeatureCode,
+		Status:      req.Status,
+	})
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"message": "代币消耗规则更新成功"})
+}
+
 // RegisterRewardTaskRoutes 注册代币任务配置路由
 func RegisterRewardTaskRoutes(r *gin.RouterGroup, h *TaskHandler) {
 	r.POST("/list", h.ListTasks)

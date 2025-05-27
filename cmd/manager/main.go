@@ -115,16 +115,12 @@ func main() {
 // registerRoutes 注册路由
 func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// 初始化服务
-	//authService := service.NewAuthService(db)
 	adminService := service.NewAdminService(db)
-	tokenService := service.NewTokenService(db)
 	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
 	configService := service.NewSystemConfigService(db)
 
 	// 初始化处理器
-	//authHandler := handler.NewAuthHandler(authService)
 	adminHandler := handler.NewAdminHandler(adminService)
-	tokenHandler := handler.NewTokenHandler(tokenService)
 	taskHandler := handler.NewTaskHandler(taskService)
 	configHandler := handler.NewSystemConfigHandler(configService)
 
@@ -154,23 +150,6 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		{
 			reward := api.Group("/rewards-tasks", middleware.AdminAuth())
 			handler.RegisterRewardTaskRoutes(reward, taskHandler)
-		}
-
-		// Token相关路由
-		token := api.Group("/token", middleware.Auth())
-		handler.RegisterTokenRoutes(token, tokenHandler)
-
-		// 任务相关路由
-		tasks := api.Group("/tasks")
-		{
-			// 用户接口
-			userTasks := tasks.Group("", middleware.Auth())
-			{
-				userTasks.GET("/available", taskHandler.GetAvailableTasks)
-				userTasks.POST("/complete", taskHandler.CompleteTask)
-				userTasks.GET("/records", taskHandler.GetUserTaskRecords)
-				userTasks.GET("/statistics", taskHandler.GetUserTaskStatistics)
-			}
 		}
 	}
 }

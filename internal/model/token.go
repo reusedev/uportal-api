@@ -8,30 +8,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// TokenConsumptionRule Token消费规则
-type TokenConsumptionRule struct {
-	ID          int64     `gorm:"primaryKey" json:"id"`
-	ServiceType string    `gorm:"not null;uniqueIndex;comment:服务类型" json:"service_type"`
-	TokenAmount int64     `gorm:"not null;comment:消耗Token数量" json:"token_amount"`
-	Description string    `gorm:"size:200;comment:描述" json:"description"`
-	Status      int       `gorm:"not null;default:1;comment:状态 1-启用 2-禁用" json:"status"`
-	CreatedAt   time.Time `gorm:"not null" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"not null" json:"updated_at"`
-}
-
-// TableName 指定表名
-func (TokenConsumptionRule) TableName() string {
-	return "token_consume_rules"
-}
-
 // CreateTokenConsumptionRule 创建Token消费规则
-func CreateTokenConsumptionRule(db *gorm.DB, rule *TokenConsumptionRule) error {
+func CreateTokenConsumptionRule(db *gorm.DB, rule *TokenConsumeRule) error {
 	return db.Create(rule).Error
 }
 
 // GetTokenConsumptionRule 获取Token消费规则
-func GetTokenConsumptionRule(db *gorm.DB, id int64) (*TokenConsumptionRule, error) {
-	var rule TokenConsumptionRule
+func GetTokenConsumptionRule(db *gorm.DB, id int) (*TokenConsumeRule, error) {
+	var rule TokenConsumeRule
 	err := db.First(&rule, id).Error
 	if err != nil {
 		return nil, err
@@ -40,9 +24,9 @@ func GetTokenConsumptionRule(db *gorm.DB, id int64) (*TokenConsumptionRule, erro
 }
 
 // GetTokenConsumptionRuleByService 根据服务类型获取Token消费规则
-func GetTokenConsumptionRuleByService(db *gorm.DB, serviceType string) (*TokenConsumptionRule, error) {
-	var rule TokenConsumptionRule
-	err := db.Where("service_type = ? AND status = 1", serviceType).First(&rule).Error
+func GetTokenConsumptionRuleByService(db *gorm.DB, serviceType string) (*TokenConsumeRule, error) {
+	var rule TokenConsumeRule
+	err := db.Where("feature_code = ? AND status = 1", serviceType).First(&rule).Error
 	if err != nil {
 		return nil, err
 	}
@@ -50,21 +34,21 @@ func GetTokenConsumptionRuleByService(db *gorm.DB, serviceType string) (*TokenCo
 }
 
 // UpdateTokenConsumptionRule 更新Token消费规则
-func UpdateTokenConsumptionRule(db *gorm.DB, id int64, updates map[string]interface{}) error {
-	return db.Model(&TokenConsumptionRule{}).Where("id = ?", id).Updates(updates).Error
+func UpdateTokenConsumptionRule(db *gorm.DB, id int, updates map[string]interface{}) error {
+	return db.Model(&TokenConsumeRule{}).Where("feature_id = ?", id).Updates(updates).Error
 }
 
 // DeleteTokenConsumptionRule 删除Token消费规则
-func DeleteTokenConsumptionRule(db *gorm.DB, id int64) error {
-	return db.Delete(&TokenConsumptionRule{}, id).Error
+func DeleteTokenConsumptionRule(db *gorm.DB, id int) error {
+	return db.Delete(&TokenConsumeRule{}, id).Error
 }
 
 // ListTokenConsumptionRules 获取Token消费规则列表
-func ListTokenConsumptionRules(db *gorm.DB, offset, limit int) ([]*TokenConsumptionRule, int64, error) {
-	var rules []*TokenConsumptionRule
+func ListTokenConsumptionRules(db *gorm.DB, offset, limit int) ([]*TokenConsumeRule, int64, error) {
+	var rules []*TokenConsumeRule
 	var total int64
 
-	err := db.Model(&TokenConsumptionRule{}).Count(&total).Error
+	err := db.Model(&TokenConsumeRule{}).Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}

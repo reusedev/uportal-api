@@ -19,61 +19,18 @@ func NewTokenService(db *gorm.DB) *TokenService {
 	return &TokenService{db: db}
 }
 
-// CreateConsumptionRuleRequest 创建消费规则请求
-type CreateConsumptionRuleRequest struct {
-	ServiceType string `json:"service_type" binding:"required,max=50"`
-	TokenAmount int64  `json:"token_amount" binding:"required,min=1"`
-	Description string `json:"description" binding:"required,max=200"`
-}
-
-// CreateConsumptionRule 创建Token消费规则
-func (s *TokenService) CreateConsumptionRule(ctx context.Context, req *CreateConsumptionRuleRequest) (*model.TokenConsumptionRule, error) {
-	rule := &model.TokenConsumptionRule{
-		ServiceType: req.ServiceType,
-		TokenAmount: req.TokenAmount,
-		Description: req.Description,
-		Status:      1,
-	}
-
-	err := model.CreateTokenConsumptionRule(s.db, rule)
-	if err != nil {
-		return nil, err
-	}
-	return rule, nil
-}
-
 // UpdateConsumptionRuleRequest 更新消费规则请求
 type UpdateConsumptionRuleRequest struct {
 	ID          int64  `json:"id" binding:"required,min=1"`
-	ServiceType string `json:"service_type" binding:"required,max=50"`
-	TokenAmount int64  `json:"token_amount" binding:"required,min=1"`
-	Description string `json:"description" binding:"required,max=200"`
-	Status      int    `json:"status" binding:"required,oneof=1 2"`
-}
-
-// UpdateConsumptionRule 更新Token消费规则
-func (s *TokenService) UpdateConsumptionRule(ctx context.Context, id int64, req *UpdateConsumptionRuleRequest) error {
-	// 检查规则是否存在
-	_, err := model.GetTokenConsumptionRule(s.db, id)
-	if err != nil {
-		if stderrors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New(errors.ErrCodeNotFound, "消费规则不存在", nil)
-		}
-		return errors.New(errors.ErrCodeInternal, "查询消费规则失败", err)
-	}
-
-	updates := map[string]interface{}{
-		"service_type": req.ServiceType,
-		"token_amount": req.TokenAmount,
-		"description":  req.Description,
-		"status":       req.Status,
-	}
-
-	return model.UpdateTokenConsumptionRule(s.db, id, updates)
+	FeatureName string `json:"feature_name" binding:"required,max=100"`
+	FeatureDesc string `json:"feature_desc" binding:"required,max=255"`
+	TokenCost   *int64 `json:"token_cost" binding:"required,min=1"`
+	FeatureCode string `json:"feature_code" binding:"required,max=50"`
+	Status      *int8  `json:"status" binding:"required,oneof=1 2"`
 }
 
 // DeleteConsumptionRule 删除Token消费规则
-func (s *TokenService) DeleteConsumptionRule(ctx context.Context, id int64) error {
+func (s *TokenService) DeleteConsumptionRule(ctx context.Context, id int) error {
 	// 检查规则是否存在
 	_, err := model.GetTokenConsumptionRule(s.db, id)
 	if err != nil {
@@ -223,7 +180,11 @@ func (s *TokenService) ConsumeToken(ctx context.Context, userID int64, serviceTy
 	}
 
 	// 消费Token
-	return model.ConsumeToken(s.db, userID, rule.TokenAmount, serviceType, rule.Description)
+	desc := ""
+	if rule.FeatureDesc != nil {
+		desc = *rule.FeatureDesc
+	}
+	return model.ConsumeToken(s.db, userID, int64(rule.TokenCost), serviceType, desc)
 }
 
 // AddToken 增加Token
@@ -258,5 +219,5 @@ func (s *TokenService) GetConsumptionAmount(ctx context.Context, serviceType str
 	if err != nil {
 		return 0, err
 	}
-	return rule.TokenAmount, nil
+	return int64(rule.TokenCost), nil
 }
