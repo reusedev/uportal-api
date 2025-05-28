@@ -130,7 +130,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 管理员用户
 		{
 			// 认证相关
-			handler.RegisterAuthRoutes(api, adminHandler)
+			handler.RegisterAdminRoutes(api, adminHandler)
 			// 管理员相关
 			admin := api.Group("/", middleware.AdminAuth())
 			handler.RegisterAdminManagementRoutes(admin, adminHandler)

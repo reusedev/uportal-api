@@ -438,6 +438,14 @@ func (h *AdminHandler) ListTokenRecords(c *gin.Context) {
 	response.ListResponse(c, resp.List, resp.Total)
 }
 
+// RegisterAdminRoutes 注册认证相关路由
+func RegisterAdminRoutes(r *gin.RouterGroup, h *AdminHandler) {
+	// 公开路由
+	r.POST("/login", h.Login)
+	r.POST("/register", h.CreateAdmin)
+
+}
+
 // RegisterUserManagerRoutes 注册用户列表路由（普通用户可访问）
 func RegisterUserManagerRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	users := r.Group("/users")

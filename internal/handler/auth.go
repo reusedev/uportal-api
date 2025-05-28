@@ -185,19 +185,12 @@ func (h *AuthHandler) WxMiniProgramLogin(c *gin.Context) {
 	})
 }
 
-// RegisterAuthRoutes 注册认证相关路由
-func RegisterAuthRoutes(r *gin.RouterGroup, h *AuthHandler) {
-	// 公开路由
-	r.POST("/login", h.Login)
-	r.POST("/register", h.Register)
-	r.POST("/third-party-login", h.ThirdPartyLogin)
-}
-
 // RegisterUser 注册普通用户
 func RegisterUser(r *gin.RouterGroup, h *AuthHandler) {
 	// 公开路由
 	//r.POST("/login", h.Register)
-	r.POST("/login", h.WxMiniProgramLogin) // 微信登陆
+	r.POST("/login", h.WxMiniProgramLogin)          // 微信登陆
+	r.POST("/third-party-login", h.ThirdPartyLogin) // 第三方登陆
 }
 
 // RegisterUserRoutes 注册用户相关路由
