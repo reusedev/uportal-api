@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	stderrors "errors"
+	"strconv"
 
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
@@ -52,6 +53,11 @@ func (s *TokenService) DeleteConsumptionRule(ctx context.Context, id int) error 
 type ListConsumptionRulesRequest struct {
 	Offset int `json:"offset" binding:"required,min=0"`
 	Limit  int `json:"limit" binding:"required,min=1"`
+}
+
+type ListUserTokenRecords struct {
+	Prev  *string `json:"prev"` //上一条记录 ID
+	Limit *int    `json:"limit"`
 }
 
 // CreateRechargePlanRequest 创建充值套餐请求
@@ -162,8 +168,16 @@ func (s *TokenService) GetUserTokenBalance(ctx context.Context, userID int64) (i
 }
 
 // GetUserTokenRecords 获取用户的代币记录列表
-func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID int64, page, pageSize int) ([]*model.TokenRecord, int64, error) {
-	return model.GetTokenRecords(s.db, userID, (page-1)*pageSize, pageSize)
+func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID int64, req ListUserTokenRecords) ([]*model.TokenRecord, error) {
+	var start int
+	limit := 10
+	if req.Prev != nil {
+		start, _ = strconv.Atoi(*req.Prev)
+	}
+	if req.Limit != nil {
+		limit = int(*req.Limit)
+	}
+	return model.GetTokenRecords(s.db, userID, start, limit)
 }
 
 // ConsumeToken 消费Token

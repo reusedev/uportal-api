@@ -53,6 +53,11 @@ type ThirdPartyLoginRequest struct {
 	UserAgent      string `json:"-"` // 设备信息，从请求头获取
 }
 
+type UpdateProfileReq struct {
+	Nickname  *string `json:"nickname"`
+	AvatarURL *string `json:"avatar_url"`
+}
+
 // Register 用户注册
 func (s *AuthService) Register(ctx context.Context, req *RegisterRequest) (*model.User, error) {
 	// 检查手机号或邮箱是否已存在

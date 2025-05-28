@@ -96,7 +96,7 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 		return
 	}
 
-	tasks, total, err := h.taskService.ListTasks(c.Request.Context(), req.Page, req.Limit, req.Status, req.TaskName)
+	tasks, total, err := h.taskService.ListTasks(c.Request.Context(), req.Status, req.TaskName)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -184,9 +184,9 @@ func (h *TaskHandler) GetUserTaskStatistics(c *gin.Context) {
 
 // ListConsumptionRulesRequest 获取代币消耗规则列表请求
 type ListConsumptionRulesRequest struct {
-	Page     int  `json:"page" binding:"required,min=1"`
-	PageSize int  `json:"limit" binding:"required,min=1,max=100"`
-	Status   *int `json:"status,omitempty"` // 可选的状态过滤
+	//Page     int  `json:"page" binding:"required,min=1"`
+	//PageSize int  `json:"limit" binding:"required,min=1,max=100"`
+	Status *int `json:"status,omitempty"` // 可选的状态过滤
 }
 
 // ListConsumptionRules 获取代币消耗规则列表
@@ -197,7 +197,7 @@ func (h *TaskHandler) ListConsumptionRules(c *gin.Context) {
 		return
 	}
 
-	rules, total, err := h.taskService.ListConsumptionRules(c.Request.Context(), req.Page, req.PageSize)
+	rules, total, err := h.taskService.ListConsumptionRules(c.Request.Context())
 	if err != nil {
 		response.Error(c, err)
 		return

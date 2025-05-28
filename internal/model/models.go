@@ -133,17 +133,17 @@ type TokenConsumeRule struct {
 
 // TokenRecord 用户代币记录表结构体
 type TokenRecord struct {
-	RecordID     int64             `gorm:"column:record_id;primaryKey;autoIncrement" json:"record_id"`                                                        // 记录ID，主键，自增
+	RecordID     int64             `gorm:"column:record_id;primaryKey;autoIncrement" json:"id"`                                                               // 记录ID，主键，自增
 	UserID       int64             `gorm:"column:user_id;not null;index:idx_token_records_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`  // 用户ID
-	ChangeAmount int               `gorm:"column:change_amount;not null" json:"change_amount"`                                                                // 代币变动数
+	ChangeAmount int               `gorm:"column:change_amount;not null" json:"points"`                                                                       // 代币变动数
 	BalanceAfter int               `gorm:"column:balance_after;not null" json:"balance_after"`                                                                // 变动后余额
-	ChangeType   string            `gorm:"column:change_type;type:varchar(20);not null" json:"change_type"`                                                   // 变动类型
+	ChangeType   string            `gorm:"column:change_type;type:varchar(20);not null" json:"source"`                                                        // 变动类型
 	TaskID       *int              `gorm:"column:task_id;index:idx_token_records_task;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"task_id"`          // 任务ID来源
 	FeatureID    *int              `gorm:"column:feature_id;index:idx_token_records_feature;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"feature_id"` // 功能ID来源
 	OrderID      *int64            `gorm:"column:order_id;index:idx_token_records_order;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"order_id"`       // 订单ID来源
 	AdminID      *int64            `gorm:"column:admin_id;index:idx_token_records_admin;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin_id"`       // 管理员ID来源
 	Remark       *string           `gorm:"column:remark;type:varchar(255)" json:"remark"`                                                                     // 备注说明
-	ChangeTime   time.Time         `gorm:"column:change_time;not null;autoCreateTime" json:"change_time"`                                                     // 变动时间
+	ChangeTime   time.Time         `gorm:"column:change_time;not null;autoCreateTime" json:"created_at"`                                                      // 变动时间
 	User         User              `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`            // 关联用户信息
 	Task         *RewardTask       `gorm:"foreignKey:TaskID;references:TaskID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"task,omitempty"`           // 关联任务信息
 	Feature      *TokenConsumeRule `gorm:"foreignKey:FeatureID;references:FeatureID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"feature,omitempty"`  // 关联功能信息

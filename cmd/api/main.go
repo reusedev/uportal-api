@@ -116,7 +116,6 @@ func main() {
 func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// 初始化服务
 	authService := service.NewAuthService(db)
-	adminService := service.NewAdminService(db)
 	tokenService := service.NewTokenService(db)
 	orderService := service.NewOrderService(db)
 	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
@@ -127,27 +126,24 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
-	adminHandler := handler.NewAdminHandler(adminService)
 	tokenHandler := handler.NewTokenHandler(tokenService)
 	orderHandler := handler.NewOrderHandler(orderService)
 	paymentHandler := handler.NewPaymentHandler(paymentService)
 	taskHandler := handler.NewTaskHandler(taskService)
 
 	// 注册路由
-	api := engine.Group("/api/v1")
+	api := engine.Group("/api")
 	{
-		// 用户相关路由（需要认证）
-		user := api.Group("", middleware.Auth())
+
+		// 登陆
+		handler.RegisterUser(api, authHandler)
+
+		// 更新身份认证信息
+		user := api.Group("profile", middleware.Auth())
 		handler.RegisterUserRoutes(user, authHandler)
-		handler.RegisterUserManagerRoutes(user, adminHandler)
 
-		// 管理员相关路由
-		admin := api.Group("/admin", middleware.AuthMiddleware())
-		//handler.RegisterAdminManagementRoutes(admin, adminHandler)
-		handler.RegisterAdminTokenRoutes(admin, tokenHandler)
-
-		// Token相关路由
-		token := api.Group("/token", middleware.Auth())
+		// 代币相关路由
+		token := api.Group("/points", middleware.Auth())
 		handler.RegisterTokenRoutes(token, tokenHandler)
 
 		// 订单相关路由

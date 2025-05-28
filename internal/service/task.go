@@ -34,8 +34,8 @@ func NewTaskService(db *gorm.DB, redis *redis.Client, logger *zap.Logger, config
 }
 
 type ListTaskRequest struct {
-	Page     int    `json:"page" binding:"required"`
-	Limit    int    `json:"limit" binding:"required"`
+	//Page     int    `json:"page" binding:"required"`
+	//Limit    int    `json:"limit" binding:"required"`
 	Status   *int   `json:"status"`    // 可选，任务状态
 	TaskName string `json:"task_name"` // 可选，任务名称模糊查询
 }
@@ -125,7 +125,7 @@ func (s *TaskService) GetTask(ctx context.Context, taskID int) (*model.RewardTas
 }
 
 // ListTasks 获取任务列表
-func (s *TaskService) ListTasks(ctx context.Context, page, pageSize int, status *int, taskName string) ([]*model.RewardTask, int64, error) {
+func (s *TaskService) ListTasks(ctx context.Context, status *int, taskName string) ([]*model.RewardTask, int64, error) {
 	var tasks []*model.RewardTask
 	var total int64
 
@@ -141,7 +141,7 @@ func (s *TaskService) ListTasks(ctx context.Context, page, pageSize int, status 
 		return nil, 0, errors.New(errors.ErrCodeInternal, "获取任务总数失败", err)
 	}
 
-	if err := query.Offset((page - 1) * pageSize).Limit(pageSize).Find(&tasks).Error; err != nil {
+	if err := query.Find(&tasks).Error; err != nil {
 		return nil, 0, errors.New(errors.ErrCodeInternal, "获取任务列表失败", err)
 	}
 
@@ -149,9 +149,8 @@ func (s *TaskService) ListTasks(ctx context.Context, page, pageSize int, status 
 }
 
 // ListConsumptionRules 获取代币消耗规则列表
-func (s *TaskService) ListConsumptionRules(ctx context.Context, page, pageSize int) ([]*model.TokenConsumeRule, int64, error) {
-	offset := (page - 1) * pageSize
-	rules, total, err := model.ListTokenConsumptionRules(s.db, offset, pageSize)
+func (s *TaskService) ListConsumptionRules(ctx context.Context) ([]*model.TokenConsumeRule, int64, error) {
+	rules, total, err := model.ListTokenConsumptionRules(s.db)
 	if err != nil {
 		return nil, 0, errors.New(errors.ErrCodeInternal, "获取代币消耗规则列表失败", err)
 	}

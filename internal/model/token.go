@@ -44,7 +44,7 @@ func DeleteTokenConsumptionRule(db *gorm.DB, id int) error {
 }
 
 // ListTokenConsumptionRules 获取Token消费规则列表
-func ListTokenConsumptionRules(db *gorm.DB, offset, limit int) ([]*TokenConsumeRule, int64, error) {
+func ListTokenConsumptionRules(db *gorm.DB) ([]*TokenConsumeRule, int64, error) {
 	var rules []*TokenConsumeRule
 	var total int64
 
@@ -53,7 +53,7 @@ func ListTokenConsumptionRules(db *gorm.DB, offset, limit int) ([]*TokenConsumeR
 		return nil, 0, err
 	}
 
-	err = db.Offset(offset).Limit(limit).Find(&rules).Error
+	err = db.Find(&rules).Error
 	if err != nil {
 		return nil, 0, err
 	}
@@ -110,29 +110,16 @@ func CreateTokenRecord(db *gorm.DB, record *TokenRecord) error {
 }
 
 // GetTokenRecords 获取用户的代币记录列表
-func GetTokenRecords(db *gorm.DB, userID int64, offset, limit int) ([]*TokenRecord, int64, error) {
+func GetTokenRecords(db *gorm.DB, userID int64, start, limit int) ([]*TokenRecord, error) {
 	var records []*TokenRecord
-	var total int64
-
-	err := db.Model(&TokenRecord{}).Where("user_id = ?", userID).Count(&total).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	err = db.Where("user_id = ?", userID).
-		Preload("User").
-		Preload("Task").
-		Preload("Feature").
-		Preload("Order").
-		Preload("Admin").
-		Order("change_time DESC").
-		Offset(offset).Limit(limit).
+	err := db.Where("user_id = ? and record_id > ?", userID, start).
+		Order("change_time DESC").Limit(limit).
 		Find(&records).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	return records, total, nil
+	return records, nil
 }
 
 // GetUserTokenBalance 获取用户Token余额

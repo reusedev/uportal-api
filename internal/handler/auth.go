@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/internal/service"
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"github.com/reusedev/uportal-api/pkg/response"
 )
@@ -113,27 +114,19 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 
 // UpdateProfile 更新用户信息
 func (h *AuthHandler) UpdateProfile(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	var req struct {
-		Nickname  string `json:"nickname" binding:"omitempty,min=2,max=50"`
-		AvatarURL string `json:"avatar_url" binding:"omitempty,url"`
-		Language  string `json:"language" binding:"omitempty,len=5"`
-	}
-
+	var req service.UpdateProfileReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
+	userID := c.GetInt64(consts.UserId)
 
 	updates := make(map[string]interface{})
-	if req.Nickname != "" {
+	if req.Nickname != nil {
 		updates["nickname"] = req.Nickname
 	}
-	if req.AvatarURL != "" {
+	if req.AvatarURL != nil {
 		updates["avatar_url"] = req.AvatarURL
-	}
-	if req.Language != "" {
-		updates["language"] = req.Language
 	}
 
 	err := h.authService.UpdateUser(c.Request.Context(), userID, updates)
@@ -174,9 +167,15 @@ func RegisterAuthRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	r.POST("/managers/create", h.CreateAdmin)
 }
 
+// RegisterUser 注册普通用户
+func RegisterUser(r *gin.RouterGroup, h *AuthHandler) {
+	// 公开路由
+	r.POST("/login", h.Register)
+}
+
 // RegisterUserRoutes 注册用户相关路由
 func RegisterUserRoutes(r *gin.RouterGroup, h *AuthHandler) {
-	r.GET("/profile", h.GetProfile)
-	r.PUT("/profile", h.UpdateProfile)
-	r.PUT("/password", h.ChangePassword)
+	//r.GET("/profile", h.GetProfile)
+	r.PUT("/update", h.UpdateProfile)
+	//r.PUT("/password", h.ChangePassword)
 }

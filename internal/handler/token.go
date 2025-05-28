@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -109,29 +110,31 @@ func (h *TokenHandler) ListRechargePlans(c *gin.Context) {
 
 // GetUserTokenBalance 获取用户Token余额
 func (h *TokenHandler) GetUserTokenBalance(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+	userID := c.GetInt64(consts.UserId)
 	balance, err := h.tokenService.GetUserTokenBalance(c.Request.Context(), userID)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Success(c, gin.H{"balance": balance})
+	response.Success(c, balance)
 }
 
 // GetUserTokenRecords 获取用户Token记录
 func (h *TokenHandler) GetUserTokenRecords(c *gin.Context) {
-	userID := c.GetInt64("user_id")
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
-
-	records, total, err := h.tokenService.GetUserTokenRecords(c.Request.Context(), userID, page, pageSize)
+	var req service.ListUserTokenRecords
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	userID := c.GetInt64(consts.UserId)
+	records, err := h.tokenService.GetUserTokenRecords(c.Request.Context(), userID, req)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.ListResponse(c, records, total)
+	response.ListResponse(c, records, 0)
 }
 
 // GetRechargeAmount 计算充值金额
@@ -170,12 +173,9 @@ func (h *TokenHandler) GetConsumptionAmount(c *gin.Context) {
 
 // RegisterTokenRoutes 注册 Token 相关路由
 func RegisterTokenRoutes(r *gin.RouterGroup, h *TokenHandler) {
-	tokens := r.Group("/tokens")
-	{
-		tokens.GET("/balance", h.GetUserTokenBalance)
-		tokens.GET("/history", h.GetUserTokenRecords)
-		tokens.GET("/plans", h.ListRechargePlans)
-	}
+	r.GET("/balance", h.GetUserTokenBalance) // 获取代币余额
+	r.GET("/records", h.GetUserTokenRecords) // 获取用户代币明细记录
+	r.GET("/plans", h.ListRechargePlans)
 }
 
 // RegisterAdminTokenRoutes 注册管理员 Token 相关路由
