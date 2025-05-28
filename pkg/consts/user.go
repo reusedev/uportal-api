@@ -25,5 +25,6 @@ const (
 	LoginStatusFailed  = 0
 	LoginStatusSuccess = 1
 
-	UserId = "user_id"
+	UserId   = "user_id"
+	SetToken = "Set-Token"
 )

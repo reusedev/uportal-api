@@ -65,7 +65,7 @@ func (s *TokenRecordService) ListTokenRecords(ctx context.Context, req *ListToke
 	// 获取分页数据
 	var records []*model.TokenRecord
 	offset := (req.PageNum - 1) * req.PageSize
-	if err := query.Order("created_at DESC").
+	if err := query.Order("change_time DESC").
 		Offset(offset).
 		Limit(req.PageSize).
 		Find(&records).Error; err != nil {

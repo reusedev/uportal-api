@@ -42,15 +42,14 @@ type ListTaskRequest struct {
 
 // CreateTaskRequest 创建任务请求
 type CreateTaskRequest struct {
-	TaskName        string `json:"task_name" binding:"required"`
-	Description     string `json:"task_desc" binding:"required"`
-	TokenReward     int    `json:"token_reward" binding:"required"`
-	DailyLimit      int    `json:"daily_limit" binding:"required"`
-	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
-	ValidFrom       string `json:"valid_from" binding:"required"`
-	ValidTo         string `json:"valid_to" binding:"required"`
-	Repeatable      *int8  `json:"repeatable" binding:"required"`
-	Status          *int8  `json:"status" binding:"required"`
+	TaskName        string    `json:"task_name" binding:"required"`
+	Description     string    `json:"task_desc" binding:"required"`
+	TokenReward     int       `json:"token_reward" binding:"required"`
+	DailyLimit      int       `json:"daily_limit" binding:"required"`
+	IntervalSeconds int       `json:"interval_seconds" binding:"required"`
+	ValidDate       [2]string `json:"valid_date" binding:"required"`
+	Repeatable      *int8     `json:"repeatable" binding:"required"`
+	Status          *int8     `json:"status" binding:"required"`
 }
 
 // CreateTask 创建任务
@@ -64,8 +63,8 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		Repeatable:      *req.Repeatable,
 		Status:          *req.Status, // 默认启用
 	}
-	from, _ := time.Parse(time.DateTime, req.ValidFrom)
-	to, _ := time.Parse(time.DateTime, req.ValidTo)
+	from, _ := time.Parse(time.DateOnly, req.ValidDate[0])
+	to, _ := time.Parse(time.DateOnly, req.ValidDate[1])
 
 	task.ValidFrom = &from
 	task.ValidTo = &to

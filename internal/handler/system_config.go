@@ -39,7 +39,7 @@ func (h *SystemConfigHandler) CreateConfig(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"message": "success"})
+	response.Success(c, nil)
 }
 
 // UpdateConfig 更新系统配置
@@ -71,7 +71,7 @@ func (h *SystemConfigHandler) DeleteConfig(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"message": "系统配置删除成功"})
+	response.Success(c, nil)
 }
 
 // RegisterSystemConfigRoutes 注册系统配置路由

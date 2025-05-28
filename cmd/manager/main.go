@@ -118,9 +118,11 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	adminService := service.NewAdminService(db)
 	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
 	configService := service.NewSystemConfigService(db)
+	tokenRecordService := service.NewTokenRecordService(db)
+	loginService := service.NewUserLoginLogService(db)
 
 	// 初始化处理器
-	adminHandler := handler.NewAdminHandler(adminService)
+	adminHandler := handler.NewAdminHandler(adminService, loginService, tokenRecordService)
 	taskHandler := handler.NewTaskHandler(taskService)
 	configHandler := handler.NewSystemConfigHandler(configService)
 
@@ -148,8 +150,13 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		}
 		// 代币管理
 		{
-			reward := api.Group("/rewards-tasks", middleware.AdminAuth())
+			reward := api.Group("/reward-tasks", middleware.AdminAuth())
 			handler.RegisterRewardTaskRoutes(reward, taskHandler)
+		}
+		// 代币消耗规则
+		{
+			reward := api.Group("/token-consume-rules", middleware.AdminAuth())
+			handler.RegisterTokenConsumeRulesRoutes(reward, taskHandler)
 		}
 	}
 }

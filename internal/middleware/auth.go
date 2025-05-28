@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"github.com/reusedev/uportal-api/pkg/consts"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -58,7 +59,7 @@ func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
-			response.Error(c, errors.New(errors.ErrCodeUnauthorized, "未提供认证令牌", nil))
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 1002, "message": "未提供认证令牌"})
 			c.Abort()
 			return
 		}
@@ -70,7 +71,7 @@ func Auth() gin.HandlerFunc {
 
 		claims, err := jwt.ParseToken(token)
 		if err != nil {
-			response.Error(c, errors.New(errors.ErrCodeUnauthorized, "无效的认证令牌", err))
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 1002, "message": "无效的认证令牌"})
 			c.Abort()
 			return
 		}
@@ -86,7 +87,7 @@ func AdminAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
-			response.Error(c, errors.New(errors.ErrCodeUnauthorized, "未提供认证令牌", nil))
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 1002, "message": "未提供认证令牌"})
 			c.Abort()
 			return
 		}
@@ -98,14 +99,14 @@ func AdminAuth() gin.HandlerFunc {
 
 		claims, err := jwt.ParseToken(token)
 		if err != nil {
-			response.Error(c, errors.New(errors.ErrCodeUnauthorized, "无效的认证令牌", err))
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 1002, "message": "无效的认证令牌"})
 			c.Abort()
 			return
 		}
 
 		// 验证是否为管理员
 		if !claims.IsAdmin {
-			response.Error(c, errors.New(errors.ErrCodeForbidden, "需要管理员权限", nil))
+			c.JSON(http.StatusUnauthorized, gin.H{"code": 1002, "message": "需要管理员权限"})
 			c.Abort()
 			return
 		}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/reusedev/uportal-api/pkg/constants"
 	"gorm.io/gorm"
 )
 
@@ -35,7 +36,7 @@ func (u User) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(struct {
 		Alias
-		Auths []string `json:"auths"`
+		Auths []string `json:"auth_providers"`
 	}{
 		Alias: Alias(u),
 		Auths: providers,
@@ -49,8 +50,27 @@ type AdminUser struct {
 	PasswordHash string     `gorm:"column:password_hash;type:varchar(255);not null" json:"-"`                                // 密码哈希
 	Role         string     `gorm:"column:role;type:varchar(20);not null;default:admin" json:"role"`                         // 角色
 	Status       int8       `gorm:"column:status;not null;default:1" json:"status"`                                          // 账号状态：1=正常，0=停用
-	CreatedAt    time.Time  `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                             // 创建时间
-	LastLoginAt  *time.Time `gorm:"column:last_login_at" json:"last_login_at"`                                               // 最后登录时间
+	CreatedAt    time.Time  `gorm:"column:created_at;not null;autoCreateTime" json:"-"`                                      // 创建时间
+	LastLoginAt  *time.Time `gorm:"column:last_login_at" json:"-"`                                                           // 最后登录时间
+}
+
+// MarshalJSON 自定义 JSON 序列化方法
+func (u AdminUser) MarshalJSON() ([]byte, error) {
+	type Alias AdminUser
+	var lastLoginAt string
+	if u.LastLoginAt != nil {
+		lastLoginAt = u.LastLoginAt.Format(constants.TimeFormatDateTime)
+	}
+	// 创建别名以避免递归调用
+	return json.Marshal(struct {
+		Alias
+		CreatedAt   string `json:"created_at"`
+		LastLoginAt string `json:"last_login_at"`
+	}{
+		Alias:       Alias(u),
+		CreatedAt:   u.CreatedAt.Format(constants.TimeFormatDateTime),
+		LastLoginAt: lastLoginAt,
+	})
 }
 
 // UserAuth 用户第三方认证表结构体

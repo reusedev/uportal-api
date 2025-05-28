@@ -21,9 +21,11 @@ type AdminHandler struct {
 }
 
 // NewAdminHandler 创建管理员处理器
-func NewAdminHandler(adminService *service.AdminService) *AdminHandler {
+func NewAdminHandler(adminService *service.AdminService, loginService *service.UserLoginLogService, tokenService *service.TokenRecordService) *AdminHandler {
 	return &AdminHandler{
-		adminService: adminService,
+		adminService:       adminService,
+		loginLogService:    loginService,
+		tokenRecordService: tokenService,
 	}
 }
 
@@ -37,8 +39,8 @@ type ListUsersRequest struct {
 }
 
 type OperateUsersRequest struct {
-	UserId int  `json:"user_id" binding:"required"`
-	Status *int `json:"status" binding:"required"`
+	UserId string `json:"user_id" binding:"required"`
+	Status *int   `json:"status" binding:"required"`
 }
 
 type TokenUsersRequest struct {
@@ -50,7 +52,7 @@ type TokenUsersRequest struct {
 // ListUsers 获取用户列表
 func (h *AdminHandler) ListUsers(c *gin.Context) {
 	var req ListUsersRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "Invalid request parameters", err))
 		return
 	}
@@ -150,7 +152,7 @@ func (h *AdminHandler) ListUserLoginLogs(c *gin.Context) {
 // TokenAdjustUser 调整用户代币
 func (h *AdminHandler) TokenAdjustUser(c *gin.Context) {
 	var req TokenUsersRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "Invalid request parameters", err))
 		return
 	}
@@ -173,7 +175,7 @@ func (h *AdminHandler) TokenAdjustUser(c *gin.Context) {
 // UpdateUser 更新用户信息
 func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	var req OperateUsersRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "Invalid request parameters", err))
 		return
 	}
@@ -182,8 +184,9 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	if req.Status != nil {
 		updates["status"] = *req.Status
 	}
+	id, _ := strconv.Atoi(req.UserId)
 	updates["updated_at"] = time.Now()
-	if err := h.adminService.UpdateUser(c.Request.Context(), int64(req.UserId), updates); err != nil {
+	if err := h.adminService.UpdateUser(c.Request.Context(), int64(id), updates); err != nil {
 		response.Error(c, err)
 		return
 	}
@@ -209,7 +212,7 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 
 // ResetPasswordRequest 重置密码请求
 type ResetPasswordRequest struct {
-	Password    string `json:"password" binding:"required,min=6,max=32"`
+	Password    string `json:"new_password" binding:"required,min=6,max=32"`
 	OldPassword string `json:"old_password" binding:"required,min=6,max=32"`
 }
 
@@ -237,17 +240,17 @@ func (h *AdminHandler) ResetPassword(c *gin.Context) {
 
 // ListAdminUsersRequest 获取管理员列表请求
 type ListAdminUsersRequest struct {
-	Page     int    `form:"page" binding:"required,min=1"`
-	Limit    int    `form:"limit" binding:"required,min=1,max=100"`
-	Username string `form:"username"`
-	Role     string `form:"role"`
-	Status   *int   `form:"status"`
+	Page     int    `json:"page" binding:"required,min=1"`
+	Limit    int    `json:"limit" binding:"required,min=1,max=100"`
+	Username string `json:"username" binding:"required"`
+	Role     string `json:"role" binding:"required"`
+	Status   *int   `json:"status" binding:"required"`
 }
 
 // ListAdminUsers 获取管理员列表
 func (h *AdminHandler) ListAdminUsers(c *gin.Context) {
 	var req ListAdminUsersRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "Invalid request parameters", err))
 		return
 	}
@@ -310,16 +313,13 @@ func (h *AdminHandler) Login(c *gin.Context) {
 		UserAgent: c.GetHeader("User-Agent"),
 	}
 
-	admin, token, err := h.adminService.Login(c.Request.Context(), loginReq)
+	_, token, err := h.adminService.Login(c.Request.Context(), loginReq)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
-
-	response.Success(c, gin.H{
-		"admin": admin,
-		"token": token,
-	})
+	c.Header(consts.SetToken, token)
+	response.Success(c, nil)
 }
 
 // CreateAdmin 创建管理员
@@ -441,21 +441,20 @@ func (h *AdminHandler) ListTokenRecords(c *gin.Context) {
 // RegisterAdminRoutes 注册认证相关路由
 func RegisterAdminRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	// 公开路由
-	r.POST("/login", h.Login)
-	r.POST("/register", h.CreateAdmin)
+	r.POST("/auth/login", h.Login)
+	r.POST("/managers/create", h.CreateAdmin)
 
 }
 
 // RegisterUserManagerRoutes 注册用户列表路由（普通用户可访问）
 func RegisterUserManagerRoutes(r *gin.RouterGroup, h *AdminHandler) {
-	users := r.Group("/users")
 	{
-		users.POST("/list", h.ListUsers)                 // 获取用户列表
-		users.GET("/:id", h.GetUser)                     // 获取用户详情
-		users.POST("/operate", h.UpdateUser)             // 更新用户状态
-		users.POST("/tokens/adjust", h.TokenAdjustUser)  // 调整用户代币
-		users.POST("/login-logs", h.ListUserLoginLogs)   // 获取用户登录日志
-		users.POST("/token-records", h.ListTokenRecords) // 获取用户代币记录
+		r.POST("/list", h.ListUsers)                 // 获取用户列表
+		r.GET("/:id", h.GetUser)                     // 获取用户详情
+		r.POST("/operate", h.UpdateUser)             // 更新用户状态
+		r.POST("/tokens/adjust", h.TokenAdjustUser)  // 调整用户代币
+		r.POST("/login-logs", h.ListUserLoginLogs)   // 获取用户登录日志
+		r.POST("/token-records", h.ListTokenRecords) // 获取用户代币记录
 	}
 }
 
@@ -464,6 +463,6 @@ func RegisterAdminManagementRoutes(r *gin.RouterGroup, h *AdminHandler) {
 	// 管理员管理路由
 	r.POST("/auth/change-password", h.ResetPassword) // 获取管理员列表
 	r.POST("/managers/list", h.ListAdminUsers)       // 获取管理员列表
-	r.DELETE("/managers/edit", h.UpdateAdmin)        // 更新管理员信息
-	r.DELETE("/managers/delete", h.DeleteAdmin)      // 删除管理员
+	r.POST("/managers/edit", h.UpdateAdmin)          // 更新管理员信息
+	r.POST("/managers/delete", h.DeleteAdmin)        // 删除管理员
 }

@@ -29,13 +29,13 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	task, err := h.taskService.CreateTask(c.Request.Context(), &req)
+	_, err := h.taskService.CreateTask(c.Request.Context(), &req)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Success(c, task)
+	response.Success(c, nil)
 }
 
 // UpdateTask 更新任务
@@ -46,13 +46,13 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 		return
 	}
 
-	task, err := h.taskService.UpdateTask(c.Request.Context(), &req)
+	_, err := h.taskService.UpdateTask(c.Request.Context(), &req)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Success(c, task)
+	response.Success(c, nil)
 }
 
 // DeleteTask 删除任务
@@ -223,7 +223,7 @@ func (h *TaskHandler) CreateConsumptionRule(c *gin.Context) {
 		return
 	}
 
-	rule, err := h.taskService.CreateConsumptionRule(c.Request.Context(), &service.CreateConsumptionRuleRequest{
+	_, err := h.taskService.CreateConsumptionRule(c.Request.Context(), &service.CreateConsumptionRuleRequest{
 		FeatureName: req.FeatureName,
 		FeatureDesc: req.FeatureDesc,
 		TokenCost:   req.TokenCost,
@@ -235,7 +235,7 @@ func (h *TaskHandler) CreateConsumptionRule(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, rule)
+	response.Success(c, nil)
 }
 
 // UpdateConsumptionRuleRequest 更新代币消耗规则请求
@@ -268,15 +268,23 @@ func (h *TaskHandler) UpdateConsumptionRule(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"message": "代币消耗规则更新成功"})
+	response.Success(c, nil)
 }
 
 // RegisterRewardTaskRoutes 注册代币任务配置路由
 func RegisterRewardTaskRoutes(r *gin.RouterGroup, h *TaskHandler) {
 	r.POST("/list", h.ListTasks)
 	r.POST("/create", h.CreateTask)
-	r.PUT("/edit", h.UpdateTask)
+	r.POST("/edit", h.UpdateTask)
+
 	r.POST("/consumption-rules/list", h.ListConsumptionRules)    // 获取代币消耗规则列表
 	r.POST("/consumption-rules/create", h.CreateConsumptionRule) // 创建代币消耗规则
 	r.POST("/consumption-rules/update", h.UpdateConsumptionRule) // 更新代币消耗规则
+}
+
+// RegisterTokenConsumeRulesRoutes 代币消耗规则
+func RegisterTokenConsumeRulesRoutes(r *gin.RouterGroup, h *TaskHandler) {
+	r.POST("/list", h.ListConsumptionRules)    // 获取代币消耗规则列表
+	r.POST("/create", h.CreateConsumptionRule) // 创建代币消耗规则
+	r.POST("/update", h.UpdateConsumptionRule) // 更新代币消耗规则
 }
