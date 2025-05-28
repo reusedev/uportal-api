@@ -16,12 +16,16 @@ import (
 
 // AuthService 认证服务
 type AuthService struct {
-	db *gorm.DB
+	db        *gorm.DB
+	wechatSvc *WechatService
 }
 
 // NewAuthService 创建认证服务实例
-func NewAuthService(db *gorm.DB) *AuthService {
-	return &AuthService{db: db}
+func NewAuthService(db *gorm.DB, wechatSvc *WechatService) *AuthService {
+	return &AuthService{
+		db:        db,
+		wechatSvc: wechatSvc,
+	}
 }
 
 // RegisterRequest 注册请求
@@ -44,18 +48,30 @@ type LoginRequest struct {
 
 // ThirdPartyLoginRequest 第三方登录请求
 type ThirdPartyLoginRequest struct {
-	Provider       string `json:"provider" binding:"required,oneof=wechat apple google twitter"`
-	ProviderUserID string `json:"provider_user_id" binding:"required"`
-	Nickname       string `json:"nickname" binding:"required,min=2,max=50"`
-	AvatarURL      string `json:"avatar_url" binding:"omitempty,url"`
-	Platform       string `json:"-"` // 登录平台，从请求头获取
-	IP             string `json:"-"` // 登录IP，从请求头获取
-	UserAgent      string `json:"-"` // 设备信息，从请求头获取
+	Provider       string  `json:"provider" binding:"required,oneof=wechat apple google twitter"`
+	ProviderUserID string  `json:"provider_user_id" binding:"required"`
+	Nickname       *string `json:"nickname" binding:"required,min=2,max=50"`
+	AvatarURL      *string `json:"avatar_url" binding:"omitempty,url"`
+	Platform       string  `json:"-"` // 登录平台，从请求头获取
+	IP             string  `json:"-"` // 登录IP，从请求头获取
+	UserAgent      string  `json:"-"` // 设备信息，从请求头获取
 }
 
 type UpdateProfileReq struct {
 	Nickname  *string `json:"nickname"`
 	AvatarURL *string `json:"avatar_url"`
+}
+
+// WxMiniProgramLoginRequest 微信小程序登录请求
+type WxMiniProgramLoginRequest struct {
+	Code          string  `json:"code" binding:"required"`
+	Nickname      *string `json:"nickname"`
+	AvatarURL     *string `json:"avatar_url"`
+	EncryptedData string  `json:"encrypted_data"`
+	IV            string  `json:"iv"`
+	Platform      string  `json:"-"`
+	IP            string  `json:"-"`
+	UserAgent     string  `json:"-"`
 }
 
 // Register 用户注册
@@ -193,9 +209,16 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 
 			// 更新用户信息
 			updates := map[string]interface{}{
-				"nickname":   req.Nickname,
-				"avatar_url": req.AvatarURL,
+				"last_login_at": time.Now(),
+				"updated_at":    time.Now(),
 			}
+			if req.Nickname != nil {
+				updates["nickname"] = *req.Nickname
+			}
+			if req.AvatarURL != nil {
+				updates["avatar_url"] = *req.AvatarURL
+			}
+
 			if err := model.UpdateUser(tx, existingUser.UserID, updates); err != nil {
 				return errors.New(errors.ErrCodeInternal, "更新用户信息失败", err)
 			}
@@ -210,9 +233,13 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 
 		// 不存在关联，创建新用户
 		user = &model.User{
-			Nickname:  &req.Nickname,
-			AvatarURL: &req.AvatarURL,
-			Status:    1,
+			Status: 1,
+		}
+		if req.Nickname != nil {
+			user.Nickname = req.Nickname
+		}
+		if req.AvatarURL != nil {
+			user.AvatarURL = req.AvatarURL
 		}
 
 		err = tx.Create(user).Error
@@ -344,4 +371,68 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassw
 	}
 
 	return nil
+}
+
+// WxMiniProgramLogin 微信小程序登录
+func (s *AuthService) WxMiniProgramLogin(ctx context.Context, req *WxMiniProgramLoginRequest) (*model.User, string, error) {
+	// 调用微信服务获取 openid 和 session_key
+	wxLoginReq := &WxLoginRequest{
+		Code:          req.Code,
+		Nickname:      req.Nickname,
+		AvatarURL:     req.AvatarURL,
+		EncryptedData: req.EncryptedData,
+		IV:            req.IV,
+	}
+
+	wxResult, err := s.wechatSvc.Login(ctx, wxLoginReq)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// 使用 openid 作为 provider_user_id 进行第三方登录
+	thirdPartyReq := &ThirdPartyLoginRequest{
+		Provider:       "wechat",
+		ProviderUserID: wxResult.OpenID,
+		Nickname:       req.Nickname,
+		AvatarURL:      req.AvatarURL,
+		Platform:       req.Platform,
+		IP:             req.IP,
+		UserAgent:      req.UserAgent,
+	}
+
+	// 调用第三方登录方法
+	user, token, err := s.ThirdPartyLogin(ctx, thirdPartyReq)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// 如果有加密数据，解密并更新用户信息
+	if req.EncryptedData != "" && req.IV != "" {
+		userInfo, err := s.wechatSvc.DecryptUserInfo(wxResult.SessionKey, req.EncryptedData, req.IV)
+		if err != nil {
+			logs.Business().Warn("解密用户信息失败",
+				zap.Int64("user_id", user.UserID),
+				zap.Error(err),
+			)
+		} else {
+			// 更新用户信息
+			updates := make(map[string]interface{})
+			if nickname, ok := userInfo["nickName"].(string); ok && nickname != "" {
+				updates["nickname"] = nickname
+			}
+			if avatarURL, ok := userInfo["avatarUrl"].(string); ok && avatarURL != "" {
+				updates["avatar_url"] = avatarURL
+			}
+			if len(updates) > 0 {
+				if err := model.UpdateUser(s.db, user.UserID, updates); err != nil {
+					logs.Business().Warn("更新用户信息失败",
+						zap.Int64("user_id", user.UserID),
+						zap.Error(err),
+					)
+				}
+			}
+		}
+	}
+
+	return user, token, nil
 }

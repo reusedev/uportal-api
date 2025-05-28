@@ -160,17 +160,44 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// WxMiniProgramLogin 微信小程序登录
+func (h *AuthHandler) WxMiniProgramLogin(c *gin.Context) {
+	var req service.WxMiniProgramLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	// 获取客户端信息
+	req.Platform = c.GetHeader("X-Platform")
+	req.IP = c.ClientIP()
+	req.UserAgent = c.GetHeader("User-Agent")
+
+	user, token, err := h.authService.WxMiniProgramLogin(c.Request.Context(), &req)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{
+		"user":  user,
+		"token": token,
+	})
+}
+
 // RegisterAuthRoutes 注册认证相关路由
-func RegisterAuthRoutes(r *gin.RouterGroup, h *AdminHandler) {
+func RegisterAuthRoutes(r *gin.RouterGroup, h *AuthHandler) {
 	// 公开路由
-	r.POST("/auth/login", h.Login)
-	r.POST("/managers/create", h.CreateAdmin)
+	r.POST("/login", h.Login)
+	r.POST("/register", h.Register)
+	r.POST("/third-party-login", h.ThirdPartyLogin)
 }
 
 // RegisterUser 注册普通用户
 func RegisterUser(r *gin.RouterGroup, h *AuthHandler) {
 	// 公开路由
-	r.POST("/login", h.Register)
+	//r.POST("/login", h.Register)
+	r.POST("/login", h.WxMiniProgramLogin) // 微信登陆
 }
 
 // RegisterUserRoutes 注册用户相关路由

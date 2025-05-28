@@ -115,7 +115,8 @@ func main() {
 // registerRoutes 注册路由
 func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// 初始化服务
-	authService := service.NewAuthService(db)
+	wechatSvc := service.NewWechatService(cfg)
+	authService := service.NewAuthService(db, wechatSvc)
 	tokenService := service.NewTokenService(db)
 	orderService := service.NewOrderService(db)
 	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
