@@ -171,10 +171,35 @@ func (h *TokenHandler) GetConsumptionAmount(c *gin.Context) {
 	response.Success(c, gin.H{"amount": amount})
 }
 
+func (h *TokenHandler) ReportPointsReward(c *gin.Context) {
+	// 从上下文获取当前用户ID
+	userID, exists := c.Get(consts.UserId)
+	if !exists {
+		response.Error(c, errors.New(errors.ErrCodeUnauthorized, "未登录", nil))
+		return
+	}
+
+	// 绑定请求参数
+	var req ReportPointsRewardRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	// 处理代币奖励
+	if err := h.tokenService.ProcessPointsReward(c.Request.Context(), userID.(int64), req.Type); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, nil)
+}
+
 // RegisterTokenRoutes 注册 Token 相关路由
 func RegisterTokenRoutes(r *gin.RouterGroup, h *TokenHandler) {
-	r.GET("/balance", h.GetUserTokenBalance) // 获取代币余额
-	r.GET("/records", h.GetUserTokenRecords) // 获取用户代币明细记录
+	r.GET("/balance", h.GetUserTokenBalance)  // 获取代币余额
+	r.POST("/records", h.GetUserTokenRecords) // 获取用户代币明细记录
+	r.POST("/reward", h.ReportPointsReward)   // 上报金币奖励
 	r.GET("/plans", h.ListRechargePlans)
 }
 

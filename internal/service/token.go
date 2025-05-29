@@ -5,6 +5,9 @@ import (
 	stderrors "errors"
 	"strconv"
 
+	"github.com/reusedev/uportal-api/pkg/logs"
+	"go.uber.org/zap"
+
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"gorm.io/gorm"
@@ -234,4 +237,90 @@ func (s *TokenService) GetConsumptionAmount(ctx context.Context, serviceType str
 		return 0, err
 	}
 	return int64(rule.TokenCost), nil
+}
+
+// ProcessPointsReward 处理代币奖励
+func (s *TokenService) ProcessPointsReward(ctx context.Context, userID int64, rewardType string) error {
+	// 验证奖励类型
+	amount, exists := rewardAmounts[rewardType]
+	if !exists {
+		return errors.New(errors.ErrCodeInvalidParams, "无效的奖励类型", nil)
+	}
+
+	// 开启事务
+	tx := s.db.Begin()
+	if tx.Error != nil {
+		return errors.New(errors.ErrCodeInternal, "开启事务失败", tx.Error)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 检查用户是否存在
+	var user model.User
+	if err := tx.First(&user, userID).Error; err != nil {
+		tx.Rollback()
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New(errors.ErrCodeUserNotFound, "用户不存在", nil)
+		}
+		return errors.New(errors.ErrCodeInternal, "获取用户信息失败", err)
+	}
+
+	// 检查用户状态
+	if user.Status != 1 {
+		tx.Rollback()
+		return errors.New(errors.ErrCodeUserDisabled, "用户账号已被禁用", nil)
+	}
+
+	// 更新用户代币余额
+	if err := tx.Model(&user).Update("token_balance", gorm.Expr("token_balance + ?", amount)).Error; err != nil {
+		tx.Rollback()
+		return errors.New(errors.ErrCodeInternal, "更新代币余额失败", err)
+	}
+
+	// 创建代币变动记录
+	tokenRecord := &model.TokenRecord{
+		UserID:       userID,
+		ChangeAmount: amount,
+		ChangeType:   rewardType,
+		BalanceAfter: user.TokenBalance + amount,
+		Remark:       model.StringPtr(getRewardRemark(rewardType)),
+	}
+
+	if err := tx.Create(tokenRecord).Error; err != nil {
+		tx.Rollback()
+		return errors.New(errors.ErrCodeInternal, "创建代币记录失败", err)
+	}
+
+	// 记录日志
+	logs.Business().Info("代币奖励发放成功",
+		zap.Int64("user_id", userID),
+		zap.String("reward_type", rewardType),
+		zap.Int("amount", amount),
+	)
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		return errors.New(errors.ErrCodeInternal, "提交事务失败", err)
+	}
+
+	return nil
+}
+
+// getRewardRemark 获取奖励类型的备注说明
+func getRewardRemark(rewardType string) string {
+	switch rewardType {
+	case RewardTypeDailyLogin:
+		return "每日登录奖励"
+	case RewardTypeProfile:
+		return "完善资料奖励"
+	case RewardTypeShare:
+		return "分享奖励"
+	case RewardTypeFeedback:
+		return "反馈奖励"
+	default:
+		return "其他奖励"
+	}
 }

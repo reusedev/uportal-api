@@ -1,6 +1,8 @@
 package handler
 
 import (
+	basicErr "errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/internal/service"
@@ -24,6 +26,11 @@ func NewInviteHandler(inviteSvc *service.InviteService) *InviteHandler {
 // ReportInviteRequest 邀请上报请求
 type ReportInviteRequest struct {
 	InviteBy int64 `json:"invite_by" binding:"required"` // 邀请人ID
+}
+
+// ReportPointsRewardRequest 代币奖励上报请求
+type ReportPointsRewardRequest struct {
+	Type string `json:"type" binding:"required"` // 奖励类型
 }
 
 func (h *InviteHandler) ReportInvite(c *gin.Context) {
@@ -67,7 +74,7 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 	// 检查邀请人状态
 	var inviter model.User
 	if err := h.inviteSvc.GetDB().First(&inviter, req.InviteBy).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if basicErr.Is(err, gorm.ErrRecordNotFound) {
 			response.Error(c, errors.New(errors.ErrCodeUserNotFound, "邀请人不存在", nil))
 			return
 		}

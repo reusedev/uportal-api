@@ -137,7 +137,6 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// 注册路由
 	api := engine.Group("/api")
 	{
-
 		// 登陆
 		handler.RegisterUser(api, authHandler)
 

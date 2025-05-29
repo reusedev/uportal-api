@@ -191,3 +191,21 @@ func (s *InviteService) ProcessInviteRewardWithTx(ctx context.Context, tx *gorm.
 
 	return nil
 }
+
+// 定义奖励类型常量
+const (
+	RewardTypeDailyLogin = "DAILY_LOGIN" // 每日登录奖励
+	RewardTypeProfile    = "PROFILE"     // 完善资料奖励
+	RewardTypeShare      = "SHARE"       // 分享奖励
+	RewardTypeFeedback   = "FEEDBACK"    // 反馈奖励
+	RewardAd             = "rewardad"    // 激励视频奖励
+)
+
+// 定义奖励类型对应的代币数
+var rewardAmounts = map[string]int{
+	RewardTypeDailyLogin: 10,  // 每日登录奖励10代币
+	RewardTypeProfile:    50,  // 完善资料奖励50代币
+	RewardTypeShare:      20,  // 分享奖励20代币
+	RewardTypeFeedback:   30,  // 反馈奖励30代币
+	RewardAd:             100, // 激励视频奖励100代币
+}
