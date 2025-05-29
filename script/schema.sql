@@ -9,13 +9,16 @@ CREATE TABLE `users` (
                          `language` VARCHAR(10)  NOT NULL DEFAULT 'zh-CN' COMMENT '界面语言偏好，如 zh-CN、en-US 等',
                          `status`  TINYINT       NOT NULL DEFAULT 1      COMMENT '账号状态：1=正常，0=禁用',
                          `token_balance` INT     NOT NULL DEFAULT 0      COMMENT '代币余额',
+                         `inviter_id` BIGINT    DEFAULT NULL            COMMENT '邀请人ID',
                          `created_at` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
                          `updated_at` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
                          `last_login_at` DATETIME DEFAULT NULL           COMMENT '最后登录时间',
                          PRIMARY KEY (`user_id`),
                          UNIQUE KEY `uk_users_phone` (`phone`),
                          UNIQUE KEY `uk_users_email` (`email`),
-                         KEY `idx_users_status` (`status`)
+                         KEY `idx_users_status` (`status`),
+                         KEY `idx_users_inviter` (`inviter_id`),
+                         CONSTRAINT `fk_users_inviter` FOREIGN KEY (`inviter_id`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='用户表，存储基础用户信息';
 
@@ -228,3 +231,20 @@ CREATE TABLE IF NOT EXISTS notifications (
     INDEX idx_user_status (user_id, status),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
+
+-- 邀请记录表
+CREATE TABLE `invite_records` (
+    `record_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID，主键，自增',
+    `inviter_id` BIGINT NOT NULL COMMENT '邀请人ID',
+    `invitee_id` BIGINT NOT NULL COMMENT '被邀请人ID',
+    `token_reward` INT NOT NULL COMMENT '邀请奖励代币数',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0=待发放，1=已发放，2=发放失败',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`record_id`),
+    UNIQUE KEY `uk_invite_invitee` (`invitee_id`),
+    KEY `idx_invite_inviter` (`inviter_id`),
+    CONSTRAINT `fk_invite_inviter` FOREIGN KEY (`inviter_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_invite_invitee` FOREIGN KEY (`invitee_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  COMMENT='邀请记录表，记录用户邀请关系和奖励发放状态';

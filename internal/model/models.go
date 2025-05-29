@@ -19,11 +19,13 @@ type User struct {
 	Language     string         `gorm:"column:language;type:varchar(10);not null;default:zh-CN" json:"language"` // 界面语言偏好
 	Status       int8           `gorm:"column:status;not null;default:1;index:idx_users_status" json:"status"`   // 账号状态：1=正常，0=禁用
 	TokenBalance int            `gorm:"column:token_balance;not null;default:0" json:"token_balance"`            // 代币余额
+	InviterID    *int64         `gorm:"column:inviter_id;index:idx_users_inviter" json:"inviter_id"`             // 邀请人ID
 	CreatedAt    time.Time      `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`             // 注册时间
 	UpdatedAt    time.Time      `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`             // 记录更新时间
 	LastLoginAt  *time.Time     `gorm:"column:last_login_at" json:"last_login_at"`                               // 最后登录时间
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
-	UserAuths    []UserAuth     `gorm:"foreignKey:UserID" json:"-"` // 第三方认证信息（不直接序列化）
+	UserAuths    []UserAuth     `gorm:"foreignKey:UserID" json:"-"`                                      // 第三方认证信息（不直接序列化）
+	Inviter      *User          `gorm:"foreignKey:InviterID;references:UserID" json:"inviter,omitempty"` // 邀请人信息
 }
 
 // MarshalJSON 自定义 JSON 序列化方法
@@ -231,6 +233,19 @@ type Notification struct {
 	UpdatedAt time.Time `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
+// InviteRecord 邀请记录表结构体
+type InviteRecord struct {
+	RecordID    int64     `gorm:"column:record_id;primaryKey;autoIncrement" json:"record_id"`                 // 记录ID，主键，自增
+	InviterID   int64     `gorm:"column:inviter_id;not null;index:idx_invite_inviter" json:"inviter_id"`      // 邀请人ID
+	InviteeID   int64     `gorm:"column:invitee_id;not null;uniqueIndex:uk_invite_invitee" json:"invitee_id"` // 被邀请人ID
+	TokenReward int       `gorm:"column:token_reward;not null" json:"token_reward"`                           // 邀请奖励代币数
+	Status      int8      `gorm:"column:status;not null;default:0" json:"status"`                             // 状态：0=待发放，1=已发放，2=发放失败
+	CreatedAt   time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                // 创建时间
+	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`                // 更新时间
+	Inviter     User      `gorm:"foreignKey:InviterID;references:UserID" json:"inviter,omitempty"`            // 邀请人信息
+	Invitee     User      `gorm:"foreignKey:InviteeID;references:UserID" json:"invitee,omitempty"`            // 被邀请人信息
+}
+
 // TableName 指定表名
 func (User) TableName() string {
 	return "users"
@@ -286,4 +301,13 @@ func (TaskCompletionRecord) TableName() string {
 
 func (Notification) TableName() string {
 	return "notifications"
+}
+
+func (InviteRecord) TableName() string {
+	return "invite_records"
+}
+
+// StringPtr 创建字符串指针
+func StringPtr(s string) *string {
+	return &s
 }

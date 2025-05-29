@@ -119,6 +119,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	authService := service.NewAuthService(db, wechatSvc)
 	tokenService := service.NewTokenService(db)
 	orderService := service.NewOrderService(db)
+	inviteService := service.NewInviteService(db)
 	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
 	paymentService, err := service.NewPaymentService(db, model.RedisClient, orderService, cfg)
 	if err != nil {
@@ -127,6 +128,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
+	inviteHandler := handler.NewInviteHandler(inviteService)
 	tokenHandler := handler.NewTokenHandler(tokenService)
 	orderHandler := handler.NewOrderHandler(orderService)
 	paymentHandler := handler.NewPaymentHandler(paymentService)
@@ -142,6 +144,9 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 更新身份认证信息
 		user := api.Group("profile", middleware.Auth())
 		handler.RegisterUserRoutes(user, authHandler)
+		// 邀请
+		invite := api.Group("invite", middleware.Auth())
+		handler.RegisterInviteRoutes(invite, inviteHandler)
 
 		// 代币相关路由
 		token := api.Group("/points", middleware.Auth())
