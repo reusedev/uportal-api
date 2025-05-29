@@ -9,9 +9,8 @@ import (
 
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
-	"github.com/reusedev/uportal-api/pkg/logs"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // InviteService 邀请服务
@@ -147,47 +146,48 @@ func (s *InviteService) CreateInviteRecordWithTx(ctx context.Context, tx *gorm.D
 	return nil
 }
 
-// ProcessInviteRewardWithTx 在事务中处理邀请奖励
+// ProcessInviteRewardWithTx - 在事务中处理邀请奖励
 func (s *InviteService) ProcessInviteRewardWithTx(ctx context.Context, tx *gorm.DB, inviteeID int64) error {
 	// 查找待处理的邀请记录
 	var record model.InviteRecord
 	if err := tx.Where("invitee_id = ? AND status = 0", inviteeID).First(&record).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil // 没有待处理的邀请记录
+			return nil
 		}
 		return errors.New(errors.ErrCodeInternal, "查询邀请记录失败", err)
 	}
 
-	// 更新邀请人代币余额
-	if err := tx.Model(&model.User{}).
-		Where("user_id = ?", record.InviterID).
-		Update("token_balance", gorm.Expr("token_balance + ?", record.TokenReward)).Error; err != nil {
+	// 获取邀请人信息并加行锁
+	var inviter model.User
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		First(&inviter, record.InviterID).Error; err != nil {
+		return errors.New(errors.ErrCodeInternal, "获取邀请人信息失败", err)
+	}
+
+	// 使用 UpdateUserTokenBalance 更新邀请人代币余额
+	if err := model.UpdateUserTokenBalance(tx, record.InviterID, record.TokenReward); err != nil {
 		return errors.New(errors.ErrCodeInternal, "更新邀请人代币余额失败", err)
 	}
 
-	// 创建代币变动记录
+	// 创建代币记录
+	remark := "邀请奖励"
 	tokenRecord := &model.TokenRecord{
 		UserID:       record.InviterID,
 		ChangeAmount: record.TokenReward,
+		BalanceAfter: inviter.TokenBalance + record.TokenReward,
 		ChangeType:   "INVITE_REWARD",
-		Remark:       model.StringPtr("邀请奖励"),
+		Remark:       &remark,
+		ChangeTime:   time.Now(),
 	}
-
-	if err := tx.Create(tokenRecord).Error; err != nil {
+	if err := model.CreateTokenRecord(tx, tokenRecord); err != nil {
 		return errors.New(errors.ErrCodeInternal, "创建代币记录失败", err)
 	}
 
 	// 更新邀请记录状态
+	record.Status = 1
 	if err := tx.Model(&record).Update("status", 1).Error; err != nil {
 		return errors.New(errors.ErrCodeInternal, "更新邀请记录状态失败", err)
 	}
-
-	// 记录日志
-	logs.Business().Info("邀请奖励发放成功",
-		zap.Int64("inviter_id", record.InviterID),
-		zap.Int64("invitee_id", record.InviteeID),
-		zap.Int("token_reward", record.TokenReward),
-	)
 
 	return nil
 }

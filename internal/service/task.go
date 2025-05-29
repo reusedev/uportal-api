@@ -9,6 +9,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/config"
@@ -460,32 +461,29 @@ func (s *TaskService) verifyTaskCompletion(ctx context.Context, tx *gorm.DB, use
 
 // grantTaskReward 发放任务奖励
 func (s *TaskService) grantTaskReward(ctx context.Context, tx *gorm.DB, userID int64, task *model.RewardTask) error {
-	// 创建代币记录
-	record := &model.TokenRecord{
-		UserID:       userID,
-		ChangeAmount: task.TokenReward,
-		ChangeType:   "TASK_REWARD",
-		TaskID:       &task.TaskID,
-		Remark:       &task.TaskName,
+	// 获取用户信息并加行锁
+	var user model.User
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		First(&user, userID).Error; err != nil {
+		return errors.New(errors.ErrCodeInternal, "获取用户信息失败", err)
 	}
 
-	// 更新用户代币余额
-	if err := tx.Model(&model.User{}).
-		Where("user_id = ?", userID).
-		Update("token_balance", gorm.Expr("token_balance + ?", task.TokenReward)).
-		Error; err != nil {
+	// 使用 UpdateUserTokenBalance 更新用户代币余额
+	if err := model.UpdateUserTokenBalance(tx, userID, task.TokenReward); err != nil {
 		return errors.New(errors.ErrCodeInternal, "更新用户代币余额失败", err)
 	}
 
-	// 获取更新后的余额
-	var user model.User
-	if err := tx.First(&user, userID).Error; err != nil {
-		return errors.New(errors.ErrCodeInternal, "获取用户信息失败", err)
-	}
-	record.BalanceAfter = user.TokenBalance
-
 	// 创建代币记录
-	if err := tx.Create(record).Error; err != nil {
+	tokenRecord := &model.TokenRecord{
+		UserID:       userID,
+		ChangeAmount: task.TokenReward,
+		BalanceAfter: user.TokenBalance + task.TokenReward,
+		ChangeType:   "TASK_REWARD",
+		TaskID:       &task.TaskID,
+		Remark:       &task.TaskName,
+		ChangeTime:   time.Now(),
+	}
+	if err := model.CreateTokenRecord(tx, tokenRecord); err != nil {
 		return errors.New(errors.ErrCodeInternal, "创建代币记录失败", err)
 	}
 
