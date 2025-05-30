@@ -31,11 +31,12 @@ func NewAdminHandler(adminService *service.AdminService, loginService *service.U
 
 // ListUsersRequest 获取用户列表请求
 type ListUsersRequest struct {
-	Page     int    `json:"page" binding:"required,min=1"`
-	Limit    int    `json:"limit" binding:"required,min=1,max=100"`
-	NickName string `json:"nickname"`
-	Phone    string `json:"phone"`
-	Status   *int   `json:"status"`
+	Page     int      `json:"page" binding:"required,min=1"`
+	Limit    int      `json:"limit" binding:"required,min=1,max=100"`
+	NickName string   `json:"nickname"`
+	Phone    string   `json:"phone"`
+	Status   *int     `json:"status"`
+	Sort     []string `json:"sort" binding:"omitempty,dive,oneof=token_balance created_at updated_at last_login_at"` // 排序字段
 }
 
 type OperateUsersRequest struct {
@@ -57,12 +58,24 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		return
 	}
 
+	// 构建排序参数
+	sortParams := make([]service.SortParam, 0, len(req.Sort)/2)
+	for i := 0; i < len(req.Sort); i += 2 {
+		if i+1 < len(req.Sort) {
+			sortParams = append(sortParams, service.SortParam{
+				Field: req.Sort[i],
+				Order: req.Sort[i+1],
+			})
+		}
+	}
+
 	users, total, err := h.adminService.ListUsers(c.Request.Context(), &service.ListUsersParams{
 		Page:     req.Page,
 		Limit:    req.Limit,
 		NickName: req.NickName,
 		Phone:    req.Phone,
 		Status:   req.Status,
+		Sort:     sortParams,
 	})
 	if err != nil {
 		response.Error(c, err)

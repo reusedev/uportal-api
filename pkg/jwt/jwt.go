@@ -14,16 +14,22 @@ var (
 
 // Claims 自定义的 JWT 声明
 type Claims struct {
-	UserID  int64 `json:"user_id"`
-	IsAdmin bool  `json:"is_admin"`
+	UserID   int64  `json:"user_id"`
+	IsAdmin  bool   `json:"is_admin"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken 生成 JWT token
-func GenerateToken(userID int64, isAdmin bool) (string, error) {
+func GenerateToken(userID int64, isAdmin bool, userName, password, role string) (string, error) {
 	claims := Claims{
-		UserID:  userID,
-		IsAdmin: isAdmin,
+		UserID:   userID,
+		IsAdmin:  isAdmin,
+		Username: userName,
+		Password: password,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // token 有效期 24 小时
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

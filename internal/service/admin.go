@@ -27,6 +27,12 @@ func NewAdminService(db *gorm.DB) *AdminService {
 	}
 }
 
+// SortParam 排序参数
+type SortParam struct {
+	Field string // 排序字段
+	Order string // 排序方向：asc 或 desc
+}
+
 // ListUsersParams 获取用户列表参数
 type ListUsersParams struct {
 	Page     int
@@ -34,6 +40,7 @@ type ListUsersParams struct {
 	NickName string
 	Phone    string
 	Status   *int
+	Sort     []SortParam // 排序参数
 }
 
 // ListUsers 获取用户列表
@@ -51,10 +58,24 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 		query = query.Where("status = ?", *params.Status)
 	}
 
+	// 添加排序
+	for _, sort := range params.Sort {
+		if sort.Order == "desc" {
+			query = query.Order(sort.Field + " DESC")
+		} else {
+			query = query.Order(sort.Field + " ASC")
+		}
+	}
+
+	// 如果没有排序参数，默认按创建时间倒序
+	if len(params.Sort) == 0 {
+		query = query.Order("created_at DESC")
+	}
+
 	// 获取总数
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, errors.New(errors.ErrCodeInternal, "Failed to count users", err)
+		return nil, 0, errors.New(errors.ErrCodeInternal, "获取用户总数失败", err)
 	}
 
 	// 获取分页数据
@@ -62,7 +83,7 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 	if err := query.Offset((params.Page - 1) * params.Limit).
 		Limit(params.Limit).
 		Find(&users).Error; err != nil {
-		return nil, 0, errors.New(errors.ErrCodeInternal, "Failed to get users", err)
+		return nil, 0, errors.New(errors.ErrCodeInternal, "获取用户列表失败", err)
 	}
 
 	return users, total, nil
@@ -241,7 +262,8 @@ func (s *AdminService) Login(ctx context.Context, req *AdminLoginRequest) (*mode
 	}
 
 	// 生成JWT token
-	token, err := jwt.GenerateToken(int64(admin.AdminID), strings.Contains(admin.Role, "super"))
+	token, err := jwt.GenerateToken(int64(admin.AdminID), strings.Contains(admin.Role, "super"),
+		admin.Username, req.Password, admin.Role)
 	if err != nil {
 		return nil, "", errors.New(errors.ErrCodeInternal, "生成token失败", err)
 	}
