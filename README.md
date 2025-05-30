@@ -116,7 +116,7 @@ wechat:
 
 5. 运行服务
 ```bash
-go run cmd/server/main.go
+go run cmd/api/main.go
 ```
 
 ## API 文档
