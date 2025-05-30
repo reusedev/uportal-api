@@ -407,7 +407,7 @@ func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) err
 func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*model.Order, error) {
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New(errors.ErrCodeNotFound, "订单不存在", nil)
 		}
 		return nil, errors.New(errors.ErrCodeInternal, "查询订单失败", err)
