@@ -1,5 +1,11 @@
+-- 创建数据库（如果不存在）
+CREATE DATABASE IF NOT EXISTS `uportal` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 使用数据库
+USE `uportal`;
+
 -- 1. 用户表，存储基础用户信息
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
                          `user_id` BIGINT       NOT NULL AUTO_INCREMENT COMMENT '用户ID，主键，自增',
                          `phone`   VARCHAR(20)  DEFAULT NULL             COMMENT '手机号，用户使用手机号注册/登录时的号码，唯一',
                          `email`   VARCHAR(100) DEFAULT NULL             COMMENT '邮箱，用户邮箱地址，唯一',
@@ -23,7 +29,7 @@ CREATE TABLE `users` (
   COMMENT='用户表，存储基础用户信息';
 
 -- 2. 管理员用户表，存储后台管理员账号
-CREATE TABLE `admin_users` (
+CREATE TABLE IF NOT EXISTS `admin_users` (
                                `admin_id`     INT          NOT NULL AUTO_INCREMENT COMMENT '管理员ID，主键，自增',
                                `username`     VARCHAR(50)  NOT NULL               COMMENT '登录用户名，唯一',
                                `password_hash` VARCHAR(255) NOT NULL              COMMENT '密码哈希',
@@ -37,7 +43,7 @@ CREATE TABLE `admin_users` (
   COMMENT='管理员用户表，存储后台管理员账号信息';
 
 -- 3. 系统配置表，存储全局系统参数
-CREATE TABLE `system_config` (
+CREATE TABLE IF NOT EXISTS `system_config` (
                                  `config_key`   VARCHAR(50)  NOT NULL                COMMENT '配置键，主键，如 TOKEN_EXCHANGE_RATE',
                                  `config_value` VARCHAR(100) NOT NULL                COMMENT '配置值，以文本形式存储',
                                  `description`  VARCHAR(100) DEFAULT NULL            COMMENT '配置描述',
@@ -46,7 +52,7 @@ CREATE TABLE `system_config` (
   COMMENT='系统配置表，存储全局配置项';
 
 -- 4. 代币任务配置表，配置可奖励任务
-CREATE TABLE `reward_tasks` (
+CREATE TABLE IF NOT EXISTS `reward_tasks` (
                                 `task_id`       INT          NOT NULL AUTO_INCREMENT COMMENT '任务ID，主键，自增',
                                 `task_name`     VARCHAR(100) NOT NULL               COMMENT '任务名称，如 注册奖励、邀请好友、观看广告 等',
                                 `task_desc`     VARCHAR(255) DEFAULT NULL           COMMENT '任务描述，详细说明',
@@ -62,7 +68,7 @@ CREATE TABLE `reward_tasks` (
   COMMENT='代币任务配置表';
 
 -- 5. 代币消耗功能表，配置功能消耗规则
-CREATE TABLE `token_consume_rules` (
+CREATE TABLE IF NOT EXISTS `token_consume_rules` (
                                        `feature_id`   INT          NOT NULL AUTO_INCREMENT COMMENT '功能ID，主键，自增',
                                        `feature_name` VARCHAR(100) NOT NULL               COMMENT '功能名称，如 高级过滤器解锁 等',
                                        `feature_desc` VARCHAR(255) DEFAULT NULL           COMMENT '功能描述',
@@ -74,7 +80,7 @@ CREATE TABLE `token_consume_rules` (
   COMMENT='代币消耗功能配置表';
 
 -- 6. 充值方案表，预设代币充值套餐
-CREATE TABLE `recharge_plans` (
+CREATE TABLE IF NOT EXISTS `recharge_plans` (
                                   `plan_id`     INT           NOT NULL AUTO_INCREMENT COMMENT '方案ID，主键，自增',
                                   `token_amount` INT          NOT NULL               COMMENT '方案提供的代币数量',
                                   `price`       DECIMAL(10,2) NOT NULL               COMMENT '售价(元)',
@@ -88,7 +94,7 @@ CREATE TABLE `recharge_plans` (
   COMMENT='充值方案表';
 
 -- 7. 用户第三方认证表，关联用户与第三方平台
-CREATE TABLE `user_auth` (
+CREATE TABLE IF NOT EXISTS `user_auth` (
                              `auth_id`          BIGINT     NOT NULL AUTO_INCREMENT COMMENT '认证记录ID，主键，自增',
                              `user_id`          BIGINT     NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
                              `provider`         VARCHAR(20) NOT NULL              COMMENT '登录平台类型，如 wechat、apple、google、twitter',
@@ -101,7 +107,7 @@ CREATE TABLE `user_auth` (
   COMMENT='用户第三方认证关联表';
 
 -- 8. 用户登录日志表，记录登录行为
-CREATE TABLE `user_login_log` (
+CREATE TABLE IF NOT EXISTS `user_login_log` (
                                   `log_id`       BIGINT     NOT NULL AUTO_INCREMENT COMMENT '日志ID，主键，自增',
                                   `user_id`      BIGINT     NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
                                   `login_time`   DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
@@ -116,7 +122,7 @@ CREATE TABLE `user_login_log` (
   COMMENT='用户登录日志表';
 
 -- 9. 充值订单表，记录每笔充值交易
-CREATE TABLE `recharge_orders` (
+CREATE TABLE IF NOT EXISTS `recharge_orders` (
                                    `order_id`      BIGINT        NOT NULL AUTO_INCREMENT COMMENT '订单ID，主键，自增',
                                    `user_id`       BIGINT        NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
                                    `plan_id`       INT           DEFAULT NULL           COMMENT '方案ID，外键关联 recharge_plans.plan_id',
@@ -137,7 +143,7 @@ CREATE TABLE `recharge_orders` (
   COMMENT='充值订单表';
 
 -- 10. 退款记录表，记录充值退款详情
-CREATE TABLE `refunds` (
+CREATE TABLE IF NOT EXISTS `refunds` (
                            `refund_id`    BIGINT        NOT NULL AUTO_INCREMENT COMMENT '退款ID，主键，自增',
                            `order_id`     BIGINT        NOT NULL               COMMENT '原订单ID，外键关联 recharge_orders.order_id',
                            `user_id`      BIGINT        NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
@@ -159,7 +165,7 @@ CREATE TABLE `refunds` (
   COMMENT='退款记录表';
 
 -- 11. 用户代币记录表，记录所有代币变动流水
-CREATE TABLE `token_records` (
+CREATE TABLE IF NOT EXISTS `token_records` (
                                  `record_id`    BIGINT     NOT NULL AUTO_INCREMENT COMMENT '记录ID，主键，自增',
                                  `user_id`      BIGINT     NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
                                  `change_amount` INT       NOT NULL               COMMENT '代币变动数，正为增加，负为扣除',
@@ -168,7 +174,7 @@ CREATE TABLE `token_records` (
                                  `task_id`      INT        DEFAULT NULL           COMMENT '任务ID来源，外键关联 reward_tasks.task_id',
                                  `feature_id`   INT        DEFAULT NULL           COMMENT '功能ID来源，外键关联 token_consume_rules.feature_id',
                                  `order_id`     BIGINT     DEFAULT NULL           COMMENT '订单ID来源，外键关联 recharge_orders.order_id',
-                                 `admin_id`     BIGINT     DEFAULT NULL           COMMENT '管理员ID来源，外键关联 admin_users.admin_id',
+                                 `admin_id`     INT        DEFAULT NULL           COMMENT '管理员ID来源，外键关联 admin_users.admin_id',
                                  `remark`       VARCHAR(255) DEFAULT NULL         COMMENT '备注说明，如 新用户注册奖励、功能消费等',
                                  `change_time`  DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '变动时间',
                                  PRIMARY KEY (`record_id`),
@@ -186,7 +192,7 @@ CREATE TABLE `token_records` (
   COMMENT='用户代币记录表，记录每笔代币增减流水';
 
 -- 12. 支付回调通知记录表
-CREATE TABLE `payment_notify_records` (
+CREATE TABLE IF NOT EXISTS `payment_notify_records` (
     `record_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID',
     `order_id` BIGINT NOT NULL COMMENT '订单ID',
     `transaction_id` VARCHAR(64) NOT NULL COMMENT '微信支付交易号',
@@ -233,7 +239,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
 
 -- 邀请记录表
-CREATE TABLE `invite_records` (
+CREATE TABLE IF NOT EXISTS `invite_records` (
     `record_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID，主键，自增',
     `inviter_id` BIGINT NOT NULL COMMENT '邀请人ID',
     `invitee_id` BIGINT NOT NULL COMMENT '被邀请人ID',
