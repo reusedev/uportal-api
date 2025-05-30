@@ -2,6 +2,8 @@ package handler
 
 import (
 	basicErr "errors"
+	"github.com/reusedev/uportal-api/pkg/consts"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/internal/model"
@@ -25,7 +27,7 @@ func NewInviteHandler(inviteSvc *service.InviteService) *InviteHandler {
 
 // ReportInviteRequest 邀请上报请求
 type ReportInviteRequest struct {
-	InviteBy int64 `json:"invite_by" binding:"required"` // 邀请人ID
+	InviteBy string `json:"invite_by" binding:"required"` // 邀请人ID
 }
 
 // ReportPointsRewardRequest 代币奖励上报请求
@@ -35,8 +37,8 @@ type ReportPointsRewardRequest struct {
 
 func (h *InviteHandler) ReportInvite(c *gin.Context) {
 	// 从上下文获取当前用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
+	userID := c.GetInt64(consts.UserId)
+	if userID <= 0 {
 		response.Error(c, errors.New(errors.ErrCodeUnauthorized, "未登录", nil))
 		return
 	}
@@ -47,15 +49,16 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
+	inviteBy, _ := strconv.Atoi(req.InviteBy)
 
 	// 检查邀请人ID是否有效
-	if req.InviteBy <= 0 {
+	if inviteBy <= 0 {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的邀请人ID", nil))
 		return
 	}
 
 	// 不能邀请自己
-	if req.InviteBy == userID.(int64) {
+	if int64(inviteBy) == userID {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "不能邀请自己", nil))
 		return
 	}
@@ -108,16 +111,15 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInternal, "更新邀请关系失败", err))
 		return
 	}
-
 	// 创建邀请记录
-	if err := h.inviteSvc.CreateInviteRecordWithTx(c.Request.Context(), tx, req.InviteBy, userID.(int64), tokenReward); err != nil {
+	if err := h.inviteSvc.CreateInviteRecordWithTx(c.Request.Context(), tx, int64(inviteBy), int64(userID), tokenReward); err != nil {
 		tx.Rollback()
 		response.Error(c, err)
 		return
 	}
 
 	// 立即处理邀请奖励
-	if err := h.inviteSvc.ProcessInviteRewardWithTx(c.Request.Context(), tx, userID.(int64)); err != nil {
+	if err := h.inviteSvc.ProcessInviteRewardWithTx(c.Request.Context(), tx, int64(userID)); err != nil {
 		tx.Rollback()
 		response.Error(c, err)
 		return

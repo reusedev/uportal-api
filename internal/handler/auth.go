@@ -180,8 +180,9 @@ func (h *AuthHandler) WxMiniProgramLogin(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"user":  user,
-		"token": token,
+		"profile":      user,
+		"access_token": token,
+		"expire_in":    24 * 60 * 60 * 1000,
 	})
 }
 

@@ -406,6 +406,23 @@ func (s *AuthService) WxMiniProgramLogin(ctx context.Context, req *WxMiniProgram
 		return nil, "", err
 	}
 
+	// 记录登录日志
+	logEntry := &model.UserLoginLog{
+		UserID:        user.UserID,
+		LoginMethod:   "wechat_mini_program",
+		LoginPlatform: &req.Platform,
+		IPAddress:     &req.IP,
+		DeviceInfo:    &req.UserAgent,
+		LoginTime:     time.Now(),
+	}
+	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
+		// 仅记录错误，不影响登录流程
+		logs.Business().Warn("创建微信小程序登录日志失败",
+			zap.Int64("user_id", user.UserID),
+			zap.Error(err),
+		)
+	}
+
 	// 如果有加密数据，解密并更新用户信息
 	if req.EncryptedData != "" && req.IV != "" {
 		userInfo, err := s.wechatSvc.DecryptUserInfo(wxResult.SessionKey, req.EncryptedData, req.IV)

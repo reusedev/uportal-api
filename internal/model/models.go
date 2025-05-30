@@ -10,17 +10,17 @@ import (
 
 // User 用户表结构体
 type User struct {
-	UserID       int64          `gorm:"column:user_id;primaryKey;autoIncrement" json:"user_id"`                  // 用户ID，主键，自增
+	UserID       int64          `gorm:"column:user_id;primaryKey;autoIncrement" json:"id"`                       // 用户ID，主键，自增
 	Phone        *string        `gorm:"column:phone;type:varchar(20);uniqueIndex:uk_users_phone" json:"phone"`   // 手机号
 	Email        *string        `gorm:"column:email;type:varchar(100);uniqueIndex:uk_users_email" json:"email"`  // 邮箱
 	PasswordHash *string        `gorm:"column:password_hash;type:varchar(255)" json:"-"`                         // 密码哈希
 	Nickname     *string        `gorm:"column:nickname;type:varchar(50)" json:"nickname"`                        // 用户昵称
-	AvatarURL    *string        `gorm:"column:avatar_url;type:varchar(255)" json:"avatar_url"`                   // 头像URL
+	AvatarURL    *string        `gorm:"column:avatar_url;type:varchar(255)" json:"avatar"`                       // 头像URL
 	Language     string         `gorm:"column:language;type:varchar(10);not null;default:zh-CN" json:"language"` // 界面语言偏好
 	Status       int8           `gorm:"column:status;not null;default:1;index:idx_users_status" json:"status"`   // 账号状态：1=正常，0=禁用
 	TokenBalance int            `gorm:"column:token_balance;not null;default:0" json:"token_balance"`            // 代币余额
 	InviterID    *int64         `gorm:"column:inviter_id;index:idx_users_inviter" json:"inviter_id"`             // 邀请人ID
-	CreatedAt    time.Time      `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`             // 注册时间
+	CreatedAt    time.Time      `gorm:"column:created_at;not null;autoCreateTime" json:"-"`                      // 注册时间
 	UpdatedAt    time.Time      `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`             // 记录更新时间
 	LastLoginAt  *time.Time     `gorm:"column:last_login_at" json:"last_login_at"`                               // 最后登录时间
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
@@ -38,10 +38,12 @@ func (u User) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(struct {
 		Alias
-		Auths []string `json:"auth_providers"`
+		Auths     []string `json:"auth_providers"`
+		CreatedAt string   `json:"created_at"`
 	}{
-		Alias: Alias(u),
-		Auths: providers,
+		Alias:     Alias(u),
+		Auths:     providers,
+		CreatedAt: u.CreatedAt.Format(constants.TimeFormatDateTime),
 	})
 }
 
