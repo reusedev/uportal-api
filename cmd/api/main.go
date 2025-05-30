@@ -125,13 +125,17 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	if err != nil {
 		logs.Business().Error("Init payment service error", zap.Error(err))
 	}
+	alipayService, err := service.NewAlipayService(db, orderService, cfg)
+	if err != nil {
+		logs.Business().Error("Init alipay service error", zap.Error(err))
+	}
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
 	inviteHandler := handler.NewInviteHandler(inviteService)
 	tokenHandler := handler.NewTokenHandler(tokenService)
 	orderHandler := handler.NewOrderHandler(orderService)
-	paymentHandler := handler.NewPaymentHandler(paymentService)
+	paymentHandler := handler.NewPaymentHandler(paymentService, alipayService)
 	taskHandler := handler.NewTaskHandler(taskService)
 
 	// 注册路由

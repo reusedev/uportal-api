@@ -75,6 +75,15 @@ type Config struct {
 			RootCaFile string `yaml:"rootCaFile"` // 根证书文件路径
 		} `yaml:"pay"`
 	} `yaml:"wechat"`
+
+	Alipay struct {
+		AppID      string `yaml:"appId"`      // 支付宝应用ID
+		PrivateKey string `yaml:"privateKey"` // 应用私钥
+		PublicKey  string `yaml:"publicKey"`  // 支付宝公钥
+		NotifyUrl  string `yaml:"notifyUrl"`  // 支付回调通知地址
+		ReturnUrl  string `yaml:"returnUrl"`  // 支付完成返回地址
+		IsProd     bool   `yaml:"isProd"`     // 是否生产环境
+	} `yaml:"alipay"`
 }
 
 // LoadConfig 加载配置文件
