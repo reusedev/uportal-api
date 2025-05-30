@@ -59,7 +59,7 @@ type ThirdPartyLoginRequest struct {
 
 type UpdateProfileReq struct {
 	Nickname  *string `json:"nickname"`
-	AvatarURL *string `json:"avatar_url"`
+	AvatarURL *string `json:"avatar"`
 }
 
 // WxMiniProgramLoginRequest 微信小程序登录请求

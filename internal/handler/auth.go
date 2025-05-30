@@ -197,6 +197,6 @@ func RegisterUser(r *gin.RouterGroup, h *AuthHandler) {
 // RegisterUserRoutes 注册用户相关路由
 func RegisterUserRoutes(r *gin.RouterGroup, h *AuthHandler) {
 	//r.GET("/profile", h.GetProfile)
-	r.PUT("/update", h.UpdateProfile)
+	r.POST("/update", h.UpdateProfile)
 	//r.PUT("/password", h.ChangePassword)
 }

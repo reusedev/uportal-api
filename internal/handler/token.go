@@ -134,7 +134,7 @@ func (h *TokenHandler) GetUserTokenRecords(c *gin.Context) {
 		return
 	}
 
-	response.ListResponse(c, records, 0)
+	response.Success(c, records)
 }
 
 // GetRechargeAmount 计算充值金额
