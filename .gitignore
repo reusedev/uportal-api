@@ -34,3 +34,4 @@ go.sum
 
 # Lock files
 *.lock
+config/config.yaml
