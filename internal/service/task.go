@@ -79,7 +79,7 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 
 // UpdateTaskRequest 更新任务请求
 type UpdateTaskRequest struct {
-	TaskId      int    `json:"id" binding:"required"`
+	TaskId      int    `json:"task_id" binding:"required"`
 	TaskName    string `json:"task_name" binding:"required"`
 	TokenReward int    `json:"token_reward" binding:"required"`
 	Status      *int8  `json:"status" binding:"required"`
