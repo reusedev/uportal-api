@@ -65,8 +65,8 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		Repeatable:      *req.Repeatable,
 		Status:          *req.Status, // 默认启用
 	}
-	from, _ := time.Parse(time.DateTime, req.ValidFrom)
-	to, _ := time.Parse(time.DateTime, req.ValidTo)
+	from, _ := time.Parse(time.DateOnly, req.ValidFrom)
+	to, _ := time.Parse(time.DateOnly, req.ValidTo)
 
 	task.ValidFrom = &from
 	task.ValidTo = &to
@@ -98,8 +98,8 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		return nil, err
 	}
 
-	from, _ := time.Parse(time.DateTime, req.ValidFrom)
-	to, _ := time.Parse(time.DateTime, req.ValidTo)
+	from, _ := time.Parse(time.DateOnly, req.ValidFrom)
+	to, _ := time.Parse(time.DateOnly, req.ValidTo)
 
 	updates := map[string]interface{}{
 		"task_name":        req.TaskName,
@@ -108,8 +108,8 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		"task_desc":        req.Description,
 		"daily_limit":      req.DailyLimit,
 		"interval_seconds": req.IntervalSeconds,
-		"valid_from":       from,
-		"valid_to":         to,
+		"valid_from":       &from,
+		"valid_to":         &to,
 		"repeatable":       req.Repeatable,
 	}
 

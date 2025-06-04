@@ -183,8 +183,8 @@ type RewardTask struct {
 	TokenReward     int        `gorm:"column:token_reward;not null" json:"token_reward"`                   // 完成一次任务获得的代币数
 	DailyLimit      int        `gorm:"column:daily_limit;not null;default:0" json:"daily_limit"`           // 每日奖励上限
 	IntervalSeconds int        `gorm:"column:interval_seconds;not null;default:0" json:"interval_seconds"` // 两次完成任务的最小间隔秒数
-	ValidFrom       *time.Time `gorm:"column:valid_from" json:"-"`                                         // 任务生效时间
-	ValidTo         *time.Time `gorm:"column:valid_to" json:"-"`                                           // 任务截止时间
+	ValidFrom       *time.Time `gorm:"column:valid_from;type:date" json:"-"`                               // 任务生效时间
+	ValidTo         *time.Time `gorm:"column:valid_to;type:date" json:"-"`                                 // 任务截止时间
 	Repeatable      int8       `gorm:"column:repeatable;not null;default:1" json:"repeatable"`             // 是否可重复完成：1=是，0=否
 	Status          int8       `gorm:"column:status;not null;default:1" json:"status"`                     // 任务状态：1=启用，0=停用
 }

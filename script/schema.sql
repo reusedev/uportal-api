@@ -59,8 +59,8 @@ CREATE TABLE IF NOT EXISTS `reward_tasks` (
                                 `token_reward`  INT          NOT NULL               COMMENT '完成一次任务获得的代币数',
                                 `daily_limit`   INT          NOT NULL DEFAULT 0     COMMENT '每日奖励上限，0表示不限制',
                                 `interval_seconds` INT       NOT NULL DEFAULT 0     COMMENT '两次完成任务的最小间隔秒数，0表示不限制',
-                                `valid_from`    DATETIME     DEFAULT NULL           COMMENT '任务生效时间，NULL表示即时生效',
-                                `valid_to`      DATETIME     DEFAULT NULL           COMMENT '任务截止时间，NULL表示永久有效',
+                                `valid_from`    DATE     DEFAULT NULL           COMMENT '任务生效时间，NULL表示即时生效',
+                                `valid_to`      DATE     DEFAULT NULL           COMMENT '任务截止时间，NULL表示永久有效',
                                 `repeatable`    TINYINT      NOT NULL DEFAULT 1     COMMENT '是否可重复完成：1=是，0=否',
                                 `status`        TINYINT      NOT NULL DEFAULT 1     COMMENT '任务状态：1=启用，0=停用',
                                 PRIMARY KEY (`task_id`)
