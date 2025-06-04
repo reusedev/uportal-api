@@ -255,9 +255,9 @@ func (h *AdminHandler) ResetPassword(c *gin.Context) {
 type ListAdminUsersRequest struct {
 	Page     int    `json:"page" binding:"required,min=1"`
 	Limit    int    `json:"limit" binding:"required,min=1,max=100"`
-	Username string `json:"username" binding:"required"`
-	Role     string `json:"role" binding:"required"`
-	Status   *int   `json:"status" binding:"required"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	Status   *int   `json:"status"`
 }
 
 // ListAdminUsers 获取管理员列表
