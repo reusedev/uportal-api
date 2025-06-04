@@ -85,7 +85,9 @@ func main() {
 	engine.Use(middleware.Recovery(logs.Business())) // 恢复中间件应该最先注册
 	engine.Use(middleware.Logger(logs.Business()))   // 日志中间件
 	engine.Use(middleware.CORS())                    // CORS中间件
-
+	engine.Any("/", func(c *gin.Context) {
+		c.AbortWithStatus(http.StatusOK)
+	})
 	// 8. 注册路由
 	registerRoutes(engine, model.DB, cfg)
 
