@@ -35,3 +35,7 @@ go.sum
 # Lock files
 *.lock
 config/config.yaml
+deploy.sh
+config/config.prod.yaml
+/uportal-api-*
+start.sh
