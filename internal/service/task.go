@@ -79,10 +79,16 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 
 // UpdateTaskRequest 更新任务请求
 type UpdateTaskRequest struct {
-	TaskId      int    `json:"task_id" binding:"required"`
-	TaskName    string `json:"task_name" binding:"required"`
-	TokenReward int    `json:"token_reward" binding:"required"`
-	Status      *int8  `json:"status" binding:"required"`
+	TaskId          int    `json:"id" binding:"required"`
+	Status          *int8  `json:"status" binding:"required"`
+	TaskName        string `json:"task_name" binding:"required"`
+	Description     string `json:"task_desc" binding:"required"`
+	TokenReward     int    `json:"token_reward" binding:"required"`
+	DailyLimit      int    `json:"daily_limit" binding:"required"`
+	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
+	ValidFrom       string `json:"valid_from" binding:"required"`
+	ValidTo         string `json:"valid_to" binding:"required"`
+	Repeatable      *int8  `json:"repeatable" binding:"required"`
 }
 
 // UpdateTask 更新任务
@@ -92,10 +98,19 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		return nil, err
 	}
 
+	from, _ := time.Parse(time.DateTime, req.ValidFrom)
+	to, _ := time.Parse(time.DateTime, req.ValidTo)
+
 	updates := map[string]interface{}{
-		"task_name":    req.TaskName,
-		"token_reward": req.TokenReward,
-		"status":       *req.Status,
+		"task_name":        req.TaskName,
+		"token_reward":     req.TokenReward,
+		"status":           *req.Status,
+		"task_desc":        req.Description,
+		"daily_limit":      req.DailyLimit,
+		"interval_seconds": req.IntervalSeconds,
+		"valid_from":       from,
+		"valid_to":         to,
+		"repeatable":       req.Repeatable,
 	}
 
 	if err := s.db.Model(task).Updates(updates).Error; err != nil {
@@ -117,7 +132,7 @@ func (s *TaskService) DeleteTask(ctx context.Context, taskID int) error {
 func (s *TaskService) GetTask(ctx context.Context, taskID int) (*model.RewardTask, error) {
 	var task model.RewardTask
 	if err := s.db.First(&task, taskID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New(errors.ErrCodeNotFound, "任务不存在", nil)
 		}
 		return nil, errors.New(errors.ErrCodeInternal, "获取任务失败", err)
