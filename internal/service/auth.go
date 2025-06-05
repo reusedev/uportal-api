@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	stderrors "errors"
+	"github.com/reusedev/uportal-api/internal/handler"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -234,6 +235,7 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 		// 不存在关联，创建新用户
 		user = &model.User{
 			Status: 1,
+			UserID: handler.GenerateUserID(),
 		}
 		if req.Nickname != nil {
 			user.Nickname = req.Nickname
