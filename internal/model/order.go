@@ -20,19 +20,19 @@ const (
 
 // Order 订单表结构体
 type Order struct {
-	OrderID     int64          `gorm:"column:order_id;primaryKey;autoIncrement" json:"order_id"`                                               // 订单ID，主键，自增
-	UserID      int64          `gorm:"column:user_id;index:idx_orders_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`       // 用户ID
-	OrderNo     string         `gorm:"column:order_no;type:varchar(64);uniqueIndex:uk_orders_no" json:"order_no"`                              // 订单号
-	Amount      float64        `gorm:"column:amount;type:decimal(10,2)" json:"amount"`                                                         // 订单金额
-	ProductID   string         `gorm:"column:product_id;type:varchar(64)" json:"product_id"`                                                   // 商品ID
-	ProductName string         `gorm:"column:product_name;type:varchar(64)" json:"product_name"`                                               // 商品名称
-	Status      OrderStatus    `gorm:"column:status;type:varchar(20);default:pending" json:"status"`                                           // 订单状态
-	PaymentInfo string         `gorm:"column:payment_info;type:json" json:"payment_info"`                                                      // 支付信息
-	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`                                                     // 创建时间
-	PaidAt      *time.Time     `gorm:"column:paid_at" json:"paid_at"`                                                                          // 支付时间
-	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`                                                     // 更新时间
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`                                                                                         // 删除时间
-	User        User           `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"` // 关联用户信息
+	OrderID     int64          `gorm:"column:order_id;primaryKey;autoIncrement" json:"order_id"`                                                          // 订单ID，主键，自增
+	UserID      string         `gorm:"column:user_id;type:varchar(13);index:idx_orders_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
+	OrderNo     string         `gorm:"column:order_no;type:varchar(64);uniqueIndex:uk_orders_no" json:"order_no"`                                         // 订单号
+	Amount      float64        `gorm:"column:amount;type:decimal(10,2)" json:"amount"`                                                                    // 订单金额
+	ProductID   string         `gorm:"column:product_id;type:varchar(64)" json:"product_id"`                                                              // 商品ID
+	ProductName string         `gorm:"column:product_name;type:varchar(64)" json:"product_name"`                                                          // 商品名称
+	Status      OrderStatus    `gorm:"column:status;type:varchar(20);default:pending" json:"status"`                                                      // 订单状态
+	PaymentInfo string         `gorm:"column:payment_info;type:json" json:"payment_info"`                                                                 // 支付信息
+	CreatedAt   time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`                                                                // 创建时间
+	PaidAt      *time.Time     `gorm:"column:paid_at" json:"paid_at"`                                                                                     // 支付时间
+	UpdatedAt   time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`                                                                // 更新时间
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`                                                                                                    // 删除时间
+	User        User           `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`            // 关联用户信息
 }
 
 // TableName 指定表名

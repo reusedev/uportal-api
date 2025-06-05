@@ -107,7 +107,7 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 
 // GetAvailableTasks 获取用户可用的任务列表
 func (h *TaskHandler) GetAvailableTasks(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+	userID := c.GetString("user_id")
 	tasks, err := h.taskService.GetAvailableTasks(c.Request.Context(), userID)
 	if err != nil {
 		response.Error(c, err)
@@ -119,7 +119,7 @@ func (h *TaskHandler) GetAvailableTasks(c *gin.Context) {
 
 // CompleteTask 完成任务
 func (h *TaskHandler) CompleteTask(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+	userID := c.GetString("user_id")
 	var req service.CompleteTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))

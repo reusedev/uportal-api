@@ -100,7 +100,7 @@ func initBaseData(db *gorm.DB) error {
 	if count == 0 {
 		admin := &AdminUser{
 			Username:     "admin",
-			PasswordHash: "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi", // admin123
+			PasswordHash: "$2a$10$uXh03r/wuLRWVvTQNzUthugLWcVDE5mburOLWvql0FK5lUKK2owqa", // admin123
 			Role:         "super_admin",
 			Status:       1,
 		}

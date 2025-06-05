@@ -22,7 +22,7 @@ func NewOrderService(db *gorm.DB) *OrderService {
 }
 
 // CreateOrder 创建订单
-func (s *OrderService) CreateOrder(ctx context.Context, userID int64, amount float64, productID string, productName string) (*model.Order, error) {
+func (s *OrderService) CreateOrder(ctx context.Context, userID string, amount float64, productID string, productName string) (*model.Order, error) {
 	// 创建订单
 	order := &model.Order{
 		UserID:      userID,

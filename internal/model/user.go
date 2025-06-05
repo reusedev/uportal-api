@@ -12,7 +12,7 @@ func CreateUser(db *gorm.DB, user *User) error {
 }
 
 // GetUserByID 根据ID获取用户
-func GetUserByID(db *gorm.DB, id int64) (*User, error) {
+func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	var user User
 	err := db.First(&user, id).Error
 	if err != nil {
@@ -53,12 +53,12 @@ func GetUserByProvider(db *gorm.DB, provider, providerUserID string) (*User, err
 }
 
 // UpdateUser 更新用户信息
-func UpdateUser(db *gorm.DB, id int64, updates map[string]interface{}) error {
+func UpdateUser(db *gorm.DB, id string, updates map[string]interface{}) error {
 	return db.Model(&User{}).Where("user_id = ?", id).Updates(updates).Error
 }
 
 // DeleteUser 删除用户
-func DeleteUser(db *gorm.DB, id int64) error {
+func DeleteUser(db *gorm.DB, id string) error {
 	return db.Delete(&User{}, id).Error
 }
 
@@ -73,7 +73,7 @@ func CreateLoginLog(db *gorm.DB, log *UserLoginLog) error {
 }
 
 // UpdateLastLoginTime 更新最后登录时间
-func UpdateLastLoginTime(db *gorm.DB, id int64) error {
+func UpdateLastLoginTime(db *gorm.DB, id string) error {
 	now := time.Now()
 	return db.Model(&User{}).Where("user_id = ?", id).
 		Update("last_login_at", now).Error

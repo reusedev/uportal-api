@@ -77,7 +77,7 @@ func Auth() gin.HandlerFunc {
 		}
 
 		// 将用户ID存入上下文
-		c.Set("user_id", claims.UserID)
+		c.Set(consts.UserId, claims.Sub)
 		c.Next()
 	}
 }

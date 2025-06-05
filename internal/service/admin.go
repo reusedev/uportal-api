@@ -103,7 +103,7 @@ func (s *AdminService) GetUser(ctx context.Context, id int64) (*model.User, erro
 }
 
 // UpdateUser 更新用户信息
-func (s *AdminService) UpdateUser(ctx context.Context, id int64, updates map[string]interface{}) error {
+func (s *AdminService) UpdateUser(ctx context.Context, id string, updates map[string]interface{}) error {
 	// 检查用户是否存在
 	if _, err := model.GetUserByID(s.db, id); err != nil {
 		return errors.New(errors.ErrCodeNotFound, "User not found", err)
@@ -130,7 +130,7 @@ func (s *AdminService) UpdateUser(ctx context.Context, id int64, updates map[str
 }
 
 // DeleteUser 删除用户
-func (s *AdminService) DeleteUser(ctx context.Context, id int64) error {
+func (s *AdminService) DeleteUser(ctx context.Context, id string) error {
 	// 检查用户是否存在
 	if _, err := model.GetUserByID(s.db, id); err != nil {
 		return errors.New(errors.ErrCodeNotFound, "User not found", err)

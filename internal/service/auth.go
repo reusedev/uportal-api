@@ -164,7 +164,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*model.User
 	if err != nil {
 		// 仅记录错误，不影响登录流程
 		logs.Business().Warn("更新最后登录时间失败",
-			zap.Int64("user_id", user.UserID),
+			zap.String("user_id", user.UserID),
 			zap.Error(err),
 		)
 	}
@@ -180,7 +180,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest) (*model.User
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
 		logs.Business().Warn("创建登录日志失败",
-			zap.Int64("user_id", user.UserID),
+			zap.String("user_id", user.UserID),
 			zap.Error(err),
 		)
 	}
@@ -234,7 +234,13 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 		// 不存在关联，创建新用户
 		user = &model.User{
 			Status: 1,
+			UserID: model.GenerateUserID(),
 		}
+		logs.Business().Warn("创建登录日志失败",
+			zap.String("user_id", user.UserID),
+			zap.Error(err),
+		)
+		logs.Business().Warn("生成用户ID", zap.String("user_id", user.UserID))
 		if req.Nickname != nil {
 			user.Nickname = req.Nickname
 		}
@@ -281,7 +287,7 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
 		logs.Business().Warn("创建登录日志失败",
-			zap.Int64("user_id", user.UserID),
+			zap.String("user_id", user.UserID),
 			zap.Error(err),
 		)
 	}
@@ -312,8 +318,8 @@ func (s *AuthService) checkEmailExists(ctx context.Context, email string) (bool,
 // 生成JWT token
 func (s *AuthService) generateToken(user *model.User) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": user.UserID,
-		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+		"sub": user.UserID,
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -321,7 +327,7 @@ func (s *AuthService) generateToken(user *model.User) (string, error) {
 }
 
 // GetUserByID 根据ID获取用户
-func (s *AuthService) GetUserByID(ctx context.Context, id int64) (*model.User, error) {
+func (s *AuthService) GetUserByID(ctx context.Context, id string) (*model.User, error) {
 	user, err := model.GetUserByID(s.db, id)
 	if err != nil {
 		return nil, errors.New(errors.ErrCodeNotFound, "User not found", err)
@@ -330,7 +336,7 @@ func (s *AuthService) GetUserByID(ctx context.Context, id int64) (*model.User, e
 }
 
 // UpdateUser 更新用户信息
-func (s *AuthService) UpdateUser(ctx context.Context, id int64, updates map[string]interface{}) error {
+func (s *AuthService) UpdateUser(ctx context.Context, id string, updates map[string]interface{}) error {
 	err := model.UpdateUser(s.db, id, updates)
 	if err != nil {
 		return errors.New(errors.ErrCodeInternal, "更新用户信息失败", err)
@@ -339,7 +345,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, id int64, updates map[stri
 }
 
 // ChangePassword 修改密码
-func (s *AuthService) ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error {
+func (s *AuthService) ChangePassword(ctx context.Context, userID string, oldPassword, newPassword string) error {
 	// 获取用户信息
 	user, err := model.GetUserByID(s.db, userID)
 	if err != nil {
@@ -418,7 +424,7 @@ func (s *AuthService) WxMiniProgramLogin(ctx context.Context, req *WxMiniProgram
 	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
 		// 仅记录错误，不影响登录流程
 		logs.Business().Warn("创建微信小程序登录日志失败",
-			zap.Int64("user_id", user.UserID),
+			zap.String("user_id", user.UserID),
 			zap.Error(err),
 		)
 	}
@@ -428,7 +434,7 @@ func (s *AuthService) WxMiniProgramLogin(ctx context.Context, req *WxMiniProgram
 		userInfo, err := s.wechatSvc.DecryptUserInfo(wxResult.SessionKey, req.EncryptedData, req.IV)
 		if err != nil {
 			logs.Business().Warn("解密用户信息失败",
-				zap.Int64("user_id", user.UserID),
+				zap.String("user_id", user.UserID),
 				zap.Error(err),
 			)
 		} else {
@@ -443,7 +449,7 @@ func (s *AuthService) WxMiniProgramLogin(ctx context.Context, req *WxMiniProgram
 			if len(updates) > 0 {
 				if err := model.UpdateUser(s.db, user.UserID, updates); err != nil {
 					logs.Business().Warn("更新用户信息失败",
-						zap.Int64("user_id", user.UserID),
+						zap.String("user_id", user.UserID),
 						zap.Error(err),
 					)
 				}

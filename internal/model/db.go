@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"gorm.io/gorm/schema"
 	"time"
 
 	"github.com/reusedev/uportal-api/pkg/config"
@@ -46,6 +47,9 @@ func InitDB() error {
 			return time.Now().Local()
 		},
 		DisableForeignKeyConstraintWhenMigrating: false, // 确保启用外键约束
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix: "",
+		},
 	}
 
 	// 连接数据库

@@ -123,7 +123,7 @@ func GetTokenRecords(db *gorm.DB, userID int64, start, limit int) ([]*TokenRecor
 }
 
 // GetUserTokenBalance 获取用户Token余额
-func GetUserTokenBalance(db *gorm.DB, userID int64) (int64, error) {
+func GetUserTokenBalance(db *gorm.DB, userID string) (int64, error) {
 	var user User
 	err := db.Select("token_balance").First(&user, userID).Error
 	if err != nil {
@@ -133,7 +133,7 @@ func GetUserTokenBalance(db *gorm.DB, userID int64) (int64, error) {
 }
 
 // UpdateUserTokenBalance 更新用户代币余额
-func UpdateUserTokenBalance(db *gorm.DB, userID int64, changeAmount int) error {
+func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error {
 	var user User
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
@@ -156,7 +156,7 @@ func UpdateUserTokenBalance(db *gorm.DB, userID int64, changeAmount int) error {
 }
 
 // ConsumeToken 消费Token
-func ConsumeToken(db *gorm.DB, userID int64, amount int64, serviceType string, description string) error {
+func ConsumeToken(db *gorm.DB, userID string, amount int64, serviceType string, description string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
 		balance, err := GetUserTokenBalance(tx, userID)
@@ -189,7 +189,7 @@ func ConsumeToken(db *gorm.DB, userID int64, amount int64, serviceType string, d
 }
 
 // AddToken 增加Token
-func AddToken(db *gorm.DB, userID int64, amount int64, recordType int, orderID string, description string) error {
+func AddToken(db *gorm.DB, userID string, amount int64, recordType int, orderID string, description string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
 		balance, err := GetUserTokenBalance(tx, userID)
@@ -237,7 +237,7 @@ func getChangeType(recordType int) string {
 }
 
 // CreateTokenConsumptionRecord 创建代币消费记录
-func CreateTokenConsumptionRecord(db *gorm.DB, userID int64, featureID int, amount int, remark string) error {
+func CreateTokenConsumptionRecord(db *gorm.DB, userID string, featureID int, amount int, remark string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
 		var user User
@@ -274,7 +274,7 @@ func CreateTokenConsumptionRecord(db *gorm.DB, userID int64, featureID int, amou
 }
 
 // CreateTokenRewardRecord 创建代币奖励记录
-func CreateTokenRewardRecord(db *gorm.DB, userID int64, taskID int, amount int, remark string) error {
+func CreateTokenRewardRecord(db *gorm.DB, userID string, taskID int, amount int, remark string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
 		var user User

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	stderrors "errors"
 	"fmt"
 	"time"
 
@@ -91,7 +92,7 @@ func (s *InviteService) GetDB() *gorm.DB {
 }
 
 // CreateInviteRecord 创建邀请记录
-func (s *InviteService) CreateInviteRecord(ctx context.Context, inviterID, inviteeID int64, tokenReward int) error {
+func (s *InviteService) CreateInviteRecord(ctx context.Context, inviterID, inviteeID string, tokenReward int) error {
 	// 检查是否已经存在邀请记录
 	var count int64
 	if err := s.db.Model(&model.InviteRecord{}).
@@ -119,7 +120,7 @@ func (s *InviteService) CreateInviteRecord(ctx context.Context, inviterID, invit
 }
 
 // CreateInviteRecordWithTx 在事务中创建邀请记录
-func (s *InviteService) CreateInviteRecordWithTx(ctx context.Context, tx *gorm.DB, inviterID, inviteeID int64, tokenReward int) error {
+func (s *InviteService) CreateInviteRecordWithTx(ctx context.Context, tx *gorm.DB, inviterID, inviteeID string, tokenReward int) error {
 	// 检查是否已经存在邀请记录
 	var count int64
 	if err := tx.Model(&model.InviteRecord{}).
@@ -147,11 +148,11 @@ func (s *InviteService) CreateInviteRecordWithTx(ctx context.Context, tx *gorm.D
 }
 
 // ProcessInviteRewardWithTx - 在事务中处理邀请奖励
-func (s *InviteService) ProcessInviteRewardWithTx(ctx context.Context, tx *gorm.DB, inviteeID int64) error {
+func (s *InviteService) ProcessInviteRewardWithTx(ctx context.Context, tx *gorm.DB, inviteeID string) error {
 	// 查找待处理的邀请记录
 	var record model.InviteRecord
 	if err := tx.Where("invitee_id = ? AND status = 0", inviteeID).First(&record).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return nil
 		}
 		return errors.New(errors.ErrCodeInternal, "查询邀请记录失败", err)

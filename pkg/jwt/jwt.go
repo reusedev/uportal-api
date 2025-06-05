@@ -15,6 +15,7 @@ var (
 // Claims 自定义的 JWT 声明
 type Claims struct {
 	UserID   int64  `json:"user_id"`
+	Sub      string `json:"sub"`
 	IsAdmin  bool   `json:"is_admin"`
 	Username string `json:"username"`
 	Password string `json:"password"`

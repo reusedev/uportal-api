@@ -416,7 +416,7 @@ func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*model.Or
 }
 
 // CreateOrder 创建订单
-func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, amount float64, productID string, productName string) (*model.Order, error) {
+func (s *PaymentService) CreateOrder(ctx context.Context, userID string, amount float64, productID string, productName string) (*model.Order, error) {
 	// 创建订单
 	order := &model.Order{
 		UserID:      userID,
@@ -434,7 +434,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, amount f
 
 	logs.Business().Info("订单创建成功",
 		zap.Int64("order_id", order.OrderID),
-		zap.Int64("user_id", userID),
+		zap.String("user_id", userID),
 		zap.String("order_no", order.OrderNo),
 		zap.Float64("amount", amount),
 	)
