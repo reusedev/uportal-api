@@ -236,6 +236,11 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 			Status: 1,
 			UserID: model.GenerateUserID(),
 		}
+		logs.Business().Warn("创建登录日志失败",
+			zap.String("user_id", user.UserID),
+			zap.Error(err),
+		)
+		logs.Business().Warn("生成用户ID", zap.String("user_id", user.UserID))
 		if req.Nickname != nil {
 			user.Nickname = req.Nickname
 		}
