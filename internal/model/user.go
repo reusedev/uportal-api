@@ -14,7 +14,7 @@ func CreateUser(db *gorm.DB, user *User) error {
 // GetUserByID 根据ID获取用户
 func GetUserByID(db *gorm.DB, id string) (*User, error) {
 	var user User
-	err := db.First(&user, id).Error
+	err := db.Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +54,12 @@ func GetUserByProvider(db *gorm.DB, provider, providerUserID string) (*User, err
 
 // UpdateUser 更新用户信息
 func UpdateUser(db *gorm.DB, id string, updates map[string]interface{}) error {
-	return db.Model(&User{}).Where("user_id = ?", id).Updates(updates).Error
+	return db.Model(&User{}).Where("id = ?", id).Updates(updates).Error
 }
 
 // DeleteUser 删除用户
 func DeleteUser(db *gorm.DB, id string) error {
-	return db.Delete(&User{}, id).Error
+	return db.Where("id = ?", id).Delete(&User{}).Error
 }
 
 // CreateUserAuth 创建第三方认证记录
@@ -75,12 +75,12 @@ func CreateLoginLog(db *gorm.DB, log *UserLoginLog) error {
 // UpdateLastLoginTime 更新最后登录时间
 func UpdateLastLoginTime(db *gorm.DB, id string) error {
 	now := time.Now()
-	return db.Model(&User{}).Where("user_id = ?", id).
+	return db.Model(&User{}).Where("id = ?", id).
 		Update("last_login_at", now).Error
 }
 
 // UpdateTokenBalance 更新用户代币余额
 func UpdateTokenBalance(db *gorm.DB, id int64, amount int) error {
-	return db.Model(&User{}).Where("user_id = ?", id).
+	return db.Model(&User{}).Where("id = ?", id).
 		Update("token_balance", gorm.Expr("token_balance + ?", amount)).Error
 }

@@ -148,7 +148,7 @@ func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error 
 			return errors.New(errors.ErrCodeInsufficientBalance, "代币余额不足", nil)
 		}
 
-		return tx.Model(&User{}).Where("user_id = ?", userID).
+		return tx.Model(&User{}).Where("id = ?", userID).
 			Update("token_balance", newBalance).Error
 	})
 
@@ -253,7 +253,7 @@ func CreateTokenConsumptionRecord(db *gorm.DB, userID string, featureID int, amo
 
 		// 更新用户余额
 		newBalance := user.TokenBalance - amount
-		err = tx.Model(&User{}).Where("user_id = ?", userID).
+		err = tx.Model(&User{}).Where("id = ?", userID).
 			Update("token_balance", newBalance).Error
 		if err != nil {
 			return err
@@ -285,7 +285,7 @@ func CreateTokenRewardRecord(db *gorm.DB, userID string, taskID int, amount int,
 
 		// 更新用户余额
 		newBalance := user.TokenBalance + amount
-		err = tx.Model(&User{}).Where("user_id = ?", userID).
+		err = tx.Model(&User{}).Where("id = ?", userID).
 			Update("token_balance", newBalance).Error
 		if err != nil {
 			return err
