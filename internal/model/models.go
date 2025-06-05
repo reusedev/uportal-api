@@ -10,7 +10,7 @@ import (
 
 // User 用户表结构体
 type User struct {
-	UserID       int64          `gorm:"column:user_id;primaryKey;autoIncrement" json:"id"`                       // 用户ID，主键，自增
+	UserID       string         `gorm:"column:user_id;type:varchar(13);primaryKey" json:"id"`                    // 用户ID，主键，自增
 	Phone        *string        `gorm:"column:phone;type:varchar(20);uniqueIndex:uk_users_phone" json:"phone"`   // 手机号
 	Email        *string        `gorm:"column:email;type:varchar(100);uniqueIndex:uk_users_email" json:"email"`  // 邮箱
 	PasswordHash *string        `gorm:"column:password_hash;type:varchar(255)" json:"-"`                         // 密码哈希
@@ -79,24 +79,24 @@ func (u AdminUser) MarshalJSON() ([]byte, error) {
 
 // UserAuth 用户第三方认证表结构体
 type UserAuth struct {
-	AuthID         int64     `gorm:"column:auth_id;primaryKey;autoIncrement" json:"auth_id"`                                                       // 认证记录ID，主键，自增
-	UserID         int64     `gorm:"column:user_id;not null;index:idx_user_auth_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
-	Provider       string    `gorm:"column:provider;type:varchar(20);not null" json:"provider"`                                                    // 登录平台类型
-	ProviderUserID string    `gorm:"column:provider_user_id;type:varchar(100);not null" json:"provider_user_id"`                                   // 第三方平台内用户唯一ID
-	CreatedAt      time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                                                  // 绑定时间
-	User           User      `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`       // 关联用户信息
+	AuthID         int64     `gorm:"column:auth_id;primaryKey;autoIncrement" json:"auth_id"`                                                                        // 认证记录ID，主键，自增
+	UserID         string    `gorm:"column:user_id;type:varchar(13);not null;index:idx_user_auth_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
+	Provider       string    `gorm:"column:provider;type:varchar(20);not null" json:"provider"`                                                                     // 登录平台类型
+	ProviderUserID string    `gorm:"column:provider_user_id;type:varchar(100);not null" json:"provider_user_id"`                                                    // 第三方平台内用户唯一ID
+	CreatedAt      time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                                                                   // 绑定时间
+	User           User      `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                        // 关联用户信息
 }
 
 // UserLoginLog 用户登录日志表结构体
 type UserLoginLog struct {
-	LogID         int64     `gorm:"column:log_id;primaryKey;autoIncrement" json:"log_id"`                                                         // 日志ID，主键，自增
-	UserID        int64     `gorm:"column:user_id;not null;index:idx_login_log_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
-	LoginTime     time.Time `gorm:"column:login_time;not null;autoCreateTime" json:"login_time"`                                                  // 登录时间
-	LoginMethod   string    `gorm:"column:login_method;type:varchar(20);not null" json:"login_method"`                                            // 登录方式
-	LoginPlatform *string   `gorm:"column:login_platform;type:varchar(20)" json:"login_platform"`                                                 // 登录平台
-	IPAddress     *string   `gorm:"column:ip_address;type:varchar(45)" json:"ip_address"`                                                         // 登录IP地址
-	DeviceInfo    *string   `gorm:"column:device_info;type:varchar(100)" json:"device_info"`                                                      // 设备信息
-	User          User      `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`       // 关联用户信息
+	LogID         int64     `gorm:"column:log_id;primaryKey;autoIncrement" json:"log_id"`                                                                          // 日志ID，主键，自增
+	UserID        string    `gorm:"column:user_id;type:varchar(13);not null;index:idx_login_log_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
+	LoginTime     time.Time `gorm:"column:login_time;not null;autoCreateTime" json:"login_time"`                                                                   // 登录时间
+	LoginMethod   string    `gorm:"column:login_method;type:varchar(20);not null" json:"login_method"`                                                             // 登录方式
+	LoginPlatform *string   `gorm:"column:login_platform;type:varchar(20)" json:"login_platform"`                                                                  // 登录平台
+	IPAddress     *string   `gorm:"column:ip_address;type:varchar(45)" json:"ip_address"`                                                                          // 登录IP地址
+	DeviceInfo    *string   `gorm:"column:device_info;type:varchar(100)" json:"device_info"`                                                                       // 设备信息
+	User          User      `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                        // 关联用户信息
 }
 
 // RechargePlan 充值方案表结构体
@@ -114,7 +114,7 @@ type RechargePlan struct {
 // RechargeOrder 充值订单表结构体
 type RechargeOrder struct {
 	OrderID       int64         `gorm:"column:order_id;primaryKey;autoIncrement" json:"order_id"`                                                           // 订单ID，主键，自增
-	UserID        int64         `gorm:"column:user_id;not null;index:idx_recharge_orders_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
+	UserID        string        `gorm:"column:user_id;not null;index:idx_recharge_orders_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
 	PlanID        *int          `gorm:"column:plan_id;index:idx_recharge_orders_plan;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"plan_id"`         // 方案ID
 	TokenAmount   int           `gorm:"column:token_amount;not null" json:"token_amount"`                                                                   // 本次订单获得的代币数量
 	AmountPaid    float64       `gorm:"column:amount_paid;type:decimal(10,2);not null" json:"amount_paid"`                                                  // 支付金额(元)
@@ -132,7 +132,7 @@ type RechargeOrder struct {
 type Refund struct {
 	RefundID     int64         `gorm:"column:refund_id;primaryKey;autoIncrement" json:"refund_id"`                                                    // 退款ID，主键，自增
 	OrderID      int64         `gorm:"column:order_id;not null;index:idx_refunds_order;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order_id"` // 原订单ID
-	UserID       int64         `gorm:"column:user_id;not null;index:idx_refunds_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`    // 用户ID
+	UserID       string        `gorm:"column:user_id;not null;index:idx_refunds_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`    // 用户ID
 	RefundAmount float64       `gorm:"column:refund_amount;type:decimal(10,2);not null" json:"refund_amount"`                                         // 退款金额(元)
 	RefundTokens int           `gorm:"column:refund_tokens;not null" json:"refund_tokens"`                                                            // 收回代币数
 	RefundMethod string        `gorm:"column:refund_method;type:varchar(20);not null" json:"refund_method"`                                           // 退款方式
@@ -158,7 +158,7 @@ type TokenConsumeRule struct {
 // TokenRecord 用户代币记录表结构体
 type TokenRecord struct {
 	RecordID     int64             `gorm:"column:record_id;primaryKey;autoIncrement" json:"id"`                                                               // 记录ID，主键，自增
-	UserID       int64             `gorm:"column:user_id;not null;index:idx_token_records_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`  // 用户ID
+	UserID       string            `gorm:"column:user_id;not null;index:idx_token_records_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`  // 用户ID
 	ChangeAmount int               `gorm:"column:change_amount;not null" json:"points"`                                                                       // 代币变动数
 	BalanceAfter int               `gorm:"column:balance_after;not null" json:"balance_after"`                                                                // 变动后余额
 	ChangeType   string            `gorm:"column:change_type;type:varchar(20);not null" json:"source"`                                                        // 变动类型
@@ -236,7 +236,7 @@ type PaymentNotifyRecord struct {
 // TaskCompletionRecord 任务完成记录
 type TaskCompletionRecord struct {
 	ID          int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	UserID      int64     `gorm:"column:user_id;not null" json:"user_id"`
+	UserID      string    `gorm:"column:user_id;not null" json:"user_id"`
 	TaskID      int       `gorm:"column:task_id;not null" json:"task_id"`
 	TokenReward int       `gorm:"column:token_reward;not null" json:"token_reward"`
 	CompletedAt time.Time `gorm:"column:completed_at;not null;default:CURRENT_TIMESTAMP" json:"completed_at"`
@@ -247,7 +247,7 @@ type TaskCompletionRecord struct {
 // Notification 通知
 type Notification struct {
 	ID        int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	UserID    int64     `gorm:"column:user_id;not null" json:"user_id"`
+	UserID    string    `gorm:"column:user_id;not null" json:"user_id"`
 	Type      string    `gorm:"column:type;not null;size:32" json:"type"`
 	Title     string    `gorm:"column:title;not null;size:128" json:"title"`
 	Content   string    `gorm:"column:content;not null;type:text" json:"content"`
@@ -258,15 +258,15 @@ type Notification struct {
 
 // InviteRecord 邀请记录表结构体
 type InviteRecord struct {
-	RecordID    int64     `gorm:"column:record_id;primaryKey;autoIncrement" json:"record_id"`                 // 记录ID，主键，自增
-	InviterID   int64     `gorm:"column:inviter_id;not null;index:idx_invite_inviter" json:"inviter_id"`      // 邀请人ID
-	InviteeID   int64     `gorm:"column:invitee_id;not null;uniqueIndex:uk_invite_invitee" json:"invitee_id"` // 被邀请人ID
-	TokenReward int       `gorm:"column:token_reward;not null" json:"token_reward"`                           // 邀请奖励代币数
-	Status      int8      `gorm:"column:status;not null;default:0" json:"status"`                             // 状态：0=待发放，1=已发放，2=发放失败
-	CreatedAt   time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                // 创建时间
-	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`                // 更新时间
-	Inviter     User      `gorm:"foreignKey:InviterID;references:UserID" json:"inviter,omitempty"`            // 邀请人信息
-	Invitee     User      `gorm:"foreignKey:InviteeID;references:UserID" json:"invitee,omitempty"`            // 被邀请人信息
+	RecordID    int64     `gorm:"column:record_id;primaryKey;autoIncrement" json:"record_id"`                             // 记录ID，主键，自增
+	InviterID   string    `gorm:"column:inviter_id;size:13;not null;index:idx_invite_inviter(13)" json:"inviter_id"`      // 邀请人ID
+	InviteeID   string    `gorm:"column:invitee_id;size:13;not null;uniqueIndex:uk_invite_invitee(13)" json:"invitee_id"` // 被邀请人ID
+	TokenReward int       `gorm:"column:token_reward;not null" json:"token_reward"`                                       // 邀请奖励代币数
+	Status      int8      `gorm:"column:status;not null;default:0" json:"status"`                                         // 状态：0=待发放，1=已发放，2=发放失败
+	CreatedAt   time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                            // 创建时间
+	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`                            // 更新时间
+	Inviter     User      `gorm:"foreignKey:InviterID;references:UserID" json:"inviter,omitempty"`                        // 邀请人信息
+	Invitee     User      `gorm:"foreignKey:InviteeID;references:UserID" json:"invitee,omitempty"`                        // 被邀请人信息
 }
 
 // TableName 指定表名

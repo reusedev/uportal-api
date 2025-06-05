@@ -6,7 +6,7 @@ USE `uportal`;
 
 -- 1. 用户表，存储基础用户信息
 CREATE TABLE IF NOT EXISTS `users` (
-                         `user_id` BIGINT       NOT NULL AUTO_INCREMENT COMMENT '用户ID，主键，自增',
+                         `user_id` VARCHAR(13) NOT NULL  COMMENT '用户ID，主键，自增',
                          `phone`   VARCHAR(20)  DEFAULT NULL             COMMENT '手机号，用户使用手机号注册/登录时的号码，唯一',
                          `email`   VARCHAR(100) DEFAULT NULL             COMMENT '邮箱，用户邮箱地址，唯一',
                          `password_hash` VARCHAR(255) DEFAULT NULL       COMMENT '密码哈希，用于手机号/邮箱注册的情况，第三方登录用户此字段为空',
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS `recharge_plans` (
 -- 7. 用户第三方认证表，关联用户与第三方平台
 CREATE TABLE IF NOT EXISTS `user_auth` (
                              `auth_id`          BIGINT     NOT NULL AUTO_INCREMENT COMMENT '认证记录ID，主键，自增',
-                             `user_id`          BIGINT     NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
+                             `user_id`          VARCHAR(13) NOT NULL              COMMENT '用户ID，外键关联 users.user_id',
                              `provider`         VARCHAR(20) NOT NULL              COMMENT '登录平台类型，如 wechat、apple、google、twitter',
                              `provider_user_id` VARCHAR(100) NOT NULL             COMMENT '第三方平台内用户唯一ID，如 openid、OAuth ID 等',
                              `created_at`       DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS `user_auth` (
 -- 8. 用户登录日志表，记录登录行为
 CREATE TABLE IF NOT EXISTS `user_login_log` (
                                   `log_id`       BIGINT     NOT NULL AUTO_INCREMENT COMMENT '日志ID，主键，自增',
-                                  `user_id`      BIGINT     NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
+                                  `user_id`     VARCHAR(13) NOT NULL            COMMENT '用户ID，外键关联 users.user_id',
                                   `login_time`   DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
                                   `login_method` VARCHAR(20) NOT NULL              COMMENT '登录方式，如 password、wechat、phone',
                                   `login_platform` VARCHAR(20) DEFAULT NULL         COMMENT '登录平台，如 iOSApp、Web、WeChatMiniProg',
@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS `user_login_log` (
 -- 9. 充值订单表，记录每笔充值交易
 CREATE TABLE IF NOT EXISTS `recharge_orders` (
                                    `order_id`      BIGINT        NOT NULL AUTO_INCREMENT COMMENT '订单ID，主键，自增',
-                                   `user_id`       BIGINT        NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
+                                   `user_id`      VARCHAR(13) NOT NULL           COMMENT '用户ID，外键关联 users.user_id',
                                    `plan_id`       INT           DEFAULT NULL           COMMENT '方案ID，外键关联 recharge_plans.plan_id',
                                    `token_amount`  INT           NOT NULL               COMMENT '本次订单获得的代币数量',
                                    `amount_paid`   DECIMAL(10,2) NOT NULL               COMMENT '支付金额(元)',
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS `recharge_orders` (
 CREATE TABLE IF NOT EXISTS `refunds` (
                            `refund_id`    BIGINT        NOT NULL AUTO_INCREMENT COMMENT '退款ID，主键，自增',
                            `order_id`     BIGINT        NOT NULL               COMMENT '原订单ID，外键关联 recharge_orders.order_id',
-                           `user_id`      BIGINT        NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
+                           `user_id`     VARCHAR(13) NOT NULL             COMMENT '用户ID，外键关联 users.user_id',
                            `refund_amount` DECIMAL(10,2) NOT NULL               COMMENT '退款金额(元)',
                            `refund_tokens` INT           NOT NULL               COMMENT '收回代币数',
                            `refund_method` VARCHAR(20)   NOT NULL               COMMENT '退款方式，如 Alipay、WeChat',
@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS `refunds` (
 -- 11. 用户代币记录表，记录所有代币变动流水
 CREATE TABLE IF NOT EXISTS `token_records` (
                                  `record_id`    BIGINT     NOT NULL AUTO_INCREMENT COMMENT '记录ID，主键，自增',
-                                 `user_id`      BIGINT     NOT NULL               COMMENT '用户ID，外键关联 users.user_id',
+                                 `user_id`      VARCHAR(13) NOT NULL          COMMENT '用户ID，外键关联 users.user_id',
                                  `change_amount` INT       NOT NULL               COMMENT '代币变动数，正为增加，负为扣除',
                                  `balance_after` INT       NOT NULL               COMMENT '变动后余额',
                                  `change_type`  VARCHAR(20) NOT NULL              COMMENT '变动类型，如 TASK_REWARD、FEATURE_COST、PURCHASE、REFUND、ADMIN_ADJUST',
@@ -214,7 +214,7 @@ CREATE TABLE IF NOT EXISTS `payment_notify_records` (
 -- 任务完成记录表
 CREATE TABLE IF NOT EXISTS task_completion_records (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL COMMENT '用户ID',
+    user_id VARCHAR(13) NOT NULL COMMENT '用户ID',
     task_id INT NOT NULL COMMENT '任务ID',
     token_reward INT NOT NULL COMMENT '获得的代币奖励',
     completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '完成时间',
@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS task_completion_records (
 -- 通知表
 CREATE TABLE IF NOT EXISTS notifications (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    user_id BIGINT NOT NULL COMMENT '用户ID',
+    user_id VARCHAR(13) NOT NULL COMMENT '用户ID',
     type VARCHAR(32) NOT NULL COMMENT '通知类型',
     title VARCHAR(128) NOT NULL COMMENT '通知标题',
     content TEXT NOT NULL COMMENT '通知内容',
@@ -241,8 +241,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 -- 邀请记录表
 CREATE TABLE IF NOT EXISTS `invite_records` (
     `record_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID，主键，自增',
-    `inviter_id` BIGINT NOT NULL COMMENT '邀请人ID',
-    `invitee_id` BIGINT NOT NULL COMMENT '被邀请人ID',
+    `inviter_id` VARCHAR(13) NOT NULL  COMMENT '邀请人ID',
+    `invitee_id` VARCHAR(13) NOT NULL  COMMENT '被邀请人ID',
     `token_reward` INT NOT NULL COMMENT '邀请奖励代币数',
     `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0=待发放，1=已发放，2=发放失败',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

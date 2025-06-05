@@ -110,7 +110,7 @@ func (h *TokenHandler) ListRechargePlans(c *gin.Context) {
 
 // GetUserTokenBalance 获取用户Token余额
 func (h *TokenHandler) GetUserTokenBalance(c *gin.Context) {
-	userID := c.GetInt64(consts.UserId)
+	userID := c.GetString(consts.UserId)
 	balance, err := h.tokenService.GetUserTokenBalance(c.Request.Context(), userID)
 	if err != nil {
 		response.Error(c, err)
@@ -187,7 +187,7 @@ func (h *TokenHandler) ReportPointsReward(c *gin.Context) {
 	}
 
 	// 处理代币奖励
-	if err := h.tokenService.ProcessPointsReward(c.Request.Context(), userID.(int64), req.Type); err != nil {
+	if err := h.tokenService.ProcessPointsReward(c.Request.Context(), userID.(string), req.Type); err != nil {
 		response.Error(c, err)
 		return
 	}

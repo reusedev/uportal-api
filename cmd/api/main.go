@@ -29,7 +29,7 @@ var (
 
 func init() {
 	flag.StringVar(&configPath, "config", "config/config.yaml", "config file path")
-	flag.BoolVar(&doMigrate, "migrate", false, "执行数据库迁移")
+	flag.BoolVar(&doMigrate, "migrate", true, "执行数据库迁移")
 	flag.Parse()
 }
 

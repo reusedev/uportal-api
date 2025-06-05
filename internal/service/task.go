@@ -230,7 +230,7 @@ func (s *TaskService) CreateConsumptionRule(ctx context.Context, req *CreateCons
 }
 
 // GetAvailableTasks 获取用户可用的任务列表
-func (s *TaskService) GetAvailableTasks(ctx context.Context, userID int64) ([]*model.RewardTask, error) {
+func (s *TaskService) GetAvailableTasks(ctx context.Context, userID string) ([]*model.RewardTask, error) {
 	var tasks []*model.RewardTask
 	now := time.Now()
 
@@ -285,7 +285,7 @@ func (s *TaskService) GetAvailableTasks(ctx context.Context, userID int64) ([]*m
 }
 
 // getUserTaskCompletionCount 获取用户任务完成次数
-func (s *TaskService) getUserTaskCompletionCount(ctx context.Context, userID int64, taskID int) (int64, error) {
+func (s *TaskService) getUserTaskCompletionCount(ctx context.Context, userID string, taskID int) (int64, error) {
 	var count int64
 	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local)
 
@@ -316,9 +316,9 @@ type TaskCompletionResult struct {
 }
 
 // CompleteTask 完成任务
-func (s *TaskService) CompleteTask(ctx context.Context, userID int64, req *CompleteTaskRequest) (*TaskCompletionResult, error) {
+func (s *TaskService) CompleteTask(ctx context.Context, userID string, req *CompleteTaskRequest) (*TaskCompletionResult, error) {
 	// 获取分布式锁，防止并发完成
-	lockKey := fmt.Sprintf("task_completion_lock:%d:%d", userID, req.TaskID)
+	lockKey := fmt.Sprintf("task_completion_lock:%s:%d", userID, req.TaskID)
 	acquired, err := s.redis.SetNX(ctx, lockKey, "1", 10*time.Second).Result()
 	if err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "获取任务锁失败", err)
@@ -410,7 +410,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID int64, req *Compl
 }
 
 // checkTaskLimits 检查任务限制
-func (s *TaskService) checkTaskLimits(ctx context.Context, tx *gorm.DB, userID int64, task *model.RewardTask) error {
+func (s *TaskService) checkTaskLimits(ctx context.Context, tx *gorm.DB, userID string, task *model.RewardTask) error {
 	// 检查每日限制
 	if task.DailyLimit > 0 {
 		count, err := s.getUserTaskCompletionCount(ctx, userID, task.TaskID)
@@ -452,7 +452,7 @@ func (s *TaskService) checkTaskLimits(ctx context.Context, tx *gorm.DB, userID i
 }
 
 // verifyTaskCompletion 验证任务完成条件
-func (s *TaskService) verifyTaskCompletion(ctx context.Context, tx *gorm.DB, userID int64, task *model.RewardTask, extraData map[string]interface{}) error {
+func (s *TaskService) verifyTaskCompletion(ctx context.Context, tx *gorm.DB, userID string, task *model.RewardTask, extraData map[string]interface{}) error {
 	// 这里可以根据具体任务类型实现不同的验证逻辑
 	// 例如：观看视频任务验证视频是否完整观看，分享任务验证分享是否成功等
 	// 目前实现一个简单的示例验证
@@ -476,7 +476,7 @@ func (s *TaskService) verifyTaskCompletion(ctx context.Context, tx *gorm.DB, use
 }
 
 // grantTaskReward 发放任务奖励
-func (s *TaskService) grantTaskReward(ctx context.Context, tx *gorm.DB, userID int64, task *model.RewardTask) error {
+func (s *TaskService) grantTaskReward(ctx context.Context, tx *gorm.DB, userID string, task *model.RewardTask) error {
 	// 获取用户信息并加行锁
 	var user model.User
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
@@ -507,7 +507,7 @@ func (s *TaskService) grantTaskReward(ctx context.Context, tx *gorm.DB, userID i
 }
 
 // recordTaskCompletion 记录任务完成
-func (s *TaskService) recordTaskCompletion(ctx context.Context, tx *gorm.DB, userID int64, task *model.RewardTask) error {
+func (s *TaskService) recordTaskCompletion(ctx context.Context, tx *gorm.DB, userID string, task *model.RewardTask) error {
 	// 创建任务完成记录
 	record := &model.TaskCompletionRecord{
 		UserID:      userID,
@@ -527,7 +527,7 @@ func (s *TaskService) recordTaskCompletion(ctx context.Context, tx *gorm.DB, use
 }
 
 // sendTaskCompletionNotification 发送任务完成通知
-func (s *TaskService) sendTaskCompletionNotification(ctx context.Context, userID int64, task *model.RewardTask) {
+func (s *TaskService) sendTaskCompletionNotification(ctx context.Context, userID string, task *model.RewardTask) {
 	// 获取用户信息
 	var user model.User
 	if err := s.db.First(&user, userID).Error; err != nil {
@@ -556,7 +556,7 @@ func (s *TaskService) sendTaskCompletionNotification(ctx context.Context, userID
 }
 
 // getLastTaskCompletion 获取最后一次任务完成时间
-func (s *TaskService) getLastTaskCompletion(ctx context.Context, tx *gorm.DB, userID int64, taskID int) (*time.Time, error) {
+func (s *TaskService) getLastTaskCompletion(ctx context.Context, tx *gorm.DB, userID string, taskID int) (*time.Time, error) {
 	var record model.TokenRecord
 	err := tx.Where("user_id = ? AND task_id = ? AND change_type = 'TASK_REWARD'",
 		userID, taskID).
@@ -572,7 +572,7 @@ func (s *TaskService) getLastTaskCompletion(ctx context.Context, tx *gorm.DB, us
 }
 
 // hasCompletedTask 检查是否已完成任务
-func (s *TaskService) hasCompletedTask(ctx context.Context, tx *gorm.DB, userID int64, taskID int) (bool, error) {
+func (s *TaskService) hasCompletedTask(ctx context.Context, tx *gorm.DB, userID string, taskID int) (bool, error) {
 	var count int64
 	err := tx.Model(&model.TokenRecord{}).
 		Where("user_id = ? AND task_id = ? AND change_type = 'TASK_REWARD'",

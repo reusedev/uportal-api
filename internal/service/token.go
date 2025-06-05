@@ -159,7 +159,7 @@ func (s *TokenService) ListRechargePlans(ctx context.Context, page, pageSize int
 }
 
 // GetUserTokenBalance 获取用户Token余额
-func (s *TokenService) GetUserTokenBalance(ctx context.Context, userID int64) (int64, error) {
+func (s *TokenService) GetUserTokenBalance(ctx context.Context, userID string) (int64, error) {
 	balance, err := model.GetUserTokenBalance(s.db, userID)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
@@ -184,7 +184,7 @@ func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID int64, re
 }
 
 // ConsumeToken 消费Token
-func (s *TokenService) ConsumeToken(ctx context.Context, userID int64, serviceType string) error {
+func (s *TokenService) ConsumeToken(ctx context.Context, userID string, serviceType string) error {
 	// 获取消费规则
 	rule, err := model.GetTokenConsumptionRuleByService(s.db, serviceType)
 	if err != nil {
@@ -205,7 +205,7 @@ func (s *TokenService) ConsumeToken(ctx context.Context, userID int64, serviceTy
 }
 
 // AddToken 增加Token
-func (s *TokenService) AddToken(ctx context.Context, userID int64, amount int64, recordType int, orderID string, description string) error {
+func (s *TokenService) AddToken(ctx context.Context, userID string, amount int64, recordType int, orderID string, description string) error {
 	err := model.AddToken(s.db, userID, amount, recordType, orderID, description)
 	if err != nil {
 		return errors.New(errors.ErrCodeInternal, "增加Token失败", err)
@@ -240,7 +240,7 @@ func (s *TokenService) GetConsumptionAmount(ctx context.Context, serviceType str
 }
 
 // ProcessPointsReward 处理代币奖励
-func (s *TokenService) ProcessPointsReward(ctx context.Context, userID int64, rewardType string) error {
+func (s *TokenService) ProcessPointsReward(ctx context.Context, userID string, rewardType string) error {
 	// 验证奖励类型
 	amount, exists := rewardAmounts[rewardType]
 	if !exists {
@@ -296,7 +296,7 @@ func (s *TokenService) ProcessPointsReward(ctx context.Context, userID int64, re
 
 	// 记录日志
 	logs.Business().Info("代币奖励发放成功",
-		zap.Int64("user_id", userID),
+		zap.String("user_id", userID),
 		zap.String("reward_type", rewardType),
 		zap.Int("amount", amount),
 	)

@@ -21,7 +21,7 @@ const (
 // Order 订单表结构体
 type Order struct {
 	OrderID     int64          `gorm:"column:order_id;primaryKey;autoIncrement" json:"order_id"`                                               // 订单ID，主键，自增
-	UserID      int64          `gorm:"column:user_id;index:idx_orders_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`       // 用户ID
+	UserID      string         `gorm:"column:user_id;index:idx_orders_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`       // 用户ID
 	OrderNo     string         `gorm:"column:order_no;type:varchar(64);uniqueIndex:uk_orders_no" json:"order_no"`                              // 订单号
 	Amount      float64        `gorm:"column:amount;type:decimal(10,2)" json:"amount"`                                                         // 订单金额
 	ProductID   string         `gorm:"column:product_id;type:varchar(64)" json:"product_id"`                                                   // 商品ID

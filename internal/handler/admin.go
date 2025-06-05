@@ -175,9 +175,8 @@ func (h *AdminHandler) TokenAdjustUser(c *gin.Context) {
 		updates["token_balance"] = *req.ChangeAmount
 	}
 	updates["updated_at"] = time.Now()
-	id, _ := strconv.Atoi(req.UserId)
 
-	if err := h.adminService.UpdateUser(c.Request.Context(), int64(id), updates); err != nil {
+	if err := h.adminService.UpdateUser(c.Request.Context(), req.UserId, updates); err != nil {
 		response.Error(c, err)
 		return
 	}
@@ -197,9 +196,8 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 	if req.Status != nil {
 		updates["status"] = *req.Status
 	}
-	id, _ := strconv.Atoi(req.UserId)
 	updates["updated_at"] = time.Now()
-	if err := h.adminService.UpdateUser(c.Request.Context(), int64(id), updates); err != nil {
+	if err := h.adminService.UpdateUser(c.Request.Context(), req.UserId, updates); err != nil {
 		response.Error(c, err)
 		return
 	}
@@ -209,12 +207,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 
 // DeleteUser 删除用户
 func (h *AdminHandler) DeleteUser(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "Invalid user ID", err))
-		return
-	}
-
+	id := c.Param("id")
 	if err := h.adminService.DeleteUser(c.Request.Context(), id); err != nil {
 		response.Error(c, err)
 		return

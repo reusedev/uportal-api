@@ -102,7 +102,7 @@ func (h *AuthHandler) ThirdPartyLogin(c *gin.Context) {
 
 // GetProfile 获取用户信息
 func (h *AuthHandler) GetProfile(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+	userID := c.GetString("user_id")
 	user, err := h.authService.GetUserByID(c.Request.Context(), userID)
 	if err != nil {
 		response.Error(c, err)
@@ -119,7 +119,7 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	userID := c.GetInt64(consts.UserId)
+	userID := c.GetString(consts.UserId)
 
 	updates := make(map[string]interface{})
 	if req.Nickname != nil {
@@ -140,7 +140,7 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 
 // ChangePassword 修改密码
 func (h *AuthHandler) ChangePassword(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+	userID := c.GetString("user_id")
 	var req struct {
 		OldPassword string `json:"old_password" binding:"required,min=6,max=32"`
 		NewPassword string `json:"new_password" binding:"required,min=6,max=32"`

@@ -2,12 +2,10 @@ package handler
 
 import (
 	basicErr "errors"
-	"github.com/reusedev/uportal-api/pkg/consts"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/internal/service"
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"github.com/reusedev/uportal-api/pkg/response"
 	"gorm.io/gorm"
@@ -37,8 +35,8 @@ type ReportPointsRewardRequest struct {
 
 func (h *InviteHandler) ReportInvite(c *gin.Context) {
 	// 从上下文获取当前用户ID
-	userID := c.GetInt64(consts.UserId)
-	if userID <= 0 {
+	userID := c.GetString(consts.UserId)
+	if userID == "" {
 		response.Error(c, errors.New(errors.ErrCodeUnauthorized, "未登录", nil))
 		return
 	}
@@ -49,16 +47,16 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	inviteBy, _ := strconv.Atoi(req.InviteBy)
+	inviteBy := req.InviteBy
 
 	// 检查邀请人ID是否有效
-	if inviteBy <= 0 {
+	if inviteBy == "" {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的邀请人ID", nil))
 		return
 	}
 
 	// 不能邀请自己
-	if int64(inviteBy) == userID {
+	if inviteBy == userID {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "不能邀请自己", nil))
 		return
 	}
@@ -112,14 +110,14 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 		return
 	}
 	// 创建邀请记录
-	if err := h.inviteSvc.CreateInviteRecordWithTx(c.Request.Context(), tx, int64(inviteBy), int64(userID), tokenReward); err != nil {
+	if err := h.inviteSvc.CreateInviteRecordWithTx(c.Request.Context(), tx, inviteBy, userID, tokenReward); err != nil {
 		tx.Rollback()
 		response.Error(c, err)
 		return
 	}
 
 	// 立即处理邀请奖励
-	if err := h.inviteSvc.ProcessInviteRewardWithTx(c.Request.Context(), tx, int64(userID)); err != nil {
+	if err := h.inviteSvc.ProcessInviteRewardWithTx(c.Request.Context(), tx, userID); err != nil {
 		tx.Rollback()
 		response.Error(c, err)
 		return

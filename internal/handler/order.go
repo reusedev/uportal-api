@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	}
 
 	// 从上下文获取用户ID
-	userID := c.GetInt64("user_id")
+	userID := c.GetString(consts.UserId)
 
 	order, err := h.orderService.CreateOrder(c.Request.Context(), userID, req.Amount, req.ProductID, req.ProductName)
 	if err != nil {
@@ -64,7 +65,7 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 	}
 
 	// 验证订单所属用户
-	userID := c.GetInt64("user_id")
+	userID := c.GetString("user_id")
 	if order.UserID != userID {
 		response.Error(c, errors.New(errors.ErrCodeForbidden, "无权查看此订单", nil))
 		return
@@ -128,7 +129,7 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt64("user_id")
+	userID := c.GetString("user_id")
 	if order.UserID != userID {
 		response.Error(c, errors.New(errors.ErrCodeForbidden, "无权操作此订单", nil))
 		return
