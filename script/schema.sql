@@ -6,7 +6,7 @@ USE `uportal`;
 
 -- 1. 用户表，存储基础用户信息
 CREATE TABLE IF NOT EXISTS `users` (
-                         `user_id` VARCHAR(13) NOT NULL  COMMENT '用户ID，主键，自增',
+                         `user_id` VARCHAR(13) NOT NULL  COMMENT '用户ID，主键',
                          `phone`   VARCHAR(20)  DEFAULT NULL             COMMENT '手机号，用户使用手机号注册/登录时的号码，唯一',
                          `email`   VARCHAR(100) DEFAULT NULL             COMMENT '邮箱，用户邮箱地址，唯一',
                          `password_hash` VARCHAR(255) DEFAULT NULL       COMMENT '密码哈希，用于手机号/邮箱注册的情况，第三方登录用户此字段为空',
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `users` (
                          `language` VARCHAR(10)  NOT NULL DEFAULT 'zh-CN' COMMENT '界面语言偏好，如 zh-CN、en-US 等',
                          `status`  TINYINT       NOT NULL DEFAULT 1      COMMENT '账号状态：1=正常，0=禁用',
                          `token_balance` INT     NOT NULL DEFAULT 0      COMMENT '代币余额',
-                         `inviter_id` BIGINT    DEFAULT NULL            COMMENT '邀请人ID',
+                         `inviter_id` VARCHAR(13) DEFAULT NULL COMMENT '邀请人ID',
                          `created_at` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
                          `updated_at` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
                          `last_login_at` DATETIME DEFAULT NULL           COMMENT '最后登录时间',
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS `recharge_orders` (
 CREATE TABLE IF NOT EXISTS `refunds` (
                            `refund_id`    BIGINT        NOT NULL AUTO_INCREMENT COMMENT '退款ID，主键，自增',
                            `order_id`     BIGINT        NOT NULL               COMMENT '原订单ID，外键关联 recharge_orders.order_id',
-                           `user_id`     VARCHAR(13) NOT NULL             COMMENT '用户ID，外键关联 users.user_id',
+                           `user_id`     VARCHAR(13) Not NULL             COMMENT '用户ID，外键关联 users.user_id',
                            `refund_amount` DECIMAL(10,2) NOT NULL               COMMENT '退款金额(元)',
                            `refund_tokens` INT           NOT NULL               COMMENT '收回代币数',
                            `refund_method` VARCHAR(20)   NOT NULL               COMMENT '退款方式，如 Alipay、WeChat',
