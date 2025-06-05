@@ -396,7 +396,6 @@ func (s *AuthService) WxMiniProgramLogin(ctx context.Context, req *WxMiniProgram
 	if err != nil {
 		return nil, "", err
 	}
-
 	// 使用 openid 作为 provider_user_id 进行第三方登录
 	thirdPartyReq := &ThirdPartyLoginRequest{
 		Provider:       "wechat",
@@ -412,23 +411,6 @@ func (s *AuthService) WxMiniProgramLogin(ctx context.Context, req *WxMiniProgram
 	user, token, err := s.ThirdPartyLogin(ctx, thirdPartyReq)
 	if err != nil {
 		return nil, "", err
-	}
-
-	// 记录登录日志
-	logEntry := &model.UserLoginLog{
-		UserID:        user.UserID,
-		LoginMethod:   "wechat_mini_program",
-		LoginPlatform: &req.Platform,
-		IPAddress:     &req.IP,
-		DeviceInfo:    &req.UserAgent,
-		LoginTime:     time.Now(),
-	}
-	if err := model.CreateLoginLog(s.db, logEntry); err != nil {
-		// 仅记录错误，不影响登录流程
-		logs.Business().Warn("创建微信小程序登录日志失败",
-			zap.String("user_id", user.UserID),
-			zap.Error(err),
-		)
 	}
 
 	// 如果有加密数据，解密并更新用户信息
