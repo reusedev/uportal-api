@@ -6,7 +6,7 @@ USE `uportal`;
 
 -- 1. 用户表，存储基础用户信息
 CREATE TABLE IF NOT EXISTS `users` (
-                         `user_id` VARCHAR(13) NOT NULL  COMMENT '用户ID，主键',
+                         `id` VARCHAR(13) NOT NULL  COMMENT '用户ID，主键',
                          `phone`   VARCHAR(20)  DEFAULT NULL             COMMENT '手机号，用户使用手机号注册/登录时的号码，唯一',
                          `email`   VARCHAR(100) DEFAULT NULL             COMMENT '邮箱，用户邮箱地址，唯一',
                          `password_hash` VARCHAR(255) DEFAULT NULL       COMMENT '密码哈希，用于手机号/邮箱注册的情况，第三方登录用户此字段为空',

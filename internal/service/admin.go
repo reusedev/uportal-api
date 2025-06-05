@@ -92,7 +92,7 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 // GetUser 获取用户详情
 func (s *AdminService) GetUser(ctx context.Context, id string) (*model.User, error) {
 	var user model.User
-	err := s.db.Preload("UserAuths").First(&user, id).Error
+	err := s.db.Debug().Preload("UserAuths").Where("id = ?", id).First(&user).Error
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New(errors.ErrCodeNotFound, "User not found", err)

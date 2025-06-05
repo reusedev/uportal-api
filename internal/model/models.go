@@ -10,7 +10,7 @@ import (
 
 // User 用户表结构体
 type User struct {
-	UserID       string         `gorm:"column:user_id;type:varchar(13);primaryKey" json:"id"`                    // 用户ID，主键，自增
+	UserID       string         `gorm:"column:id;type:varchar(13);primaryKey" json:"id"`                         // 用户ID，主键，自增
 	Phone        *string        `gorm:"column:phone;type:varchar(20);uniqueIndex:uk_users_phone" json:"phone"`   // 手机号
 	Email        *string        `gorm:"column:email;type:varchar(100);uniqueIndex:uk_users_email" json:"email"`  // 邮箱
 	PasswordHash *string        `gorm:"column:password_hash;type:varchar(255)" json:"-"`                         // 密码哈希

@@ -228,6 +228,8 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 		}
 
 		if !stderrors.Is(err, gorm.ErrRecordNotFound) {
+			logs.DB().Error("查询用户失败",
+				zap.Error(err))
 			return errors.New(errors.ErrCodeInternal, "查询用户失败", err)
 		}
 
