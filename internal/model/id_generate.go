@@ -1,4 +1,4 @@
-package handler
+package model
 
 import (
 	"crypto/sha1"
