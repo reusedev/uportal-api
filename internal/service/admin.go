@@ -90,7 +90,7 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 }
 
 // GetUser 获取用户详情
-func (s *AdminService) GetUser(ctx context.Context, id int64) (*model.User, error) {
+func (s *AdminService) GetUser(ctx context.Context, id string) (*model.User, error) {
 	var user model.User
 	err := s.db.Preload("UserAuths").First(&user, id).Error
 	if err != nil {

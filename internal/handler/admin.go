@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/reusedev/uportal-api/pkg/constants"
@@ -87,9 +86,9 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 
 // GetUser 获取用户详情
 func (h *AdminHandler) GetUser(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "Invalid user ID", err))
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "Invalid user ID", nil))
 		return
 	}
 
