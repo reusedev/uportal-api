@@ -23,20 +23,20 @@ func Migrate(db *gorm.DB) error {
 
 	// 创建所有表
 	err = newDB.AutoMigrate(
-		&User{}, // 基础用户表
-		//&AdminUser{},           // 管理员表
-		//&SystemConfig{},        // 系统配置表
-		//&RechargePlan{},        // 充值方案表
-		//&TokenConsumeRule{},    // 代币消耗规则表
-		//&RewardTask{},          // 奖励任务表
-		//&Order{},               // 订单表
-		//&UserAuth{},            // 用户认证表
-		//&UserLoginLog{},        // 用户登录日志表
-		//&RechargeOrder{},       // 充值订单表
-		//&Refund{},              // 退款记录表
-		//&TokenRecord{},         // 代币记录表
-		//&PaymentNotifyRecord{}, // 支付通知记录表
-		//&InviteRecord{},        // 邀请记录表
+		&User{},                // 基础用户表
+		&AdminUser{},           // 管理员表
+		&SystemConfig{},        // 系统配置表
+		&RechargePlan{},        // 充值方案表
+		&TokenConsumeRule{},    // 代币消耗规则表
+		&RewardTask{},          // 奖励任务表
+		&Order{},               // 订单表
+		&UserAuth{},            // 用户认证表
+		&UserLoginLog{},        // 用户登录日志表
+		&RechargeOrder{},       // 充值订单表
+		&Refund{},              // 退款记录表
+		&TokenRecord{},         // 代币记录表
+		&PaymentNotifyRecord{}, // 支付通知记录表
+		&InviteRecord{},        // 邀请记录表
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create tables: %v", err)
