@@ -91,7 +91,7 @@ type UpdateTaskRequest struct {
 	DailyLimit      int    `json:"daily_limit" binding:"required"`
 	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
 	ValidFrom       string `json:"valid_from" binding:"required"`
-	ValidTo         string `json:"valid_to" binding:"required"`
+	ValidTo         string `json:"valid_to"`
 	Repeatable      *int8  `json:"repeatable" binding:"required"`
 }
 
@@ -103,8 +103,6 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 	}
 
 	from, _ := time.Parse(time.DateOnly, req.ValidFrom)
-	to, _ := time.Parse(time.DateOnly, req.ValidTo)
-
 	updates := map[string]interface{}{
 		"task_name":        req.TaskName,
 		"token_reward":     req.TokenReward,
@@ -113,8 +111,13 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		"daily_limit":      req.DailyLimit,
 		"interval_seconds": req.IntervalSeconds,
 		"valid_from":       &from,
-		"valid_to":         &to,
 		"repeatable":       req.Repeatable,
+	}
+	if req.ValidTo != "" {
+		to, err := time.Parse(time.DateOnly, req.ValidTo)
+		if err == nil {
+			updates["valid_to"] = &to
+		}
 	}
 
 	if err := s.db.Model(task).Updates(updates).Error; err != nil {
