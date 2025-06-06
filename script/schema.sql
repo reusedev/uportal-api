@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS `system_config` (
 -- 4. 代币任务配置表，配置可奖励任务
 CREATE TABLE IF NOT EXISTS `reward_tasks` (
                                 `task_id`       INT          NOT NULL AUTO_INCREMENT COMMENT '任务ID，主键，自增',
+                                `task_key`      VARCHAR(50)  NOT NULL               COMMENT '任务唯一标识，如 daily_login、share、invite 等',
                                 `task_name`     VARCHAR(100) NOT NULL               COMMENT '任务名称，如 注册奖励、邀请好友、观看广告 等',
                                 `task_desc`     VARCHAR(255) DEFAULT NULL           COMMENT '任务描述，详细说明',
                                 `token_reward`  INT          NOT NULL               COMMENT '完成一次任务获得的代币数',
@@ -63,7 +64,8 @@ CREATE TABLE IF NOT EXISTS `reward_tasks` (
                                 `valid_to`      DATE     DEFAULT NULL           COMMENT '任务截止时间，NULL表示永久有效',
                                 `repeatable`    TINYINT      NOT NULL DEFAULT 1     COMMENT '是否可重复完成：1=是，0=否',
                                 `status`        TINYINT      NOT NULL DEFAULT 1     COMMENT '任务状态：1=启用，0=停用',
-                                PRIMARY KEY (`task_id`)
+                                PRIMARY KEY (`task_id`),
+                                UNIQUE KEY `uk_task_key` (`task_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='代币任务配置表';
 

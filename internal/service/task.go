@@ -52,6 +52,7 @@ type CreateTaskRequest struct {
 	ValidTo         string `json:"valid_to"`
 	Repeatable      *int8  `json:"repeatable" binding:"required"`
 	Status          *int8  `json:"status" binding:"required"`
+	TaskKey         string `json:"task_key" binding:"required"`
 }
 
 // CreateTask 创建任务
@@ -64,6 +65,7 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		IntervalSeconds: req.IntervalSeconds,
 		Repeatable:      *req.Repeatable,
 		Status:          *req.Status, // 默认启用
+		TaskKey:         req.TaskKey,
 	}
 	from, _ := time.Parse(time.DateOnly, req.ValidFrom)
 	task.ValidFrom = &from
@@ -93,6 +95,7 @@ type UpdateTaskRequest struct {
 	ValidFrom       string `json:"valid_from" binding:"required"`
 	ValidTo         string `json:"valid_to"`
 	Repeatable      *int8  `json:"repeatable" binding:"required"`
+	TaskKey         string `json:"task_key" binding:"required"`
 }
 
 // UpdateTask 更新任务
@@ -112,6 +115,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		"interval_seconds": req.IntervalSeconds,
 		"valid_from":       &from,
 		"repeatable":       req.Repeatable,
+		"task_key":         req.TaskKey,
 	}
 	if req.ValidTo != "" {
 		to, err := time.Parse(time.DateOnly, req.ValidTo)

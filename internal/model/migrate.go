@@ -204,6 +204,7 @@ func initBaseData(db *gorm.DB) error {
 		tasks := []RewardTask{
 			{
 				TaskName:        "每日登录",
+				TaskKey:         "daily_login",
 				TaskDesc:        &dailyLoginDesc,
 				TokenReward:     10,
 				DailyLimit:      1,
@@ -213,6 +214,7 @@ func initBaseData(db *gorm.DB) error {
 			},
 			{
 				TaskName:        "分享",
+				TaskKey:         "share",
 				TaskDesc:        &shareDesc,
 				TokenReward:     5,
 				DailyLimit:      3,
@@ -222,6 +224,7 @@ func initBaseData(db *gorm.DB) error {
 			},
 			{
 				TaskName:        "邀请新用户",
+				TaskKey:         "invite",
 				TaskDesc:        &inviteDesc,
 				TokenReward:     50,
 				DailyLimit:      0, // 不限制每日次数
