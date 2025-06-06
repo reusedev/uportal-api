@@ -49,7 +49,7 @@ type CreateTaskRequest struct {
 	DailyLimit      int    `json:"daily_limit" binding:"required"`
 	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
 	ValidFrom       string `json:"valid_from" binding:"required"`
-	ValidTo         string `json:"valid_to" binding:"required"`
+	ValidTo         string `json:"valid_to"`
 	Repeatable      *int8  `json:"repeatable" binding:"required"`
 	Status          *int8  `json:"status" binding:"required"`
 }
@@ -66,10 +66,14 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		Status:          *req.Status, // 默认启用
 	}
 	from, _ := time.Parse(time.DateOnly, req.ValidFrom)
-	to, _ := time.Parse(time.DateOnly, req.ValidTo)
-
 	task.ValidFrom = &from
-	task.ValidTo = &to
+	if req.ValidTo == "" {
+		to, err := time.Parse(time.DateOnly, req.ValidTo)
+		if err == nil {
+			task.ValidTo = &to
+		}
+	}
+
 	if err := s.db.Create(task).Error; err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "创建任务失败", err)
 	}
