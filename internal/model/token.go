@@ -1,6 +1,7 @@
 package model
 
 import (
+	"gorm.io/gorm/clause"
 	"strconv"
 	"time"
 
@@ -137,7 +138,7 @@ func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error 
 	var user User
 	err := db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
-		err := tx.First(&user, userID).Error
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", userID).First(&user).Error
 		if err != nil {
 			return err
 		}
