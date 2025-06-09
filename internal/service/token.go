@@ -72,6 +72,19 @@ type CreateRechargePlanRequest struct {
 	Description string  `json:"description" binding:"required,max=200"`
 }
 
+type TokenIsBuyRequest struct {
+	UserId      string `json:"user_id" binding:"required"`
+	FeatureCode string `json:"feature_code" binding:"required"`
+	Num         int    `json:"num" binding:"required,min=1"`
+}
+
+type TokenBuyRequest struct {
+	UserId      string `json:"user_id" binding:"required"`
+	FeatureCode string `json:"feature_code" binding:"required"`
+	Num         int    `json:"num" binding:"required,min=1"`
+	Type        int    `json:"type" binding:"required,oneof=1 2"`
+}
+
 // CreateRechargePlan 创建充值套餐
 func (s *TokenService) CreateRechargePlan(ctx context.Context, req *CreateRechargePlanRequest) (*model.RechargePlan, error) {
 	// 将 string 转换为 *string
@@ -170,6 +183,32 @@ func (s *TokenService) GetUserTokenBalance(ctx context.Context, userID string) (
 	return balance, nil
 }
 
+// TokenIsBuy 获取用户Token余额
+func (s *TokenService) TokenIsBuy(ctx context.Context, userID, FeatureCode string, num int) (int, error) {
+
+	isBuy, err := model.GetUserTokenIsBuy(s.db, userID, FeatureCode, num)
+	if err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
+		}
+		return 0, errors.New(errors.ErrCodeInternal, "获取Token余额失败", err)
+	}
+	return isBuy, nil
+}
+
+// TokenBuy 用户金币消耗
+func (s *TokenService) TokenBuy(ctx context.Context, userID, FeatureCode string, num int) (int, error) {
+
+	isBuy, err := model.GetUserTokenIsBuy(s.db, userID, FeatureCode, num)
+	if err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
+		}
+		return 0, errors.New(errors.ErrCodeInternal, "获取Token余额失败", err)
+	}
+	return isBuy, nil
+}
+
 // GetUserTokenRecords 获取用户的代币记录列表
 func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID int64, req ListUserTokenRecords) ([]*model.TokenRecord, error) {
 	var start int
@@ -184,16 +223,16 @@ func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID int64, re
 }
 
 // ConsumeToken 消费Token
-func (s *TokenService) ConsumeToken(ctx context.Context, userID string, serviceType string) error {
+func (s *TokenService) ConsumeToken(ctx context.Context, userID, FeatureCode string, num int) (int64, error) {
 	// 获取消费规则
-	rule, err := model.GetTokenConsumptionRuleByService(s.db, serviceType)
+	rule, err := model.GetTokenConsumptionRuleByService(s.db, FeatureCode)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// 检查规则状态
 	if rule.Status != 1 {
-		return errors.New(errors.ErrCodeInvalidParams, "该服务已禁用", nil)
+		return 0, errors.New(errors.ErrCodeInvalidParams, "该服务已禁用", nil)
 	}
 
 	// 消费Token
@@ -201,7 +240,9 @@ func (s *TokenService) ConsumeToken(ctx context.Context, userID string, serviceT
 	if rule.FeatureDesc != nil {
 		desc = *rule.FeatureDesc
 	}
-	return model.ConsumeToken(s.db, userID, int64(rule.TokenCost), serviceType, desc)
+	cost := int64(rule.TokenCost * num)
+	err = model.ConsumeToken(s.db, userID, cost, FeatureCode, desc)
+	return cost, err
 }
 
 // AddToken 增加Token

@@ -120,6 +120,42 @@ func (h *TokenHandler) GetUserTokenBalance(c *gin.Context) {
 	response.Success(c, balance)
 }
 
+// TokenIsBuy 用户余额是否充足
+func (h *TokenHandler) TokenIsBuy(c *gin.Context) {
+	var req service.TokenIsBuyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	isBuy, err := h.tokenService.TokenIsBuy(c.Request.Context(), req.UserId, req.FeatureCode, req.Num)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, isBuy)
+}
+
+// TokenBuy 用户金币消耗
+func (h *TokenHandler) TokenBuy(c *gin.Context) {
+	var req service.TokenBuyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	num := req.Num
+	if req.Type == consts.Return {
+		num *= -1
+	}
+	cost, err := h.tokenService.ConsumeToken(c.Request.Context(), req.UserId, req.FeatureCode, num)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, cost)
+}
+
 // GetUserTokenRecords 获取用户Token记录
 func (h *TokenHandler) GetUserTokenRecords(c *gin.Context) {
 	var req service.ListUserTokenRecords
@@ -201,6 +237,12 @@ func RegisterTokenRoutes(r *gin.RouterGroup, h *TokenHandler) {
 	r.POST("/records", h.GetUserTokenRecords) // 获取用户代币明细记录
 	r.POST("/reward", h.ReportPointsReward)   // 上报金币奖励
 	r.GET("/plans", h.ListRechargePlans)
+}
+
+// RegisterCloudRoutes 注册 Cloud 相关路由
+func RegisterCloudRoutes(r *gin.RouterGroup, h *TokenHandler) {
+	r.POST("/is_buy", h.TokenIsBuy) // 用户余额是否充足
+	r.POST("/buy", h.TokenBuy)      // 用户余额是否充足
 }
 
 // RegisterAdminTokenRoutes 注册管理员 Token 相关路由

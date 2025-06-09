@@ -155,6 +155,28 @@ func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error 
 	return err
 }
 
+// GetUserTokenIsBuy 获取用户Token余额
+func GetUserTokenIsBuy(db *gorm.DB, userID, featureCode string, num int) (int, error) {
+	var isBuy int
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var rewardTask TokenConsumeRule
+		err := tx.Model(&TokenConsumeRule{}).Where("featureCode = ?", featureCode).First(&rewardTask).Error
+		if err != nil {
+			return err
+		}
+		var user User
+		err = tx.Model(&User{}).Where("id = ?", userID).First(&rewardTask).Error
+		if err != nil {
+			return err
+		}
+		if user.TokenBalance >= rewardTask.TokenCost*num {
+			isBuy = 1
+		}
+		return nil
+	})
+	return isBuy, err
+}
+
 // ConsumeToken 消费Token
 func ConsumeToken(db *gorm.DB, userID string, amount int64, serviceType string, description string) error {
 	return db.Transaction(func(tx *gorm.DB) error {

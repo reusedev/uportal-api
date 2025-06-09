@@ -157,6 +157,10 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 代币相关路由
 		token := api.Group("/points", middleware.Auth())
 		handler.RegisterTokenRoutes(token, tokenHandler)
+		// 云端交互
+
+		cloud := api.Group("/cloud/points", middleware.Auth())
+		handler.RegisterCloudRoutes(cloud, tokenHandler)
 
 		// 订单相关路由
 		order := api.Group("/orders", middleware.Auth())
