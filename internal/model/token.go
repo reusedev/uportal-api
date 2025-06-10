@@ -126,7 +126,7 @@ func GetTokenRecords(db *gorm.DB, userID int64, start, limit int) ([]*TokenRecor
 // GetUserTokenBalance 获取用户Token余额
 func GetUserTokenBalance(db *gorm.DB, userID string) (int64, error) {
 	var user User
-	err := db.Select("token_balance").First(&user, userID).Error
+	err := db.Select("token_balance").Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		return 0, err
 	}
