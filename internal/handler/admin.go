@@ -179,13 +179,19 @@ func (h *AdminHandler) TokenAdjustUser(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
+	err, i := h.adminService.CreateTokenRecord(req.UserId, req.Remark, *req.ChangeAmount, *req.ChangeAmount)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
 
-	//res := map[string]interface{}{
-	//	"user_id":       req.UserId,
-	//	"token_balance": req.ChangeAmount,
-	//}
+	res := map[string]interface{}{
+		"user_id":       req.UserId,
+		"token_balance": req.ChangeAmount,
+		"record_id":     i,
+	}
 
-	response.Success(c, nil)
+	response.Success(c, res)
 }
 
 // UpdateUser 更新用户信息

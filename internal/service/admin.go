@@ -129,6 +129,20 @@ func (s *AdminService) UpdateUser(ctx context.Context, id string, updates map[st
 	return nil
 }
 
+func (s *AdminService) CreateTokenRecord(id, remark string, amount, tokenBalance int) (error, int64) {
+	// 创建Token记录
+	record := &model.TokenRecord{
+		UserID:       id,
+		ChangeAmount: amount,
+		BalanceAfter: tokenBalance,
+		ChangeType:   "ADJUST",
+		Remark:       &remark,
+		ChangeTime:   time.Now(),
+	}
+	err := model.CreateTokenRecord(s.db, record)
+	return err, record.RecordID
+}
+
 // DeleteUser 删除用户
 func (s *AdminService) DeleteUser(ctx context.Context, id string) error {
 	// 检查用户是否存在
