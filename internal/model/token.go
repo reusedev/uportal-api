@@ -161,12 +161,12 @@ func GetUserTokenIsBuy(db *gorm.DB, userID, featureCode string, num int) (int, e
 	var isBuy int
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var rewardTask TokenConsumeRule
-		err := tx.Model(&TokenConsumeRule{}).Where("featureCode = ?", featureCode).First(&rewardTask).Error
+		err := tx.Model(&TokenConsumeRule{}).Where("feature_code = ?", featureCode).First(&rewardTask).Error
 		if err != nil {
 			return err
 		}
 		var user User
-		err = tx.Model(&User{}).Where("id = ?", userID).First(&rewardTask).Error
+		err = tx.Model(&User{}).Where("id = ?", userID).First(&user).Error
 		if err != nil {
 			return err
 		}

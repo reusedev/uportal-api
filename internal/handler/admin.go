@@ -180,6 +180,11 @@ func (h *AdminHandler) TokenAdjustUser(c *gin.Context) {
 		return
 	}
 
+	//res := map[string]interface{}{
+	//	"user_id":       req.UserId,
+	//	"token_balance": req.ChangeAmount,
+	//}
+
 	response.Success(c, nil)
 }
 
