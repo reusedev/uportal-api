@@ -111,7 +111,7 @@ func CreateTokenRecord(db *gorm.DB, record *TokenRecord) error {
 }
 
 // GetTokenRecords 获取用户的代币记录列表
-func GetTokenRecords(db *gorm.DB, userID int64, start, limit int) ([]*TokenRecord, error) {
+func GetTokenRecords(db *gorm.DB, userID string, start, limit int) ([]*TokenRecord, error) {
 	var records []*TokenRecord
 	err := db.Where("user_id = ? and record_id > ?", userID, start).
 		Order("change_time DESC").Limit(limit).

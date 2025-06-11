@@ -235,8 +235,9 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 
 		// 不存在关联，创建新用户
 		user = &model.User{
-			Status: 1,
-			UserID: model.GenerateUserID(),
+			TokenBalance: 100,
+			Status:       1,
+			UserID:       model.GenerateUserID(),
 		}
 		logs.Business().Warn("创建登录日志失败",
 			zap.String("user_id", user.UserID),

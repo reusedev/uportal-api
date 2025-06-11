@@ -163,7 +163,7 @@ func (h *TokenHandler) GetUserTokenRecords(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	userID := c.GetInt64(consts.UserId)
+	userID := c.GetString(consts.UserId)
 	records, err := h.tokenService.GetUserTokenRecords(c.Request.Context(), userID, req)
 	if err != nil {
 		response.Error(c, err)

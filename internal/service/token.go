@@ -210,7 +210,7 @@ func (s *TokenService) TokenBuy(ctx context.Context, userID, FeatureCode string,
 }
 
 // GetUserTokenRecords 获取用户的代币记录列表
-func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID int64, req ListUserTokenRecords) ([]*model.TokenRecord, error) {
+func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID string, req ListUserTokenRecords) ([]*model.TokenRecord, error) {
 	var start int
 	limit := 10
 	if req.Prev != nil {
