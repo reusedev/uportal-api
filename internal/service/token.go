@@ -223,9 +223,9 @@ func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID string, r
 }
 
 // ConsumeToken 消费Token
-func (s *TokenService) ConsumeToken(ctx context.Context, userID, FeatureCode string, num int) (int64, error) {
+func (s *TokenService) ConsumeToken(ctx context.Context, userID, featureCode, descSuffix string, num int) (int64, error) {
 	// 获取消费规则
-	rule, err := model.GetTokenConsumptionRuleByService(s.db, FeatureCode)
+	rule, err := model.GetTokenConsumptionRuleByService(s.db, featureCode)
 	if err != nil {
 		return 0, err
 	}
@@ -236,12 +236,12 @@ func (s *TokenService) ConsumeToken(ctx context.Context, userID, FeatureCode str
 	}
 
 	// 消费Token
-	desc := ""
+	desc := descSuffix
 	if rule.FeatureDesc != nil {
-		desc = *rule.FeatureDesc
+		desc = *rule.FeatureDesc + descSuffix
 	}
 	cost := int64(rule.TokenCost * num)
-	err = model.ConsumeToken(s.db, userID, cost, FeatureCode, desc)
+	err = model.ConsumeToken(s.db, userID, cost, featureCode, desc)
 	return cost, err
 }
 

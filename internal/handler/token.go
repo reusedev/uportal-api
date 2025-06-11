@@ -144,10 +144,13 @@ func (h *TokenHandler) TokenBuy(c *gin.Context) {
 		return
 	}
 	num := req.Num
+	descSuffix := consts.ConsumeText
 	if req.Type == consts.Return {
 		num *= -1
+		descSuffix = consts.ReturnText
 	}
-	cost, err := h.tokenService.ConsumeToken(c.Request.Context(), req.UserId, req.FeatureCode, num)
+
+	cost, err := h.tokenService.ConsumeToken(c.Request.Context(), req.UserId, req.FeatureCode, descSuffix, num)
 	if err != nil {
 		response.Error(c, err)
 		return
