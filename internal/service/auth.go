@@ -3,15 +3,15 @@ package service
 import (
 	"context"
 	stderrors "errors"
-	"time"
-
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/reusedev/uportal-api/internal/model"
+	"github.com/reusedev/uportal-api/pkg/config"
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"github.com/reusedev/uportal-api/pkg/logs"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"time"
 )
 
 // AuthService 认证服务
@@ -325,7 +325,7 @@ func (s *AuthService) generateToken(user *model.User) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte("your-secret-key")) // TODO: 从配置中读取密钥
+	return token.SignedString([]byte(config.GlobalConfig.JWT.Secret)) // TODO: 从配置中读取密钥
 }
 
 // GetUserByID 根据ID获取用户
