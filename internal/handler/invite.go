@@ -74,7 +74,7 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 
 	// 检查邀请人状态
 	var inviter model.User
-	if err := h.inviteSvc.GetDB().First(&inviter, req.InviteBy).Error; err != nil {
+	if err := h.inviteSvc.GetDB().Where("id = ?", req.InviteBy).First(&inviter).Error; err != nil {
 		if basicErr.Is(err, gorm.ErrRecordNotFound) {
 			response.Error(c, errors.New(errors.ErrCodeUserNotFound, "邀请人不存在", nil))
 			return
