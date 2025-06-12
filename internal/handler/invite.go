@@ -63,7 +63,7 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 
 	// 检查当前用户是否已经被邀请
 	var currentUser model.User
-	if err := h.inviteSvc.GetDB().First(&currentUser, userID).Error; err != nil {
+	if err := h.inviteSvc.GetDB().Where("id = ?", userID).First(&currentUser).Error; err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInternal, "获取用户信息失败", err))
 		return
 	}
@@ -89,7 +89,7 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 
 	// 从系统配置获取邀请奖励代币数
 	// TODO: 从系统配置中获取实际的奖励代币数
-	tokenReward := 100 // 临时使用固定值，后续从配置获取
+	tokenReward := 1000 // 临时使用固定值，后续从配置获取
 
 	// 开启事务处理邀请记录和奖励
 	tx := h.inviteSvc.GetDB().Begin()

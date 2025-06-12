@@ -235,7 +235,7 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 
 		// 不存在关联，创建新用户
 		user = &model.User{
-			TokenBalance: 100,
+			TokenBalance: 1000,
 			Status:       1,
 			UserID:       model.GenerateUserID(),
 		}
@@ -265,6 +265,17 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 		if err := model.CreateUserAuth(tx, auth); err != nil {
 			return errors.New(errors.ErrCodeInternal, "创建第三方认证失败", err)
 		}
+		remark := "注册赠送"
+		record := &model.TokenRecord{
+			UserID:       user.UserID,
+			ChangeAmount: 1000,
+			BalanceAfter: 0,
+			ChangeType:   "CONSUME",
+			Remark:       &remark,
+			ChangeTime:   time.Now(),
+		}
+
+		model.CreateTokenRecord(tx, record)
 
 		// 生成token
 		token, err = s.generateToken(user)
