@@ -213,7 +213,7 @@ type CreateConsumptionRuleRequest struct {
 	TokenCost   *int   `json:"token_cost,omitempty"`
 	FeatureCode string `json:"feature_code"`
 	Status      *int8  `json:"status"`
-	Class       string `json:"class" binding:"required"` // 代币消耗规则分类
+	Class       string `json:"classify" binding:"required"` // 代币消耗规则分类
 }
 
 // CreateConsumptionRule 创建代币消耗规则
@@ -248,7 +248,7 @@ type UpdateConsumptionRuleRequest struct {
 	TokenCost   *int64 `json:"token_cost,omitempty"`
 	FeatureCode string `json:"feature_code"`
 	Status      *int8  `json:"status"`
-	Class       string `json:"class" binding:"required"`
+	Class       string `json:"classify" binding:"required"`
 }
 
 // UpdateConsumptionRule 更新代币消耗规则
