@@ -103,10 +103,11 @@ func (s *AdminService) GetUser(ctx context.Context, id string) (*model.User, err
 }
 
 // UpdateUser 更新用户信息
-func (s *AdminService) UpdateUser(ctx context.Context, id string, updates map[string]interface{}) error {
+func (s *AdminService) UpdateUser(ctx context.Context, id string, updates map[string]interface{}) (int, error) {
 	// 检查用户是否存在
-	if _, err := model.GetUserByID(s.db, id); err != nil {
-		return errors.New(errors.ErrCodeNotFound, "User not found", err)
+	user, err := model.GetUserByID(s.db, id)
+	if err != nil {
+		return 0, errors.New(errors.ErrCodeNotFound, "User not found", err)
 	}
 
 	// 如果更新邮箱，检查是否已存在
@@ -115,18 +116,18 @@ func (s *AdminService) UpdateUser(ctx context.Context, id string, updates map[st
 		if err := s.db.Model(&model.User{}).
 			Where("email = ? AND id != ?", email, id).
 			Count(&count).Error; err != nil {
-			return errors.New(errors.ErrCodeInternal, "Failed to check email", err)
+			return 0, errors.New(errors.ErrCodeInternal, "Failed to check email", err)
 		}
 		if count > 0 {
-			return errors.New(errors.ErrCodeInvalidParams, "Email already exists", nil)
+			return 0, errors.New(errors.ErrCodeInvalidParams, "Email already exists", nil)
 		}
 	}
 
 	if err := model.UpdateUser(s.db, id, updates); err != nil {
-		return errors.New(errors.ErrCodeInternal, "Failed to update user", err)
+		return 0, errors.New(errors.ErrCodeInternal, "Failed to update user", err)
 	}
 
-	return nil
+	return user.TokenBalance, nil
 }
 
 func (s *AdminService) CreateTokenRecord(id, remark string, amount, tokenBalance int) (error, int64) {

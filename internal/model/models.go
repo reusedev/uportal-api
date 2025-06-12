@@ -160,7 +160,7 @@ type TokenConsumeRule struct {
 type TokenRecord struct {
 	RecordID     int64             `gorm:"column:record_id;primaryKey;autoIncrement" json:"id"`                                                                               // 记录ID，主键，自增
 	UserID       string            `gorm:"column:user_id;type:varchar(13);not null;index:idx_token_records_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
-	ChangeAmount int               `gorm:"column:change_amount;not null" json:"points"`                                                                                       // 代币变动数
+	ChangeAmount int               `gorm:"column:change_amount;not null" json:"change_amount"`                                                                                // 代币变动数
 	BalanceAfter int               `gorm:"column:balance_after;not null" json:"balance_after"`                                                                                // 变动后余额
 	ChangeType   string            `gorm:"column:change_type;type:varchar(20);not null" json:"source"`                                                                        // 变动类型
 	TaskID       *int              `gorm:"column:task_id;index:idx_token_records_task;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"task_id"`                          // 任务ID来源

@@ -198,7 +198,7 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 		if err == nil {
 			// 已存在关联，直接登录
 			if existingUser.Status != 1 {
-				return errors.New(errors.ErrCodeForbidden, "账号已被禁用", nil)
+				return errors.New(errors.ErrCodeForbidden, "账号已被禁用，有问题请联系客服！", nil)
 			}
 
 			// 生成token

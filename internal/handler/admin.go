@@ -175,11 +175,13 @@ func (h *AdminHandler) TokenAdjustUser(c *gin.Context) {
 	}
 	updates["updated_at"] = time.Now()
 
-	if err := h.adminService.UpdateUser(c.Request.Context(), req.UserId, updates); err != nil {
+	beforeToken, err := h.adminService.UpdateUser(c.Request.Context(), req.UserId, updates)
+	if err != nil {
 		response.Error(c, err)
 		return
 	}
-	err, i := h.adminService.CreateTokenRecord(req.UserId, req.Remark, *req.ChangeAmount, *req.ChangeAmount)
+	changeAmount := *req.ChangeAmount - beforeToken
+	err, i := h.adminService.CreateTokenRecord(req.UserId, req.Remark, changeAmount, *req.ChangeAmount)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -207,7 +209,7 @@ func (h *AdminHandler) UpdateUser(c *gin.Context) {
 		updates["status"] = *req.Status
 	}
 	updates["updated_at"] = time.Now()
-	if err := h.adminService.UpdateUser(c.Request.Context(), req.UserId, updates); err != nil {
+	if _, err := h.adminService.UpdateUser(c.Request.Context(), req.UserId, updates); err != nil {
 		response.Error(c, err)
 		return
 	}

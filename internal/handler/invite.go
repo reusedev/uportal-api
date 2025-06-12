@@ -57,7 +57,7 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 
 	// 不能邀请自己
 	if inviteBy == userID {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "不能邀请自己", nil))
+		response.Success(c, nil)
 		return
 	}
 
