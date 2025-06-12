@@ -91,7 +91,7 @@ type UpdateTaskRequest struct {
 	Description     string `json:"task_desc" binding:"required"`
 	TokenReward     int    `json:"token_reward" binding:"required"`
 	DailyLimit      int    `json:"daily_limit" binding:"required"`
-	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
+	IntervalSeconds *int   `json:"interval_seconds" binding:"required"`
 	ValidFrom       string `json:"valid_from" binding:"required"`
 	ValidTo         string `json:"valid_to"`
 	Repeatable      *int8  `json:"repeatable" binding:"required"`
@@ -112,7 +112,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		"status":           *req.Status,
 		"task_desc":        req.Description,
 		"daily_limit":      req.DailyLimit,
-		"interval_seconds": req.IntervalSeconds,
+		"interval_seconds": *req.IntervalSeconds,
 		"valid_from":       &from,
 		"repeatable":       req.Repeatable,
 		"task_key":         req.TaskKey,
