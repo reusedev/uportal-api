@@ -160,8 +160,8 @@ func (s *InviteService) ProcessInviteRewardWithTx(ctx context.Context, tx *gorm.
 
 	// 获取邀请人信息并加行锁
 	var inviter model.User
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-		First(&inviter, record.InviterID).Error; err != nil {
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", record.InviterID).
+		First(&inviter).Error; err != nil {
 		return errors.New(errors.ErrCodeInternal, "获取邀请人信息失败", err)
 	}
 

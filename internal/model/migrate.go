@@ -50,10 +50,10 @@ func Migrate(db *gorm.DB) error {
 		refTable string
 		refKey   string
 	}{
-		{"orders", "user_id", "users", "user_id"},
-		{"user_auth", "user_id", "users", "user_id"},
-		{"user_login_log", "user_id", "users", "user_id"},
-		{"recharge_orders", "user_id", "users", "user_id"},
+		{"orders", "user_id", "users", "id"},
+		{"user_auth", "user_id", "users", "id"},
+		{"user_login_log", "user_id", "users", "id"},
+		{"recharge_orders", "user_id", "users", "id"},
 		{"recharge_orders", "plan_id", "recharge_plans", "plan_id"},
 		{"refunds", "user_id", "users", "user_id"},
 		{"refunds", "order_id", "recharge_orders", "order_id"},
@@ -64,8 +64,8 @@ func Migrate(db *gorm.DB) error {
 		{"token_records", "order_id", "recharge_orders", "order_id"},
 		{"token_records", "admin_id", "admin_users", "admin_id"},
 		{"payment_notify_records", "order_id", "recharge_orders", "order_id"},
-		{"invite_records", "inviter_id", "users", "user_id"},
-		{"invite_records", "invitee_id", "users", "user_id"},
+		{"invite_records", "inviter_id", "users", "id"},
+		{"invite_records", "invitee_id", "users", "id"},
 	}
 
 	for _, c := range constraints {
