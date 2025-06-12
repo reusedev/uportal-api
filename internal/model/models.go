@@ -169,11 +169,11 @@ type TokenRecord struct {
 	AdminID      *int64            `gorm:"column:admin_id;index:idx_token_records_admin;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin_id"`                       // 管理员ID来源
 	Remark       *string           `gorm:"column:remark;type:varchar(255)" json:"remark"`                                                                                     // 备注说明
 	ChangeTime   time.Time         `gorm:"column:change_time;not null;autoCreateTime" json:"created_at"`                                                                      // 变动时间
-	User         User              `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                            // 关联用户信息
-	Task         *RewardTask       `gorm:"foreignKey:TaskID;references:TaskID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"task,omitempty"`                           // 关联任务信息
-	Feature      *TokenConsumeRule `gorm:"foreignKey:FeatureID;references:FeatureID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"feature,omitempty"`                  // 关联功能信息
-	Order        *RechargeOrder    `gorm:"foreignKey:OrderID;references:OrderID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"order,omitempty"`                        // 关联订单信息
-	Admin        *AdminUser        `gorm:"foreignKey:AdminID;references:AdminID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin,omitempty"`                        // 关联管理员信息
+	User         User              `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"-"`                                         // 关联用户信息
+	Task         *RewardTask       `gorm:"foreignKey:TaskID;references:TaskID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                        // 关联任务信息
+	Feature      *TokenConsumeRule `gorm:"foreignKey:FeatureID;references:FeatureID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                  // 关联功能信息
+	Order        *RechargeOrder    `gorm:"foreignKey:OrderID;references:OrderID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                      // 关联订单信息
+	Admin        *AdminUser        `gorm:"foreignKey:AdminID;references:AdminID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                      // 关联管理员信息
 }
 
 // RewardTask 代币任务配置表结构体

@@ -5,6 +5,7 @@ import (
 	stderrors "errors"
 	"github.com/reusedev/uportal-api/pkg/logs"
 	"go.uber.org/zap"
+	"time"
 
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
@@ -60,6 +61,13 @@ type ListConsumptionRulesRequest struct {
 type ListUserTokenRecords struct {
 	Prev  *int `json:"prev"` //上一条记录 ID
 	Limit *int `json:"limit"`
+}
+
+type ListUserTokenResp struct {
+	Id        int64     `json:"id"`
+	Source    string    `json:"source"`
+	Points    int       `json:"points"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // CreateRechargePlanRequest 创建充值套餐请求
