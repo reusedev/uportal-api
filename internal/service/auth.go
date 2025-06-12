@@ -269,7 +269,7 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 		record := &model.TokenRecord{
 			UserID:       user.UserID,
 			ChangeAmount: 1000,
-			BalanceAfter: 0,
+			BalanceAfter: 1000,
 			ChangeType:   "CONSUME",
 			Remark:       &remark,
 			ChangeTime:   time.Now(),
