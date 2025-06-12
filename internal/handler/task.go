@@ -213,6 +213,7 @@ type CreateConsumptionRuleRequest struct {
 	TokenCost   *int   `json:"token_cost,omitempty"`
 	FeatureCode string `json:"feature_code"`
 	Status      *int8  `json:"status"`
+	Class       string `json:"class" binding:"required"` // 代币消耗规则分类
 }
 
 // CreateConsumptionRule 创建代币消耗规则
@@ -229,6 +230,7 @@ func (h *TaskHandler) CreateConsumptionRule(c *gin.Context) {
 		TokenCost:   req.TokenCost,
 		FeatureCode: req.FeatureCode,
 		Status:      req.Status,
+		Class:       req.Class,
 	})
 	if err != nil {
 		response.Error(c, err)
@@ -246,6 +248,7 @@ type UpdateConsumptionRuleRequest struct {
 	TokenCost   *int64 `json:"token_cost,omitempty"`
 	FeatureCode string `json:"feature_code"`
 	Status      *int8  `json:"status"`
+	Class       string `json:"class" binding:"required"`
 }
 
 // UpdateConsumptionRule 更新代币消耗规则
@@ -262,6 +265,7 @@ func (h *TaskHandler) UpdateConsumptionRule(c *gin.Context) {
 		TokenCost:   req.TokenCost,
 		FeatureCode: req.FeatureCode,
 		Status:      req.Status,
+		Class:       req.Class,
 	})
 	if err != nil {
 		response.Error(c, err)

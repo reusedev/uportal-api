@@ -195,7 +195,9 @@ func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *Up
 		return errors.New(errors.ErrCodeInternal, "查询消费规则失败", err)
 	}
 
-	updates := map[string]interface{}{}
+	updates := map[string]interface{}{
+		"class": req.Class,
+	}
 	if req.FeatureName != "" {
 		updates["feature_name"] = req.FeatureName
 	}
@@ -221,6 +223,7 @@ type CreateConsumptionRuleRequest struct {
 	TokenCost   *int   `json:"token_cost,omitempty"`
 	FeatureCode string `json:"feature_code"`
 	Status      *int8  `json:"status"`
+	Class       string `json:"class"`
 }
 
 // CreateConsumptionRule 创建Token消费规则
@@ -231,6 +234,7 @@ func (s *TaskService) CreateConsumptionRule(ctx context.Context, req *CreateCons
 		TokenCost:   *req.TokenCost,
 		FeatureCode: &req.FeatureCode,
 		Status:      *req.Status,
+		Class:       req.Class,
 	}
 
 	err := model.CreateTokenConsumptionRule(s.db, rule)

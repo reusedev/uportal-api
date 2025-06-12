@@ -153,6 +153,7 @@ type TokenConsumeRule struct {
 	TokenCost   int     `gorm:"column:token_cost;not null" json:"token_cost"`                       // 使用一次该功能消耗的代币数
 	FeatureCode *string `gorm:"column:feature_code;type:varchar(50)" json:"feature_code"`           // 功能代码
 	Status      int8    `gorm:"column:status;not null;default:1" json:"status"`                     // 功能状态：1=启用，0=停用
+	Class       string  `gorm:"column:class;type:varchar(50)" json:"classify"`
 }
 
 // TokenRecord 用户代币记录表结构体

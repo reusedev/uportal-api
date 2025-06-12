@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS `token_consume_rules` (
                                        `feature_desc` VARCHAR(255) DEFAULT NULL           COMMENT '功能描述',
                                        `token_cost`   INT          NOT NULL               COMMENT '使用一次该功能消耗的代币数',
                                        `feature_code` VARCHAR(50)  DEFAULT NULL           COMMENT '功能代码，用于程序内部识别',
+                                       `class` VARCHAR(50)  DEFAULT NULL           COMMENT '分类',
                                        `status`       TINYINT      NOT NULL DEFAULT 1     COMMENT '功能状态：1=启用，0=停用',
                                        PRIMARY KEY (`feature_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4

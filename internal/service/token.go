@@ -29,6 +29,7 @@ type UpdateConsumptionRuleRequest struct {
 	TokenCost   *int64 `json:"token_cost" binding:"required,min=1"`
 	FeatureCode string `json:"feature_code" binding:"required,max=50"`
 	Status      *int8  `json:"status" binding:"required,oneof=1 2"`
+	Class       string `json:"class" binding:"required,max=100"`
 }
 
 // DeleteConsumptionRule 删除Token消费规则
