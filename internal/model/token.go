@@ -62,6 +62,18 @@ func ListTokenConsumptionRules(db *gorm.DB) ([]*TokenConsumeRule, int64, error) 
 	return rules, total, nil
 }
 
+// GetTokenConsumptionRules 获取Token消费规则列表
+func GetTokenConsumptionRules(db *gorm.DB, class string) ([]*TokenConsumeRule, error) {
+	var rules []*TokenConsumeRule
+
+	err := db.Model(&TokenConsumeRule{}).Where("class = ?", class).Find(&rules).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return rules, nil
+}
+
 // CreateRechargePlan 创建充值套餐
 func CreateRechargePlan(db *gorm.DB, plan *RechargePlan) error {
 	return db.Create(plan).Error

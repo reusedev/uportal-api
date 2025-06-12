@@ -189,6 +189,41 @@ type ListConsumptionRulesRequest struct {
 	Status *int `json:"status,omitempty"` // 可选的状态过滤
 }
 
+type GetConsumeRuleRequest struct {
+	Classify string `json:"classify" binding:"required"`
+}
+
+type GetConsumeRuleResponse struct {
+	Key   *string `json:"key"` // 规则标识
+	Label string  `json:"label"`
+	Cost  int     `json:"cost"`
+}
+
+// GetConsumeRule 获取代币消耗规则
+func (h *TaskHandler) GetConsumeRule(c *gin.Context) {
+	var req GetConsumeRuleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	rules, err := h.taskService.GetConsumptionRules(c.Request.Context(), req.Classify)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	resp := make([]*GetConsumeRuleResponse, 0, len(rules))
+	for _, i := range rules {
+		resp = append(resp, &GetConsumeRuleResponse{
+			Key:   i.FeatureCode,
+			Label: i.FeatureName,
+			Cost:  i.TokenCost,
+		})
+	}
+
+	response.Success(c, resp)
+}
+
 // ListConsumptionRules 获取代币消耗规则列表
 func (h *TaskHandler) ListConsumptionRules(c *gin.Context) {
 	var req ListConsumptionRulesRequest

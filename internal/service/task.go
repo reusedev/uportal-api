@@ -184,6 +184,15 @@ func (s *TaskService) ListConsumptionRules(ctx context.Context) ([]*model.TokenC
 	return rules, total, nil
 }
 
+// GetConsumptionRules 获取代币消耗规则列表
+func (s *TaskService) GetConsumptionRules(ctx context.Context, class string) ([]*model.TokenConsumeRule, error) {
+	rules, err := model.GetTokenConsumptionRules(s.db, class)
+	if err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "获取代币消耗规则列表失败", err)
+	}
+	return rules, nil
+}
+
 // UpdateConsumptionRule 更新Token消费规则
 func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *UpdateConsumptionRuleRequest) error {
 	// 检查规则是否存在
