@@ -65,9 +65,6 @@ func (s *SystemConfigService) UpdateConfig(ctx context.Context, req *UpdateConfi
 	if result.Error != nil {
 		return errors.New(errors.ErrCodeDatabaseError, "更新系统配置失败", result.Error)
 	}
-	if result.RowsAffected == 0 {
-		return errors.New(errors.ErrCodeNotFound, "系统配置不存在", nil)
-	}
 	return nil
 }
 
