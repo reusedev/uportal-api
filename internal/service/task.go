@@ -47,7 +47,7 @@ type CreateTaskRequest struct {
 	Description     string `json:"task_desc" binding:"required"`
 	TokenReward     int    `json:"token_reward" binding:"required"`
 	DailyLimit      int    `json:"daily_limit" binding:"required"`
-	IntervalSeconds int    `json:"interval_seconds" binding:"required"`
+	IntervalSeconds *int   `json:"interval_seconds" binding:"required"`
 	ValidFrom       string `json:"valid_from" binding:"required"`
 	ValidTo         string `json:"valid_to"`
 	Repeatable      *int8  `json:"repeatable" binding:"required"`
@@ -62,7 +62,7 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		TaskDesc:        &req.Description,
 		TokenReward:     req.TokenReward,
 		DailyLimit:      req.DailyLimit,
-		IntervalSeconds: req.IntervalSeconds,
+		IntervalSeconds: *req.IntervalSeconds,
 		Repeatable:      *req.Repeatable,
 		Status:          *req.Status, // 默认启用
 		TaskKey:         req.TaskKey,
