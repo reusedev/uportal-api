@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	stderrors "errors"
-	"strconv"
-
 	"github.com/reusedev/uportal-api/pkg/logs"
 	"go.uber.org/zap"
 
@@ -59,8 +57,8 @@ type ListConsumptionRulesRequest struct {
 }
 
 type ListUserTokenRecords struct {
-	Prev  *string `json:"prev"` //上一条记录 ID
-	Limit *int    `json:"limit"`
+	Prev  *int `json:"prev"` //上一条记录 ID
+	Limit *int `json:"limit"`
 }
 
 // CreateRechargePlanRequest 创建充值套餐请求
@@ -214,7 +212,7 @@ func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID string, r
 	var start int
 	limit := 10
 	if req.Prev != nil {
-		start, _ = strconv.Atoi(*req.Prev)
+		start = *req.Prev
 	}
 	if req.Limit != nil {
 		limit = int(*req.Limit)
