@@ -232,12 +232,13 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 				zap.Error(err))
 			return errors.New(errors.ErrCodeInternal, "查询用户失败", err)
 		}
-
+		now := time.Now()
 		// 不存在关联，创建新用户
 		user = &model.User{
 			TokenBalance: 1000,
 			Status:       1,
 			UserID:       model.GenerateUserID(),
+			LastLoginAt:  &now,
 		}
 		logs.Business().Warn("创建登录日志失败",
 			zap.String("user_id", user.UserID),
