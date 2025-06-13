@@ -55,10 +55,10 @@ func Migrate(db *gorm.DB) error {
 		{"user_login_log", "user_id", "users", "id"},
 		{"recharge_orders", "user_id", "users", "id"},
 		{"recharge_orders", "plan_id", "recharge_plans", "plan_id"},
-		{"refunds", "user_id", "users", "user_id"},
+		{"refunds", "user_id", "users", "id"},
 		{"refunds", "order_id", "recharge_orders", "order_id"},
 		{"refunds", "admin_id", "admin_users", "admin_id"},
-		{"token_records", "user_id", "users", "user_id"},
+		{"token_records", "user_id", "users", "id"},
 		{"token_records", "task_id", "reward_tasks", "task_id"},
 		{"token_records", "feature_id", "token_consume_rules", "feature_id"},
 		{"token_records", "order_id", "recharge_orders", "order_id"},
@@ -204,7 +204,7 @@ func initBaseData(db *gorm.DB) error {
 		tasks := []RewardTask{
 			{
 				TaskName:        "每日登录",
-				TaskKey:         "daily_login",
+				TaskKey:         "daily_login_task",
 				TaskDesc:        &dailyLoginDesc,
 				TokenReward:     10,
 				DailyLimit:      1,
@@ -214,7 +214,7 @@ func initBaseData(db *gorm.DB) error {
 			},
 			{
 				TaskName:        "分享",
-				TaskKey:         "share",
+				TaskKey:         "share_task",
 				TaskDesc:        &shareDesc,
 				TokenReward:     5,
 				DailyLimit:      3,
@@ -224,7 +224,7 @@ func initBaseData(db *gorm.DB) error {
 			},
 			{
 				TaskName:        "邀请新用户",
-				TaskKey:         "invite",
+				TaskKey:         "invite_user_task",
 				TaskDesc:        &inviteDesc,
 				TokenReward:     50,
 				DailyLimit:      0, // 不限制每日次数
