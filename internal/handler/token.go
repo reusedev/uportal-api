@@ -175,10 +175,12 @@ func (h *TokenHandler) GetUserTokenRecords(c *gin.Context) {
 	resp := make([]service.ListUserTokenResp, 0, len(records))
 	for _, i := range records {
 		resp = append(resp, service.ListUserTokenResp{
-			Id:        i.RecordID,
-			Source:    *i.Remark,
-			Points:    i.ChangeAmount,
-			CreatedAt: i.ChangeTime,
+			Id:           i.RecordID,
+			Source:       *i.Remark,
+			Points:       i.ChangeAmount,
+			CreatedAt:    i.ChangeTime,
+			Remark:       *i.Remark,
+			BalanceAfter: i.BalanceAfter,
 		})
 	}
 

@@ -64,10 +64,12 @@ type ListUserTokenRecords struct {
 }
 
 type ListUserTokenResp struct {
-	Id        int64     `json:"id"`
-	Source    string    `json:"source"`
-	Points    int       `json:"points"`
-	CreatedAt time.Time `json:"created_at"`
+	Id           int64     `json:"id"`
+	Source       string    `json:"source"`
+	Points       int       `json:"points"`
+	CreatedAt    time.Time `json:"created_at"`
+	Remark       string    `json:"remark"`
+	BalanceAfter int       `json:"balance_after"`
 }
 
 // CreateRechargePlanRequest 创建充值套餐请求
