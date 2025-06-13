@@ -182,7 +182,7 @@ func (h *TokenHandler) GetUserTokenRecords(c *gin.Context) {
 		})
 	}
 
-	response.Success(c, records)
+	response.Success(c, resp)
 }
 
 // GetRechargeAmount 计算充值金额
