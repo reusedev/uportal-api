@@ -3,9 +3,10 @@ package service
 import (
 	"context"
 	stderrors "errors"
+	"time"
+
 	"github.com/reusedev/uportal-api/pkg/logs"
 	"go.uber.org/zap"
-	"time"
 
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/errors"
@@ -310,7 +311,7 @@ func (s *TokenService) ProcessPointsReward(ctx context.Context, userID string, r
 
 	// 检查用户是否存在
 	var user model.User
-	if err := tx.First(&user, userID).Error; err != nil {
+	if err := tx.Where("id = ?", userID).First(&user).Error; err != nil {
 		tx.Rollback()
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New(errors.ErrCodeUserNotFound, "用户不存在", nil)
