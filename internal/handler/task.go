@@ -39,6 +39,14 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// RegisterTaskRoutes 注册任务相关路由
+func RegisterTaskRoutes(r *gin.RouterGroup, h *TaskHandler) {
+	r.GET("/list", h.GetAvailableTasks)
+	r.POST("/report", h.CompleteTask)
+	r.GET("/records", h.GetUserTaskRecords)
+	r.GET("/statistics", h.GetUserTaskStatistics)
+}
+
 // UpdateTask 更新任务
 func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	var req service.UpdateTaskRequest

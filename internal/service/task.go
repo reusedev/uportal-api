@@ -348,12 +348,14 @@ type CompleteTaskRequest struct {
 
 // TaskCompletionResult 任务完成结果
 type TaskCompletionResult struct {
-	TaskID            int        `json:"task_id"`
-	TaskName          string     `json:"task_name"`
-	TokenReward       int        `json:"token_reward"`
-	IsCompleted       bool       `json:"is_completed"`
-	Message           string     `json:"message"`
-	NextAvailableTime *time.Time `json:"next_available_time,omitempty"`
+	//TaskID            int        `json:"task_id"`
+	//TaskName          string     `json:"task_name"`
+	//TokenReward       int        `json:"token_reward"`
+	//IsCompleted       bool       `json:"is_completed"`
+	//Message           string     `json:"message"`
+	//NextAvailableTime *time.Time `json:"next_available_time,omitempty"`
+	Balance int64 `json:"balance"`
+	Reward  int   `json:"reward"`
 }
 
 // CompleteTask 完成任务
@@ -433,20 +435,14 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID string, req *Comp
 		return nil, errors.New(errors.ErrCodeInternal, "提交事务失败", err)
 	}
 
-	// 计算下次可完成时间
-	var nextAvailableTime *time.Time
-	if task.IntervalSeconds > 0 {
-		next := now.Add(time.Duration(task.IntervalSeconds) * time.Second)
-		nextAvailableTime = &next
+	token, err := s.getUserToken(ctx, tx, userID)
+	if err != nil {
+		return nil, err
 	}
 
 	return &TaskCompletionResult{
-		TaskID:            task.TaskID,
-		TaskName:          task.TaskName,
-		TokenReward:       task.TokenReward,
-		IsCompleted:       true,
-		Message:           "任务完成成功",
-		NextAvailableTime: nextAvailableTime,
+		Reward:  task.TokenReward,
+		Balance: token,
 	}, nil
 }
 
@@ -514,6 +510,10 @@ func (s *TaskService) verifyTaskCompletion(ctx context.Context, tx *gorm.DB, use
 	}
 
 	return nil
+}
+
+func (s *TaskService) getUserToken(ctx context.Context, tx *gorm.DB, userID string) (int64, error) {
+	return model.GetUserTokenBalance(tx, userID)
 }
 
 // grantTaskReward 发放任务奖励

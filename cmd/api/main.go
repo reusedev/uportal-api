@@ -172,18 +172,8 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 支付相关路由
 		handler.RegisterPaymentRoutes(api, paymentHandler, middleware.Auth())
 
-		// 任务相关路由
-		tasks := api.Group("/tasks")
-		{
-
-			// 用户接口
-			userTasks := tasks.Group("", middleware.Auth())
-			{
-				userTasks.GET("/available", taskHandler.GetAvailableTasks)
-				userTasks.POST("/complete", taskHandler.CompleteTask)
-				userTasks.GET("/records", taskHandler.GetUserTaskRecords)
-				userTasks.GET("/statistics", taskHandler.GetUserTaskStatistics)
-			}
-		}
+		// 用户任务相关路由
+		tasks := api.Group("/reward-tasks")
+		handler.RegisterTaskRoutes(tasks, taskHandler)
 	}
 }
