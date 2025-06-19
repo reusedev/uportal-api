@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/reusedev/uportal-api/pkg/consts"
 
 	"github.com/reusedev/uportal-api/internal/service"
 	"github.com/reusedev/uportal-api/pkg/errors"
@@ -107,7 +108,7 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 
 // GetAvailableTasks 获取用户可用的任务列表
 func (h *TaskHandler) GetAvailableTasks(c *gin.Context) {
-	userID := c.GetString("user_id")
+	userID := c.GetString(consts.UserId)
 	tasks, err := h.taskService.GetAvailableTasks(c.Request.Context(), userID)
 	if err != nil {
 		response.Error(c, err)
@@ -119,7 +120,7 @@ func (h *TaskHandler) GetAvailableTasks(c *gin.Context) {
 
 // CompleteTask 完成任务
 func (h *TaskHandler) CompleteTask(c *gin.Context) {
-	userID := c.GetString("user_id")
+	userID := c.GetString(consts.UserId)
 	var req service.CompleteTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
@@ -137,7 +138,7 @@ func (h *TaskHandler) CompleteTask(c *gin.Context) {
 
 // GetUserTaskRecords 获取用户任务完成记录
 func (h *TaskHandler) GetUserTaskRecords(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+	userID := c.GetString(consts.UserId)
 	page := utils.GetPage(c)
 	pageSize := utils.GetPageSize(c)
 
@@ -172,7 +173,7 @@ func (h *TaskHandler) GetTaskStatistics(c *gin.Context) {
 
 // GetUserTaskStatistics 获取用户任务统计信息
 func (h *TaskHandler) GetUserTaskStatistics(c *gin.Context) {
-	userID := c.GetInt64("user_id")
+	userID := c.GetInt64(consts.UserId)
 	stats, err := h.taskService.GetUserTaskStatistics(c.Request.Context(), userID)
 	if err != nil {
 		response.Error(c, err)

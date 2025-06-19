@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
-
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/config"
 	"github.com/reusedev/uportal-api/pkg/errors"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // TaskService 任务服务
@@ -193,20 +192,19 @@ func (s *TaskService) GetConsumptionRules(ctx context.Context, class string) ([]
 	return rules, nil
 }
 
-// UpdateConsumptionRule 更新Token消费规则
+// UpdateConsumptionRule 更新消费规则
 func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *UpdateConsumptionRuleRequest) error {
-	// 检查规则是否存在
-	_, err := model.GetTokenConsumptionRule(s.db, id)
-	if err != nil {
-		if stderrors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New(errors.ErrCodeNotFound, "消费规则不存在", nil)
+	// 查找现有规则
+	var rule model.TokenConsumeRule
+	if err := s.db.Where("feature_id = ?", id).First(&rule).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.New(errors.ErrCodeNotFound, "消费规则不存在", err)
 		}
 		return errors.New(errors.ErrCodeInternal, "查询消费规则失败", err)
 	}
 
-	updates := map[string]interface{}{
-		"class": req.Class,
-	}
+	// 更新规则
+	updates := make(map[string]interface{})
 	if req.FeatureName != "" {
 		updates["feature_name"] = req.FeatureName
 	}
@@ -214,7 +212,7 @@ func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *Up
 		updates["feature_desc"] = req.FeatureDesc
 	}
 	if req.TokenCost != nil {
-		updates["token_cost"] = req.TokenCost
+		updates["token_cost"] = *req.TokenCost
 	}
 	if req.FeatureCode != "" {
 		updates["feature_code"] = req.FeatureCode
@@ -222,8 +220,15 @@ func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *Up
 	if req.Status != nil {
 		updates["status"] = *req.Status
 	}
+	if req.Class != "" {
+		updates["classify"] = req.Class
+	}
 
-	return model.UpdateTokenConsumptionRule(s.db, id, updates)
+	if err := s.db.Model(&rule).Updates(updates).Error; err != nil {
+		return errors.New(errors.ErrCodeInternal, "更新消费规则失败", err)
+	}
+
+	return nil
 }
 
 type CreateConsumptionRuleRequest struct {
@@ -313,13 +318,25 @@ func (s *TaskService) getUserTaskCompletionCount(ctx context.Context, userID str
 	var count int64
 	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local)
 
-	if err := s.db.Model(&model.TokenRecord{}).
-		Where("user_id = ? AND task_id = ? AND change_type = 'TASK_REWARD' AND change_time >= ?",
+	if err := s.db.Model(&model.TaskCompletionRecord{}).
+		Where("user_id = ? AND task_id = ? AND completed_at >= ?",
 			userID, taskID, today).
 		Count(&count).Error; err != nil {
 		return 0, errors.New(errors.ErrCodeInternal, "获取任务完成次数失败", err)
 	}
 
+	return count, nil
+}
+
+// getUserTotalTaskCompletionCount 获取用户任务总完成次数
+func (s *TaskService) getUserTotalTaskCompletionCount(ctx context.Context, userID string, taskID int) (int64, error) {
+	var count int64
+	if err := s.db.Model(&model.TaskCompletionRecord{}).
+		Where("user_id = ? AND task_id = ?",
+			userID, taskID).
+		Count(&count).Error; err != nil {
+		return 0, errors.New(errors.ErrCodeInternal, "获取任务总完成次数失败", err)
+	}
 	return count, nil
 }
 
@@ -581,25 +598,25 @@ func (s *TaskService) sendTaskCompletionNotification(ctx context.Context, userID
 
 // getLastTaskCompletion 获取最后一次任务完成时间
 func (s *TaskService) getLastTaskCompletion(ctx context.Context, tx *gorm.DB, userID string, taskID int) (*time.Time, error) {
-	var record model.TokenRecord
-	err := tx.Where("user_id = ? AND task_id = ? AND change_type = 'TASK_REWARD'",
+	var record model.TaskCompletionRecord
+	err := tx.Where("user_id = ? AND task_id = ?",
 		userID, taskID).
-		Order("change_time DESC").
+		Order("completed_at DESC").
 		First(&record).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, errors.New(errors.ErrCodeInternal, "获取任务完成记录失败", err)
 	}
-	return &record.ChangeTime, nil
+	return &record.CompletedAt, nil
 }
 
 // hasCompletedTask 检查是否已完成任务
 func (s *TaskService) hasCompletedTask(ctx context.Context, tx *gorm.DB, userID string, taskID int) (bool, error) {
 	var count int64
-	err := tx.Model(&model.TokenRecord{}).
-		Where("user_id = ? AND task_id = ? AND change_type = 'TASK_REWARD'",
+	err := tx.Model(&model.TaskCompletionRecord{}).
+		Where("user_id = ? AND task_id = ?",
 			userID, taskID).
 		Count(&count).Error
 	if err != nil {
@@ -629,25 +646,25 @@ type TaskStatistics struct {
 }
 
 // GetUserTaskRecords 获取用户任务完成记录
-func (s *TaskService) GetUserTaskRecords(ctx context.Context, userID int64, page, pageSize int) ([]*TaskCompletionRecord, int64, error) {
+func (s *TaskService) GetUserTaskRecords(ctx context.Context, userID string, page, pageSize int) ([]*TaskCompletionRecord, int64, error) {
 	var records []*TaskCompletionRecord
 	var total int64
 
 	// 查询总记录数
-	if err := s.db.Model(&model.TokenRecord{}).
-		Where("user_id = ? AND change_type = 'TASK_REWARD'", userID).
+	if err := s.db.Model(&model.TaskCompletionRecord{}).
+		Where("user_id = ?", userID).
 		Count(&total).Error; err != nil {
 		return nil, 0, errors.New(errors.ErrCodeInternal, "获取任务记录总数失败", err)
 	}
 
 	// 查询任务记录
-	if err := s.db.Model(&model.TokenRecord{}).
-		Select("token_records.id as record_id, token_records.user_id, token_records.task_id, "+
-			"reward_tasks.task_name, token_records.change_amount as token_reward, "+
-			"token_records.change_time as completed_at").
-		Joins("LEFT JOIN reward_tasks ON token_records.task_id = reward_tasks.task_id").
-		Where("token_records.user_id = ? AND token_records.change_type = 'TASK_REWARD'", userID).
-		Order("token_records.change_time DESC").
+	if err := s.db.Model(&model.TaskCompletionRecord{}).
+		Select("task_completion_records.id as record_id, task_completion_records.user_id, task_completion_records.task_id, "+
+			"reward_tasks.task_name, task_completion_records.token_reward, "+
+			"task_completion_records.completed_at").
+		Joins("LEFT JOIN reward_tasks ON task_completion_records.task_id = reward_tasks.task_id").
+		Where("task_completion_records.user_id = ?", userID).
+		Order("task_completion_records.completed_at DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Scan(&records).Error; err != nil {
@@ -673,17 +690,17 @@ func (s *TaskService) GetTaskStatistics(ctx context.Context, taskID int) (*TaskS
 	stats.TaskName = task.TaskName
 
 	// 查询总完成次数和奖励
-	if err := s.db.Model(&model.TokenRecord{}).
-		Where("task_id = ? AND change_type = 'TASK_REWARD'", taskID).
-		Select("COUNT(*) as total_completions, SUM(change_amount) as total_rewards").
+	if err := s.db.Model(&model.TaskCompletionRecord{}).
+		Where("task_id = ?", taskID).
+		Select("COUNT(*) as total_completions, SUM(token_reward) as total_rewards").
 		Scan(&stats).Error; err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "获取任务统计信息失败", err)
 	}
 
 	// 查询今日完成次数和奖励
-	if err := s.db.Model(&model.TokenRecord{}).
-		Where("task_id = ? AND change_type = 'TASK_REWARD' AND change_time >= ?", taskID, today).
-		Select("COUNT(*) as today_completions, SUM(change_amount) as today_rewards").
+	if err := s.db.Model(&model.TaskCompletionRecord{}).
+		Where("task_id = ? AND completed_at >= ?", taskID, today).
+		Select("COUNT(*) as today_completions, SUM(token_reward) as today_rewards").
 		Scan(&stats).Error; err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "获取今日任务统计信息失败", err)
 	}
@@ -695,8 +712,8 @@ func (s *TaskService) GetTaskStatistics(ctx context.Context, taskID int) (*TaskS
 func (s *TaskService) GetUserTaskStatistics(ctx context.Context, userID int64) (map[int]*TaskStatistics, error) {
 	// 获取用户完成过的所有任务
 	var taskIDs []int
-	if err := s.db.Model(&model.TokenRecord{}).
-		Where("user_id = ? AND change_type = 'TASK_REWARD'", userID).
+	if err := s.db.Model(&model.TaskCompletionRecord{}).
+		Where("user_id = ?", userID).
 		Distinct("task_id").
 		Pluck("task_id", &taskIDs).Error; err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "获取用户任务列表失败", err)
@@ -721,4 +738,158 @@ func boolToInt8(b bool) int8 {
 		return 1
 	}
 	return 0
+}
+
+// UserTaskStatus 用户任务状态信息
+type UserTaskStatus struct {
+	TaskID              int        `json:"task_id"`               // 任务ID
+	TaskKey             string     `json:"task_key"`              // 任务唯一标识
+	TaskName            string     `json:"task_name"`             // 任务名称
+	TaskDesc            *string    `json:"task_desc"`             // 任务描述
+	TokenReward         int        `json:"token_reward"`          // 完成一次任务获得的代币数
+	DailyLimit          int        `json:"daily_limit"`           // 每日奖励上限
+	IntervalSeconds     int        `json:"interval_seconds"`      // 两次完成任务的最小间隔秒数
+	Repeatable          int8       `json:"repeatable"`            // 是否可重复完成
+	Status              int8       `json:"status"`                // 任务状态
+	CanComplete         bool       `json:"can_complete"`          // 当前是否可以完成
+	TodayCompletedCount int64      `json:"today_completed_count"` // 今日已完成次数
+	TotalCompletedCount int64      `json:"total_completed_count"` // 总完成次数
+	NextAvailableTime   *time.Time `json:"next_available_time"`   // 下次可完成时间
+	CompletionReason    string     `json:"completion_reason"`     // 不能完成的原因
+	ValidFrom           *time.Time `json:"valid_from"`            // 任务生效时间
+	ValidTo             *time.Time `json:"valid_to"`              // 任务截止时间
+}
+
+// GetUserAvailableTasksWithStatus 获取用户可用任务列表（包含详细状态信息）
+func (s *TaskService) GetUserAvailableTasksWithStatus(ctx context.Context, userID string) ([]*UserTaskStatus, error) {
+	var tasks []*model.RewardTask
+	now := time.Now()
+
+	// 获取所有启用的任务
+	if err := s.db.Where("status = 1 AND (valid_from IS NULL OR valid_from <= ?) AND (valid_to IS NULL OR valid_to >= ?)",
+		now, now).Find(&tasks).Error; err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "获取可用任务失败", err)
+	}
+
+	var result []*UserTaskStatus
+	for _, task := range tasks {
+		userTaskStatus := &UserTaskStatus{
+			TaskID:          task.TaskID,
+			TaskKey:         task.TaskKey,
+			TaskName:        task.TaskName,
+			TaskDesc:        task.TaskDesc,
+			TokenReward:     task.TokenReward,
+			DailyLimit:      task.DailyLimit,
+			IntervalSeconds: task.IntervalSeconds,
+			Repeatable:      task.Repeatable,
+			Status:          task.Status,
+			ValidFrom:       task.ValidFrom,
+			ValidTo:         task.ValidTo,
+			CanComplete:     true, // 默认可以完成
+		}
+
+		// 获取今日完成次数
+		todayCount, err := s.getUserTaskCompletionCount(ctx, userID, task.TaskID)
+		if err != nil {
+			return nil, err
+		}
+		userTaskStatus.TodayCompletedCount = todayCount
+
+		// 获取总完成次数
+		totalCount, err := s.getUserTotalTaskCompletionCount(ctx, userID, task.TaskID)
+		if err != nil {
+			return nil, err
+		}
+		userTaskStatus.TotalCompletedCount = totalCount
+
+		// 检查每日限制
+		if task.DailyLimit > 0 && todayCount >= int64(task.DailyLimit) {
+			userTaskStatus.CanComplete = false
+			userTaskStatus.CompletionReason = "今日任务完成次数已达上限"
+			// 计算下次可完成时间（明天0点）
+			tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
+			userTaskStatus.NextAvailableTime = &tomorrow
+		}
+
+		// 检查间隔时间
+		if task.IntervalSeconds > 0 {
+			lastCompletion, err := s.getLastTaskCompletion(ctx, s.db, userID, task.TaskID)
+			if err != nil {
+				return nil, err
+			}
+			if lastCompletion != nil {
+				nextAvailableTime := lastCompletion.Add(time.Duration(task.IntervalSeconds) * time.Second)
+				if now.Before(nextAvailableTime) {
+					userTaskStatus.CanComplete = false
+					userTaskStatus.CompletionReason = "任务冷却中"
+					userTaskStatus.NextAvailableTime = &nextAvailableTime
+				}
+			}
+		}
+
+		// 检查是否可重复完成
+		if task.Repeatable == 0 {
+			completed, err := s.hasCompletedTask(ctx, s.db, userID, task.TaskID)
+			if err != nil {
+				return nil, err
+			}
+			if completed {
+				userTaskStatus.CanComplete = false
+				userTaskStatus.CompletionReason = "该任务已完成且不可重复完成"
+			}
+		}
+
+		// 如果任务不能完成且没有设置下次可完成时间，设置一个默认值
+		if !userTaskStatus.CanComplete && userTaskStatus.NextAvailableTime == nil {
+			// 对于每日限制的任务，设置为明天0点
+			if task.DailyLimit > 0 && todayCount >= int64(task.DailyLimit) {
+				tomorrow := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
+				userTaskStatus.NextAvailableTime = &tomorrow
+			}
+		}
+
+		result = append(result, userTaskStatus)
+	}
+
+	return result, nil
+}
+
+// TaskOverview 任务概览信息
+type TaskOverview struct {
+	TotalTasks          int64             `json:"total_tasks"`            // 总任务数
+	AvailableTasks      int64             `json:"available_tasks"`        // 可完成任务数
+	CompletedToday      int64             `json:"completed_today"`        // 今日已完成任务数
+	TotalRewardsToday   int64             `json:"total_rewards_today"`    // 今日获得奖励总数
+	TotalRewardsAllTime int64             `json:"total_rewards_all_time"` // 总获得奖励数
+	Tasks               []*UserTaskStatus `json:"tasks"`                  // 任务详细列表
+}
+
+// GetUserTaskOverview 获取用户任务概览信息
+func (s *TaskService) GetUserTaskOverview(ctx context.Context, userID string) (*TaskOverview, error) {
+	// 获取所有任务状态
+	tasks, err := s.GetUserAvailableTasksWithStatus(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	overview := &TaskOverview{
+		TotalTasks:     int64(len(tasks)),
+		AvailableTasks: 0,
+		CompletedToday: 0,
+		Tasks:          tasks,
+	}
+
+	// 计算统计信息
+	for _, task := range tasks {
+		if task.CanComplete {
+			overview.AvailableTasks++
+		}
+		if task.TodayCompletedCount > 0 {
+			overview.CompletedToday++
+		}
+		overview.TotalRewardsToday += task.TodayCompletedCount * int64(task.TokenReward)
+		overview.TotalRewardsAllTime += task.TotalCompletedCount * int64(task.TokenReward)
+	}
+
+	return overview, nil
 }
