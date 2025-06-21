@@ -208,5 +208,5 @@ var rewardAmounts = map[string]int{
 	RewardTypeProfile:    50,  // 完善资料奖励50代币
 	RewardTypeShare:      20,  // 分享奖励20代币
 	RewardTypeFeedback:   30,  // 反馈奖励30代币
-	RewardAd:             100, // 激励视频奖励100代币
+	RewardAd:             300, // 激励视频奖励100代币
 }

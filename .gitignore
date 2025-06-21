@@ -42,3 +42,7 @@ deploy-api.sh
 config/config.admin.yaml
 config/config.api.yaml
 start.sh
+config/config.test.admin.yaml
+config/config.test.api.yaml
+deploy-test-admin.sh
+deploy-test-api.sh
