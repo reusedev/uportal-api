@@ -128,7 +128,7 @@ func (s *OrderService) ListOrders(ctx context.Context, req *ListOrdersRequest) (
 	}
 
 	offset := (req.Page - 1) * req.Limit
-	err = query.Order("created_at DESC").Offset(offset).Limit(req.Limit).
+	err = query.Preload("RechargePlan").Order("created_at DESC").Offset(offset).Limit(req.Limit).
 		Find(&orders).Error
 	if err != nil {
 		return nil, 0, errors.New(errors.ErrCodeInternal, "查询订单列表失败", err)

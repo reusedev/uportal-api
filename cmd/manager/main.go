@@ -164,12 +164,12 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		}
 		// 充值方案
 		{
-			recharge := api.Group("/recharge-plans")
+			recharge := api.Group("/recharge-plans", middleware.AdminAuth())
 			handler.RegisterAdminTokenRoutes(recharge, tokenHandler)
 		}
 		// 充值订单
 		{
-			orders := api.Group("/recharge-orders")
+			orders := api.Group("/recharge-orders", middleware.AdminAuth())
 			handler.RegisterAdminOrderRoutes(orders, orderHandler)
 		}
 	}

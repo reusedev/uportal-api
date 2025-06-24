@@ -139,6 +139,18 @@ type RechargeOrder struct {
 	Plan          *RechargePlan `gorm:"foreignKey:PlanID;references:PlanID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                          // 关联充值方案信息
 }
 
+func (t RechargeOrder) MarshalJSON() ([]byte, error) {
+	type Alias RechargeOrder // 创建别名以避免递归调用
+
+	return json.Marshal(struct {
+		Alias
+		PlanName string `json:"plan_name"`
+	}{
+		Alias:    Alias(t),
+		PlanName: *t.Plan.Description,
+	})
+}
+
 // Refund 退款记录表结构体
 type Refund struct {
 	RefundID     int64         `gorm:"column:refund_id;primaryKey;autoIncrement" json:"refund_id"`                                                                  // 退款ID，主键，自增
