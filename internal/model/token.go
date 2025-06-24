@@ -127,9 +127,9 @@ func GetTokenRecords(db *gorm.DB, userID string, start, limit int) ([]*TokenReco
 	var records []*TokenRecord
 	tx := db.Where("user_id = ?", userID)
 	if start > 0 {
-		tx.Where("record_id < ?", start)
+		tx = tx.Where("record_id < ?", start)
 	}
-	err := db.Order("change_time DESC").Limit(limit).
+	err := tx.Order("change_time DESC").Limit(limit).
 		Find(&records).Error
 	if err != nil {
 		return nil, err
