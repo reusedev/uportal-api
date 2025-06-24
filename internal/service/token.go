@@ -76,7 +76,7 @@ type ListUserTokenResp struct {
 // CreateRechargePlanRequest 创建充值套餐请求
 type CreateRechargePlanRequest struct {
 	TokenAmount int    `json:"token_amount" binding:"required,min=1"`
-	Price       int    `json:"price" binding:"required,min=0.01"`
+	Price       int    `json:"price" binding:"required"`
 	Currency    string `json:"currency" binding:"required"`
 	Description string `json:"description" binding:"required,max=200"`
 	Status      *int8  `json:"status" binding:"required,oneof=1 2"` // 1:启用, 2:禁用
@@ -121,7 +121,9 @@ func (s *TokenService) CreateRechargePlan(ctx context.Context, req *CreateRechar
 
 // UpdateRechargePlanRequest 更新充值套餐请求
 type UpdateRechargePlanRequest struct {
-	ID          int64   `json:"id" binding:"required,min=1"`
+	ID          int64   `json:"plan_id" binding:"required,min=1"`
+	Currency    string  `json:"currency" binding:"required"`
+	TokenAmount int     `json:"token_amount" binding:"required"`
 	Price       *int    `json:"price"`
 	Description *string `json:"description"`
 	Status      *int    `json:"status"`
@@ -138,7 +140,10 @@ func (s *TokenService) UpdateRechargePlan(ctx context.Context, req *UpdateRechar
 		return errors.New(errors.ErrCodeInternal, "查询充值套餐失败", err)
 	}
 
-	updates := make(map[string]interface{})
+	updates := map[string]interface{}{
+		"token_amount": req.TokenAmount,
+		"currency":     req.Currency,
+	}
 	if req.Price != nil {
 		updates["price"] = float64(*req.Price)
 	}

@@ -91,7 +91,7 @@ func GetRechargePlan(db *gorm.DB, id int64) (*RechargePlan, error) {
 
 // UpdateRechargePlan 更新充值套餐
 func UpdateRechargePlan(db *gorm.DB, id int64, updates map[string]interface{}) error {
-	return db.Model(&RechargePlan{}).Where("id = ?", id).Updates(updates).Error
+	return db.Model(&RechargePlan{}).Where("plan_id = ?", id).Updates(updates).Error
 }
 
 // DeleteRechargePlan 删除充值套餐

@@ -82,9 +82,9 @@ func main() {
 
 	// 7. 注册中间件
 	// 注意：中间件的注册顺序很重要
-	engine.Use(middleware.Recovery(logs.Business())) // 恢复中间件应该最先注册
-	engine.Use(middleware.Logger(logs.Business()))   // 日志中间件
-	engine.Use(middleware.CORS())                    // CORS中间件
+	//engine.Use(middleware.Recovery(logs.Business())) // 恢复中间件应该最先注册
+	engine.Use(middleware.Logger(logs.Business())) // 日志中间件
+	engine.Use(middleware.CORS())                  // CORS中间件
 
 	// 8. 注册路由
 	registerRoutes(engine, model.DB, cfg)
@@ -164,12 +164,12 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		}
 		// 充值方案
 		{
-			recharge := api.Group("/recharge-plans", middleware.AdminAuth())
+			recharge := api.Group("/recharge-plans")
 			handler.RegisterAdminTokenRoutes(recharge, tokenHandler)
 		}
 		// 充值订单
 		{
-			orders := api.Group("/recharge-orders", middleware.AdminAuth())
+			orders := api.Group("/recharge-orders")
 			handler.RegisterAdminOrderRoutes(orders, orderHandler)
 		}
 	}

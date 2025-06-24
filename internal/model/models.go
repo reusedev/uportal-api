@@ -111,6 +111,17 @@ type RechargePlan struct {
 	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`       // 更新时间
 }
 
+func (t RechargePlan) MarshalJSON() ([]byte, error) {
+	type Alias RechargePlan // 创建别名以避免递归调用
+	return json.Marshal(struct {
+		Alias
+		CreatedAt string `json:"created_at"`
+	}{
+		Alias:     Alias(t),
+		CreatedAt: t.CreatedAt.Format(time.DateTime),
+	})
+}
+
 // RechargeOrder 充值订单表结构体
 type RechargeOrder struct {
 	OrderID       int64         `gorm:"column:order_id;primaryKey;autoIncrement" json:"order_id"`                                                                            // 订单ID，主键，自增
@@ -124,8 +135,8 @@ type RechargeOrder struct {
 	CreatedAt     time.Time     `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                                                                         // 订单创建时间
 	PaidAt        *time.Time    `gorm:"column:paid_at" json:"paid_at"`                                                                                                       // 支付完成时间
 	UpdatedAt     time.Time     `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`                                                                         // 更新时间
-	User          User          `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                              // 关联用户信息
-	Plan          *RechargePlan `gorm:"foreignKey:PlanID;references:PlanID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"plan,omitempty"`                             // 关联充值方案信息
+	User          User          `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"-"`                                           // 关联用户信息
+	Plan          *RechargePlan `gorm:"foreignKey:PlanID;references:PlanID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                          // 关联充值方案信息
 }
 
 // Refund 退款记录表结构体
