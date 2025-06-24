@@ -227,7 +227,7 @@ func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID string, r
 		start = *req.Prev
 	}
 	if req.Limit != nil {
-		limit = int(*req.Limit)
+		limit = *req.Limit
 	}
 	return model.GetTokenRecords(s.db, userID, start, limit)
 }
