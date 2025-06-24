@@ -150,7 +150,7 @@ func (t RechargeOrder) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Alias
 		PlanName string  `json:"plan_name"`
-		UserName *string `json:"user_name"`
+		UserName *string `json:"nickname"`
 	}{
 		Alias:    Alias(t),
 		PlanName: planName,
