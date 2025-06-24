@@ -75,11 +75,15 @@ type ListUserTokenResp struct {
 
 // CreateRechargePlanRequest 创建充值套餐请求
 type CreateRechargePlanRequest struct {
-	Name        string  `json:"name" binding:"required,max=50"`
-	TokenAmount int64   `json:"token_amount" binding:"required,min=1"`
-	Price       float64 `json:"price" binding:"required,min=0.01"`
-	Discount    float64 `json:"discount" binding:"required,min=0.1,max=1"`
-	Description string  `json:"description" binding:"required,max=200"`
+	TokenAmount int    `json:"token_amount" binding:"required,min=1"`
+	Price       int    `json:"price" binding:"required,min=0.01"`
+	Currency    string `json:"currency" binding:"required"`
+	Description string `json:"description" binding:"required,max=200"`
+	Status      *int8  `json:"status" binding:"required,oneof=1 2"` // 1:启用, 2:禁用
+}
+
+type ListRechargePlanRequest struct {
+	Status *int8 `json:"status"`
 }
 
 type TokenIsBuyRequest struct {
@@ -100,10 +104,11 @@ func (s *TokenService) CreateRechargePlan(ctx context.Context, req *CreateRechar
 	// 将 string 转换为 *string
 	description := req.Description
 	plan := &model.RechargePlan{
-		TokenAmount: int(req.TokenAmount), // 转换为 int
-		Price:       req.Price,
+		TokenAmount: req.TokenAmount, // 转换为 int
+		Price:       float64(req.Price),
 		Description: &description,
-		Status:      1,
+		Status:      *req.Status,
+		Currency:    req.Currency,
 	}
 
 	err := model.CreateRechargePlan(s.db, plan)
@@ -116,18 +121,16 @@ func (s *TokenService) CreateRechargePlan(ctx context.Context, req *CreateRechar
 
 // UpdateRechargePlanRequest 更新充值套餐请求
 type UpdateRechargePlanRequest struct {
-	Name        string  `json:"name" binding:"required,max=50"`
-	TokenAmount int64   `json:"token_amount" binding:"required,min=1"`
-	Price       float64 `json:"price" binding:"required,min=0.01"`
-	Discount    float64 `json:"discount" binding:"required,min=0.1,max=1"`
-	Description string  `json:"description" binding:"required,max=200"`
-	Status      int     `json:"status" binding:"required,oneof=1 2"`
+	ID          int64   `json:"id" binding:"required,min=1"`
+	Price       *int    `json:"price"`
+	Description *string `json:"description"`
+	Status      *int    `json:"status"`
 }
 
 // UpdateRechargePlan 更新充值套餐
-func (s *TokenService) UpdateRechargePlan(ctx context.Context, id int64, req *UpdateRechargePlanRequest) error {
+func (s *TokenService) UpdateRechargePlan(ctx context.Context, req *UpdateRechargePlanRequest) error {
 	// 检查套餐是否存在
-	_, err := model.GetRechargePlan(s.db, id)
+	_, err := model.GetRechargePlan(s.db, req.ID)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New(errors.ErrCodeNotFound, "充值套餐不存在", nil)
@@ -135,16 +138,18 @@ func (s *TokenService) UpdateRechargePlan(ctx context.Context, id int64, req *Up
 		return errors.New(errors.ErrCodeInternal, "查询充值套餐失败", err)
 	}
 
-	// 将 string 转换为 *string
-	description := req.Description
-	updates := map[string]interface{}{
-		"token_amount": int(req.TokenAmount), // 转换为 int
-		"price":        req.Price,
-		"description":  &description,
-		"status":       req.Status,
+	updates := make(map[string]interface{})
+	if req.Price != nil {
+		updates["price"] = float64(*req.Price)
+	}
+	if req.Description != nil {
+		updates["description"] = req.Description
+	}
+	if req.Status != nil {
+		updates["status"] = *req.Status
 	}
 
-	err = model.UpdateRechargePlan(s.db, id, updates)
+	err = model.UpdateRechargePlan(s.db, req.ID, updates)
 	if err != nil {
 		return errors.New(errors.ErrCodeInternal, "更新充值套餐失败", err)
 	}
@@ -172,13 +177,12 @@ func (s *TokenService) DeleteRechargePlan(ctx context.Context, id int64) error {
 }
 
 // ListRechargePlans 获取充值套餐列表
-func (s *TokenService) ListRechargePlans(ctx context.Context, page, pageSize int) ([]*model.RechargePlan, int64, error) {
-	offset := (page - 1) * pageSize
-	plans, total, err := model.ListRechargePlans(s.db, offset, pageSize)
+func (s *TokenService) ListRechargePlans(ctx context.Context, status *int8) ([]*model.RechargePlan, error) {
+	plans, err := model.ListRechargePlans(s.db, status)
 	if err != nil {
-		return nil, 0, errors.New(errors.ErrCodeInternal, "获取充值套餐列表失败", err)
+		return nil, errors.New(errors.ErrCodeInternal, "获取充值套餐列表失败", err)
 	}
-	return plans, total, nil
+	return plans, nil
 }
 
 // GetUserTokenBalance 获取用户Token余额

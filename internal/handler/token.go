@@ -56,19 +56,13 @@ func (h *TokenHandler) CreateRechargePlan(c *gin.Context) {
 
 // UpdateRechargePlan 更新充值套餐
 func (h *TokenHandler) UpdateRechargePlan(c *gin.Context) {
-	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的套餐ID", err))
-		return
-	}
-
 	var req service.UpdateRechargePlanRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
 
-	err = h.tokenService.UpdateRechargePlan(c.Request.Context(), id, &req)
+	err := h.tokenService.UpdateRechargePlan(c.Request.Context(), &req)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -96,16 +90,19 @@ func (h *TokenHandler) DeleteRechargePlan(c *gin.Context) {
 
 // ListRechargePlans 获取充值套餐列表
 func (h *TokenHandler) ListRechargePlans(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	var req service.ListRechargePlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
 
-	plans, total, err := h.tokenService.ListRechargePlans(c.Request.Context(), page, pageSize)
+	plans, err := h.tokenService.ListRechargePlans(c, req.Status)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.ListResponse(c, plans, total)
+	response.Success(c, plans)
 }
 
 // GetUserTokenBalance 获取用户Token余额
@@ -250,7 +247,6 @@ func RegisterTokenRoutes(r *gin.RouterGroup, h *TokenHandler) {
 	r.GET("/balance", h.GetUserTokenBalance)  // 获取代币余额
 	r.POST("/records", h.GetUserTokenRecords) // 获取用户代币明细记录
 	r.POST("/reward", h.ReportPointsReward)   // 上报金币奖励
-	r.GET("/plans", h.ListRechargePlans)
 }
 
 // RegisterCloudRoutes 注册 Cloud 相关路由
@@ -266,10 +262,8 @@ func RegisterConsumeRuleRoutes(r *gin.RouterGroup, h *TaskHandler) {
 
 // RegisterAdminTokenRoutes 注册管理员 Token 相关路由
 func RegisterAdminTokenRoutes(r *gin.RouterGroup, h *TokenHandler) {
-	tokens := r.Group("/tokens")
-	{
-		tokens.POST("/plans", h.CreateRechargePlan)
-		tokens.PUT("/plans/:id", h.UpdateRechargePlan)
-		tokens.DELETE("/plans/:id", h.DeleteRechargePlan)
-	}
+	r.POST("/list", h.ListRechargePlans)
+	r.POST("/create", h.CreateRechargePlan)
+	r.POST("/edit", h.UpdateRechargePlan)
+	r.DELETE("/plans/:id", h.DeleteRechargePlan)
 }

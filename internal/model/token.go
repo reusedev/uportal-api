@@ -100,21 +100,18 @@ func DeleteRechargePlan(db *gorm.DB, id int64) error {
 }
 
 // ListRechargePlans 获取充值套餐列表
-func ListRechargePlans(db *gorm.DB, offset, limit int) ([]*RechargePlan, int64, error) {
+func ListRechargePlans(db *gorm.DB, status *int8) ([]*RechargePlan, error) {
 	var plans []*RechargePlan
-	var total int64
-
-	err := db.Model(&RechargePlan{}).Count(&total).Error
+	tx := db
+	if status != nil {
+		tx = tx.Where("status = ?", *status)
+	}
+	err := tx.Find(&plans).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	err = db.Where("status = 1").Offset(offset).Limit(limit).Find(&plans).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return plans, total, nil
+	return plans, nil
 }
 
 // CreateTokenRecord 创建代币记录
