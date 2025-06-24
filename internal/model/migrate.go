@@ -29,7 +29,6 @@ func Migrate(db *gorm.DB) error {
 		&RechargePlan{},        // 充值方案表
 		&TokenConsumeRule{},    // 代币消耗规则表
 		&RewardTask{},          // 奖励任务表
-		&Order{},               // 订单表
 		&UserAuth{},            // 用户认证表
 		&UserLoginLog{},        // 用户登录日志表
 		&RechargeOrder{},       // 充值订单表

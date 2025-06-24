@@ -74,23 +74,49 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 	response.Success(c, order)
 }
 
-// ListOrdersRequest 获取订单列表请求
-type ListOrdersRequest struct {
-	Page     int    `form:"page" binding:"required,min=1"`
-	PageSize int    `form:"page_size" binding:"required,min=1,max=100"`
-	UserID   int64  `form:"user_id"`
-	Status   string `form:"status"`
+// GetAdminOrder 获取订单详情
+func (h *OrderHandler) GetAdminOrder(c *gin.Context) {
+	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+		return
+	}
+
+	order, err := h.orderService.GetOrder(c.Request.Context(), orderID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, order)
 }
 
-// ListOrders 获取订单列表（管理员接口）
-func (h *OrderHandler) ListOrders(c *gin.Context) {
-	var req ListOrdersRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+// ListInfo 获取订单列表（管理员接口）
+func (h *OrderHandler) ListInfo(c *gin.Context) {
+	var req service.ListInfoRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
 
-	orders, total, err := h.orderService.ListOrders(c.Request.Context(), req.Page, req.PageSize, req.UserID, req.Status)
+	orders, err := h.orderService.ListInfo(c.Request.Context(), &req)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, orders)
+}
+
+// ListOrders 获取订单列表（管理员接口）
+func (h *OrderHandler) ListOrders(c *gin.Context) {
+	var req service.ListOrdersRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	orders, total, err := h.orderService.ListOrders(c.Request.Context(), &req)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -146,7 +172,7 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 
 // UpdateOrderStatusRequest 更新订单状态请求
 type UpdateOrderStatusRequest struct {
-	Status      model.OrderStatus      `json:"status" binding:"required"`
+	Status      int8                   `json:"status" binding:"required"`
 	PaymentInfo map[string]interface{} `json:"payment_info"`
 }
 
@@ -183,12 +209,15 @@ func RegisterOrderRoutes(r *gin.RouterGroup, h *OrderHandler, authMiddleware gin
 		orders.GET("/:id", h.GetOrder)
 		orders.GET("", h.GetUserOrders)
 		orders.POST("/:id/cancel", h.CancelOrder)
-
-		// 管理员订单接口
-		admin := orders.Group("/admin")
-		{
-			admin.GET("", h.ListOrders)
-			admin.PUT("/:id/status", h.UpdateOrderStatus)
-		}
 	}
+}
+
+// RegisterAdminOrderRoutes 注册管理员订单相关路由
+func RegisterAdminOrderRoutes(r *gin.RouterGroup, h *OrderHandler) {
+	// 获取充值订单列表
+	r.POST("/list", h.ListOrders)
+	// 获取充值订单状态分类详情
+	r.POST("/list_info", h.ListInfo)
+	// 获取充值订单详情
+	r.GET("/:id/info", h.GetAdminOrder)
 }

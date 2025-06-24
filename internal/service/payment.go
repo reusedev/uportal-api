@@ -93,7 +93,7 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, orderID int64, de
 	}
 
 	// 检查支付金额
-	if order.Amount != amount {
+	if order.AmountPaid != amount {
 		return nil, errors.New(errors.ErrCodeInvalidParams, "支付金额不正确", nil)
 	}
 
@@ -114,7 +114,7 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, orderID int64, de
 			Appid:       core.String(s.config.Wechat.Pay.AppID),
 			Mchid:       core.String(s.config.Wechat.Pay.MchID),
 			Description: core.String(description),
-			OutTradeNo:  core.String(order.OrderNo),
+			OutTradeNo:  order.TransactionID,
 			NotifyUrl:   core.String(s.config.Wechat.Pay.NotifyUrl),
 			Amount: &jsapi.Amount{
 				Total:    core.Int64(int64(amount * 100)), // 转换为分
@@ -244,7 +244,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 	defer s.releaseLock(ctx, lockKey)
 
 	// 幂等性检查：如果订单已经支付成功，直接返回成功
-	if order.Status == model.OrderStatusPaid {
+	if order.Status == model.OrderStatusCancelled {
 		log.Printf("Order %s already paid, skip processing", orderNo)
 		// 更新通知记录为成功
 		now := time.Now()
@@ -271,13 +271,13 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 
 	// 检查支付金额
 	paidAmount := float64(*transaction.Amount.Total) / 100.0
-	if paidAmount != order.Amount {
+	if paidAmount != order.AmountPaid {
 		tx.Rollback()
-		return fmt.Errorf("payment amount mismatch: expected %.2f, got %.2f", order.Amount, paidAmount)
+		return fmt.Errorf("payment amount mismatch: expected %.2f, got %.2f", order.AmountPaid, paidAmount)
 	}
 
 	// 更新订单状态
-	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusPaid, map[string]interface{}{
+	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled, map[string]interface{}{
 		"transaction_id": *transaction.TransactionId,
 		"payment_time":   time.Now(),
 	})
@@ -361,7 +361,7 @@ func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID int64) (*p
 	// 查询微信支付订单
 	svc := jsapi.JsapiApiService{Client: s.wxPayClient}
 	resp, _, err := svc.QueryOrderByOutTradeNo(ctx, jsapi.QueryOrderByOutTradeNoRequest{
-		OutTradeNo: core.String(order.OrderNo),
+		OutTradeNo: order.TransactionID,
 		Mchid:      core.String(s.config.Wechat.Pay.MchID),
 	})
 	if err != nil {
@@ -387,7 +387,7 @@ func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) err
 	// 关闭微信支付订单
 	svc := jsapi.JsapiApiService{Client: s.wxPayClient}
 	_, err = svc.CloseOrder(ctx, jsapi.CloseOrderRequest{
-		OutTradeNo: core.String(order.OrderNo),
+		OutTradeNo: order.TransactionID,
 		Mchid:      core.String(s.config.Wechat.Pay.MchID),
 	})
 	if err != nil {
@@ -404,7 +404,7 @@ func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) err
 }
 
 // GetOrder 获取订单信息
-func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*model.Order, error) {
+func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*model.RechargeOrder, error) {
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
@@ -416,15 +416,15 @@ func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*model.Or
 }
 
 // CreateOrder 创建订单
-func (s *PaymentService) CreateOrder(ctx context.Context, userID string, amount float64, productID string, productName string) (*model.Order, error) {
+func (s *PaymentService) CreateOrder(ctx context.Context, userID string, amount float64, productID string, productName string) (*model.RechargeOrder, error) {
 	// 创建订单
-	order := &model.Order{
-		UserID:      userID,
-		OrderNo:     generateOrderNo(),
-		Amount:      amount,
-		ProductID:   productID,
-		ProductName: productName,
-		Status:      model.OrderStatusPending,
+	order := &model.RechargeOrder{
+		UserID: userID,
+		//OrderNo:     generateOrderNo(),
+		AmountPaid: amount,
+		//ProductID:   productID,
+		//ProductName: productName,
+		Status: model.OrderStatusPending,
 	}
 
 	err := model.CreateOrder(s.db, order)
@@ -435,7 +435,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID string, amount 
 	logs.Business().Info("订单创建成功",
 		zap.Int64("order_id", order.OrderID),
 		zap.String("user_id", userID),
-		zap.String("order_no", order.OrderNo),
+		//zap.String("order_no", order.OrderNo),
 		zap.Float64("amount", amount),
 	)
 
@@ -443,7 +443,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID string, amount 
 }
 
 // GetOrderByOrderNo 根据订单号获取订单
-func (s *PaymentService) GetOrderByOrderNo(ctx context.Context, orderNo string) (*model.Order, error) {
+func (s *PaymentService) GetOrderByOrderNo(ctx context.Context, orderNo string) (*model.RechargeOrder, error) {
 	order, err := model.GetOrderByOrderNo(s.db, orderNo)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -455,7 +455,7 @@ func (s *PaymentService) GetOrderByOrderNo(ctx context.Context, orderNo string) 
 }
 
 // UpdateOrderStatus 更新订单状态
-func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, status model.OrderStatus, paymentInfo map[string]interface{}) error {
+func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, status int8, paymentInfo map[string]interface{}) error {
 	// 获取订单信息
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
@@ -476,7 +476,7 @@ func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, s
 	}
 
 	// 如果支付成功，记录支付信息
-	if status == model.OrderStatusPaid {
+	if status == model.OrderStatusCompleted {
 		paymentInfoJSON, err := json.Marshal(paymentInfo)
 		if err != nil {
 			return errors.New(errors.ErrCodeInternal, "序列化支付信息失败", err)
@@ -492,7 +492,7 @@ func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, s
 
 	logs.Business().Info("订单状态更新成功",
 		zap.Int64("order_id", orderID),
-		zap.String("order_no", order.OrderNo),
+		//zap.String("order_no", order.OrderNo),
 		zap.String("old_status", string(order.Status)),
 		zap.String("new_status", string(status)),
 	)
@@ -501,7 +501,7 @@ func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, s
 }
 
 // GetUserOrders 获取用户订单列表
-func (s *PaymentService) GetUserOrders(ctx context.Context, userID int64, page, pageSize int) ([]*model.Order, int64, error) {
+func (s *PaymentService) GetUserOrders(ctx context.Context, userID int64, page, pageSize int) ([]*model.RechargeOrder, int64, error) {
 	orders, total, err := model.GetUserOrders(s.db, userID, page, pageSize)
 	if err != nil {
 		return nil, 0, errors.New(errors.ErrCodeInternal, "查询用户订单失败", err)
@@ -515,12 +515,10 @@ func generateOrderNo() string {
 }
 
 // 检查订单状态是否可以更新
-func canUpdateOrderStatus(oldStatus, newStatus model.OrderStatus) bool {
+func canUpdateOrderStatus(oldStatus, newStatus int8) bool {
 	switch oldStatus {
 	case model.OrderStatusPending:
-		return newStatus == model.OrderStatusPaid || newStatus == model.OrderStatusCancelled
-	case model.OrderStatusPaid:
-		return newStatus == model.OrderStatusCompleted || newStatus == model.OrderStatusRefunded
+		return newStatus == model.OrderStatusCancelled
 	case model.OrderStatusRefunded:
 		return newStatus == model.OrderStatusCompleted
 	default:

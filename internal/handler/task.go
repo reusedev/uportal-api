@@ -194,7 +194,7 @@ func (h *TaskHandler) GetUserTaskStatistics(c *gin.Context) {
 // ListConsumptionRulesRequest 获取代币消耗规则列表请求
 type ListConsumptionRulesRequest struct {
 	//Page     int  `json:"page" binding:"required,min=1"`
-	//PageSize int  `json:"limit" binding:"required,min=1,max=100"`
+	//Limit int  `json:"limit" binding:"required,min=1,max=100"`
 	Status *int `json:"status,omitempty"` // 可选的状态过滤
 }
 

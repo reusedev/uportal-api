@@ -22,15 +22,12 @@ func NewOrderService(db *gorm.DB) *OrderService {
 }
 
 // CreateOrder 创建订单
-func (s *OrderService) CreateOrder(ctx context.Context, userID string, amount float64, productID string, productName string) (*model.Order, error) {
+func (s *OrderService) CreateOrder(ctx context.Context, userID string, amount float64, productID string, productName string) (*model.RechargeOrder, error) {
 	// 创建订单
-	order := &model.Order{
-		UserID:      userID,
-		OrderNo:     model.GenerateOrderNo(),
-		Amount:      amount,
-		ProductID:   productID,
-		ProductName: productName,
-		Status:      model.OrderStatusPending,
+	order := &model.RechargeOrder{
+		UserID:     userID,
+		AmountPaid: amount,
+		Status:     int8(model.OrderStatusPending),
 	}
 
 	err := model.CreateOrder(s.db, order)
@@ -42,7 +39,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID string, amount fl
 }
 
 // GetOrder 获取订单信息
-func (s *OrderService) GetOrder(ctx context.Context, orderID int64) (*model.Order, error) {
+func (s *OrderService) GetOrder(ctx context.Context, orderID int64) (*model.RechargeOrder, error) {
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
@@ -53,17 +50,76 @@ func (s *OrderService) GetOrder(ctx context.Context, orderID int64) (*model.Orde
 	return order, nil
 }
 
+type ListInfoRequest struct {
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+
+type ListInfoResp struct {
+	TotalCount int `json:"total_count"`
+	Status     int `json:"status"`
+}
+
+func (s *OrderService) ListInfo(ctx context.Context, req *ListInfoRequest) (interface{}, error) {
+	var resp []ListInfoResp
+
+	query := s.db.Model(&model.RechargeOrder{})
+	if req.StartTime != "" {
+		query = query.Where("created_at >= ?", req.StartTime)
+	}
+	if req.EndTime != "" {
+		query = query.Where("created_at <= ?", req.EndTime)
+	}
+
+	err := query.Select("status, count(*) as total_count").Group("status").Find(&resp).Error
+	if err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "查询订单总金额失败", err)
+	}
+
+	ret := map[string]int{
+		"success_num": 0,
+		"failed_num":  0,
+		"pending_num": 0,
+	}
+	for _, i := range resp {
+		switch i.Status {
+		case 0:
+			ret["pending_num"] = i.TotalCount
+		case 1:
+			ret["success_num"] = i.TotalCount
+		case 2:
+			ret["failed_num"] = i.TotalCount
+		}
+	}
+	return ret, nil
+}
+
+type ListOrdersRequest struct {
+	Page      int    `json:"page" binding:"required,min=1"`
+	Limit     int    `json:"limit" binding:"required,min=1,max=100"`
+	UserID    string `json:"user_id"`
+	Status    *int   `json:"status"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
+}
+
 // ListOrders 获取订单列表
-func (s *OrderService) ListOrders(ctx context.Context, page, pageSize int, userID int64, status string) ([]*model.Order, int64, error) {
-	var orders []*model.Order
+func (s *OrderService) ListOrders(ctx context.Context, req *ListOrdersRequest) ([]*model.RechargeOrder, int64, error) {
+	var orders []*model.RechargeOrder
 	var total int64
 
-	query := s.db.Model(&model.Order{})
-	if userID > 0 {
-		query = query.Where("user_id = ?", userID)
+	query := s.db
+	if req.UserID != "" {
+		query = query.Where("user_id = ?", req.UserID)
 	}
-	if status != "" {
-		query = query.Where("status = ?", status)
+	if req.Status != nil {
+		query = query.Where("status = ?", *req.Status)
+	}
+	if req.StartTime != "" {
+		query = query.Where("created_at >= ?", req.StartTime)
+	}
+	if req.EndTime != "" {
+		query = query.Where("created_at <= ?", req.EndTime)
 	}
 
 	err := query.Count(&total).Error
@@ -71,10 +127,10 @@ func (s *OrderService) ListOrders(ctx context.Context, page, pageSize int, userI
 		return nil, 0, errors.New(errors.ErrCodeInternal, "查询订单总数失败", err)
 	}
 
-	offset := (page - 1) * pageSize
+	offset := (req.Page - 1) * req.Limit
 	err = query.Preload("User").
 		Order("created_at DESC").
-		Offset(offset).Limit(pageSize).
+		Offset(offset).Limit(req.Limit).
 		Find(&orders).Error
 	if err != nil {
 		return nil, 0, errors.New(errors.ErrCodeInternal, "查询订单列表失败", err)
@@ -84,7 +140,7 @@ func (s *OrderService) ListOrders(ctx context.Context, page, pageSize int, userI
 }
 
 // GetUserOrders 获取用户订单列表
-func (s *OrderService) GetUserOrders(ctx context.Context, userID int64, page, pageSize int) ([]*model.Order, int64, error) {
+func (s *OrderService) GetUserOrders(ctx context.Context, userID int64, page, pageSize int) ([]*model.RechargeOrder, int64, error) {
 	orders, total, err := model.GetUserOrders(s.db, userID, page, pageSize)
 	if err != nil {
 		return nil, 0, errors.New(errors.ErrCodeInternal, "查询用户订单失败", err)
@@ -93,7 +149,7 @@ func (s *OrderService) GetUserOrders(ctx context.Context, userID int64, page, pa
 }
 
 // UpdateOrderStatus 更新订单状态
-func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, status model.OrderStatus, paymentInfo map[string]interface{}) error {
+func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, status int8, paymentInfo map[string]interface{}) error {
 	// 获取订单信息
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
@@ -114,7 +170,7 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, sta
 	}
 
 	// 如果支付成功，记录支付信息
-	if status == model.OrderStatusPaid && paymentInfo != nil {
+	if status == model.OrderStatusCompleted && paymentInfo != nil {
 		paymentInfoJSON, err := json.Marshal(paymentInfo)
 		if err != nil {
 			return errors.New(errors.ErrCodeInternal, "序列化支付信息失败", err)

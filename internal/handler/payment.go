@@ -40,7 +40,7 @@ func (h *PaymentHandler) CreateWxPayOrder(c *gin.Context) {
 	}
 
 	// 创建支付订单
-	resp, err := h.paymentService.CreateWxPayOrder(c.Request.Context(), orderID, order.ProductName, order.Amount)
+	resp, err := h.paymentService.CreateWxPayOrder(c.Request.Context(), orderID, "", order.AmountPaid)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -129,7 +129,7 @@ func (h *PaymentHandler) CreateAlipayOrder(c *gin.Context) {
 	}
 
 	// 创建支付订单
-	payUrl, err := h.alipayService.CreateAlipayOrder(c.Request.Context(), orderID, order.ProductName, order.Amount)
+	payUrl, err := h.alipayService.CreateAlipayOrder(c.Request.Context(), orderID, "", order.AmountPaid)
 	if err != nil {
 		response.Error(c, err)
 		return

@@ -121,12 +121,14 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	tokenRecordService := service.NewTokenRecordService(db)
 	loginService := service.NewUserLoginLogService(db)
 	tokenService := service.NewTokenService(db)
+	orderService := service.NewOrderService(db)
 
 	// 初始化处理器
 	adminHandler := handler.NewAdminHandler(adminService, loginService, tokenRecordService)
 	taskHandler := handler.NewTaskHandler(taskService)
 	configHandler := handler.NewSystemConfigHandler(configService)
 	tokenHandler := handler.NewTokenHandler(tokenService)
+	orderHandler := handler.NewOrderHandler(orderService)
 
 	// 注册路由
 	api := engine.Group("/admin")
@@ -164,6 +166,11 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		{
 			recharge := api.Group("/recharge-plans", middleware.AdminAuth())
 			handler.RegisterAdminTokenRoutes(recharge, tokenHandler)
+		}
+		// 充值订单
+		{
+			orders := api.Group("/recharge-orders", middleware.AdminAuth())
+			handler.RegisterAdminOrderRoutes(orders, orderHandler)
 		}
 	}
 }

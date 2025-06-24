@@ -62,7 +62,7 @@ func (s *AlipayService) CreateAlipayOrder(ctx context.Context, orderID int64, de
 	}
 
 	// 检查支付金额
-	if order.Amount != amount {
+	if order.AmountPaid != amount {
 		return "", errors.New(errors.ErrCodeInvalidParams, "支付金额不正确", nil)
 	}
 
@@ -71,7 +71,7 @@ func (s *AlipayService) CreateAlipayOrder(ctx context.Context, orderID int64, de
 	p.NotifyURL = s.config.Alipay.NotifyUrl
 	p.ReturnURL = s.config.Alipay.ReturnUrl
 	p.Subject = description
-	p.OutTradeNo = order.OrderNo
+	p.OutTradeNo = *order.TransactionID
 	p.TotalAmount = fmt.Sprintf("%.2f", amount)
 	p.ProductCode = "FAST_INSTANT_TRADE_PAY"
 
@@ -179,7 +179,7 @@ func (s *AlipayService) HandleAlipayNotify(ctx context.Context, notifyData map[s
 	}
 
 	// 幂等性检查：如果订单已经支付成功，直接返回成功
-	if order.Status == model.OrderStatusPaid {
+	if order.Status == model.OrderStatusCompleted {
 		logs.Business().Info("订单已支付，跳过处理",
 			zap.String("order_no", orderNo),
 		)
@@ -208,7 +208,7 @@ func (s *AlipayService) HandleAlipayNotify(ctx context.Context, notifyData map[s
 
 	// 检查支付金额
 	paidAmount, _ := strconv.ParseFloat(notifyData["total_amount"], 64)
-	if paidAmount != order.Amount {
+	if paidAmount != order.AmountPaid {
 		tx.Rollback()
 		return apperrors.New(apperrors.ErrCodeInvalidParams, "支付金额不匹配", nil)
 	}
@@ -222,7 +222,7 @@ func (s *AlipayService) HandleAlipayNotify(ctx context.Context, notifyData map[s
 	}
 	paymentInfoJSON, _ := json.Marshal(paymentInfo)
 
-	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusPaid, map[string]interface{}{
+	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled, map[string]interface{}{
 		"payment_info": string(paymentInfoJSON),
 		"paid_at":      time.Now(),
 	})
@@ -265,7 +265,7 @@ func (s *AlipayService) QueryAlipayOrder(ctx context.Context, orderID int64) (*a
 
 	// 查询支付宝订单
 	p := alipay.TradeQuery{}
-	p.OutTradeNo = order.OrderNo
+	p.OutTradeNo = *order.TransactionID
 
 	result, err := s.client.TradeQuery(ctx, p)
 	if err != nil {
@@ -290,7 +290,7 @@ func (s *AlipayService) CloseAlipayOrder(ctx context.Context, orderID int64) err
 
 	// 关闭支付宝订单
 	p := alipay.TradeClose{}
-	p.OutTradeNo = order.OrderNo
+	p.OutTradeNo = *order.TransactionID
 
 	_, err = s.client.TradeClose(ctx, p)
 	if err != nil {
