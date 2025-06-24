@@ -142,12 +142,16 @@ type RechargeOrder struct {
 func (t RechargeOrder) MarshalJSON() ([]byte, error) {
 	type Alias RechargeOrder // 创建别名以避免递归调用
 
+	planName := ""
+	if t.Plan != nil {
+		planName = *t.Plan.Description
+	}
 	return json.Marshal(struct {
 		Alias
 		PlanName string `json:"plan_name"`
 	}{
 		Alias:    Alias(t),
-		PlanName: *t.Plan.Description,
+		PlanName: planName,
 	})
 }
 
