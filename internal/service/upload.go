@@ -12,8 +12,9 @@ import (
 
 func Upload(c *gin.Context) {
 	file, err := c.FormFile("file")
-	response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
-
+	if err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+	}
 	os.MkdirAll("tmp", os.ModePerm)
 	filePath := "tmp/" + file.Filename
 	if err = c.SaveUploadedFile(file, filePath); err != nil {
