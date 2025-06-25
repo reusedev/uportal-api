@@ -107,7 +107,7 @@ type UpdateTaskRequest struct {
 	TaskName        string `json:"task_name" binding:"required"`
 	Description     string `json:"task_desc" binding:"required"`
 	TokenReward     int    `json:"token_reward" binding:"required"`
-	DailyLimit      int    `json:"daily_limit" binding:"required"`
+	DailyLimit      *int   `json:"daily_limit" binding:"required"`
 	IntervalSeconds *int   `json:"interval_seconds" binding:"required"`
 	ValidFrom       string `json:"valid_from" binding:"required"`
 	ValidTo         string `json:"valid_to"`
@@ -132,7 +132,6 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		"token_reward":     req.TokenReward,
 		"status":           *req.Status,
 		"task_desc":        req.Description,
-		"daily_limit":      req.DailyLimit,
 		"interval_seconds": *req.IntervalSeconds,
 		"valid_from":       &from,
 		"repeatable":       req.Repeatable,
@@ -152,6 +151,9 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 	if req.Logo != nil {
 		updates["logo_url"] = req.Logo.Url
 		updates["logo_id"] = req.Logo.Id
+	}
+	if req.DailyLimit != nil {
+		updates["daily_limit"] = *req.DailyLimit
 	}
 	if err := s.db.Model(task).Updates(updates).Error; err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "更新任务失败", err)

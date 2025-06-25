@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/reusedev/uportal-api/pkg/wechat_token"
 	"log"
 	"net/http"
 	"os"
@@ -76,6 +77,8 @@ func main() {
 	}
 	defer model.CloseRedis()
 
+	wechat_token.TokenJob()
+
 	// 6. 创建Gin引擎
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.New()
@@ -132,6 +135,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	if err != nil {
 		logs.Business().Error("Init alipay service error", zap.Error(err))
 	}
+	notifyService := service.NewNotifyService(db)
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
@@ -140,7 +144,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	orderHandler := handler.NewOrderHandler(orderService)
 	paymentHandler := handler.NewPaymentHandler(paymentService, alipayService)
 	taskHandler := handler.NewTaskHandler(taskService)
-
+	notifyHandler := handler.NewNotifyHandler(notifyService)
 	// 注册路由
 	api := engine.Group("/api")
 	{
@@ -162,8 +166,8 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		handler.RegisterConsumeRuleRoutes(rule, taskHandler)
 
 		// 云端交互
-		cloud := api.Group("/cloud/points")
-		handler.RegisterCloudRoutes(cloud, tokenHandler)
+		cloud := api.Group("/cloud")
+		handler.RegisterCloudRoutes(cloud, tokenHandler, notifyHandler)
 
 		// 订单相关路由
 		order := api.Group("/orders", middleware.Auth())
@@ -175,5 +179,9 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		// 用户任务相关路由
 		tasks := api.Group("/reward-tasks")
 		handler.RegisterTaskRoutes(tasks, taskHandler)
+
+		// 通知
+		notify := api.Group("/notification", middleware.Auth())
+		handler.RegisterNotifyRoutes(notify, notifyHandler)
 	}
 }

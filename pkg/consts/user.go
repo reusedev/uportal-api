@@ -28,3 +28,12 @@ const (
 	UserId   = "user_id"
 	SetToken = "Set-Token"
 )
+
+const (
+	Accept = "accept"
+)
+
+const (
+	//AI绘画完成通知
+	CompleteNotificationTmpId = "RqmsNBiXK9bClJ83Z0PkCguj1-wmetG6uGRz1qipf5w"
+)

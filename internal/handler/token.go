@@ -250,9 +250,10 @@ func RegisterTokenRoutes(r *gin.RouterGroup, h *TokenHandler) {
 }
 
 // RegisterCloudRoutes 注册 Cloud 相关路由
-func RegisterCloudRoutes(r *gin.RouterGroup, h *TokenHandler) {
-	r.POST("/is_buy", h.TokenIsBuy) // 用户余额是否充足
-	r.POST("/buy", h.TokenBuy)      // 用户余额是否充足
+func RegisterCloudRoutes(r *gin.RouterGroup, h *TokenHandler, n *NotifyHandler) {
+	r.POST("/points/is_buy", h.TokenIsBuy)    // 用户余额是否充足
+	r.POST("/points/buy", h.TokenBuy)         // 用户余额是否充足
+	r.POST("/notification/draw_task", n.Send) // 绘画任务完成通知
 }
 
 // RegisterConsumeRuleRoutes 注册 Cloud 相关路由
