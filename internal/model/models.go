@@ -218,11 +218,19 @@ type RewardTask struct {
 	ValidFrom       *time.Time `gorm:"column:valid_from;type:date" json:"-"`                                              // 任务生效时间
 	ValidTo         *time.Time `gorm:"column:valid_to;type:date" json:"-"`                                                // 任务截止时间
 	Repeatable      int8       `gorm:"column:repeatable;not null;default:1" json:"repeatable"`                            // 是否可重复完成：1=是，0=否
-	Status          int8       `gorm:"column:status;not null;default:1" json:"status"`                                    // 任务状态：1=启用，0=停用
+	Action          string     `gorm:"column:action;type:varchar(100);not null" json:"action"`
+	Params          string     `gorm:"column:params;type:varchar(255)" json:"params"`     // 任务参数，JSON格式
+	LogoId          string     `gorm:"column:logo_id;type:varchar(50)" json:"logo_id"`    // 任务图标ID
+	LogoUrl         string     `gorm:"column:logo_url;type:varchar(255)" json:"logo_url"` // 任务图标URL
+	Status          int8       `gorm:"column:status;not null;default:1" json:"status"`    // 任务状态：1=启用，0=停用
 }
 
 func (t RewardTask) MarshalJSON() ([]byte, error) {
 	type Alias RewardTask // 创建别名以避免递归调用
+	type Logo struct {
+		Id  string `json:"id"`
+		Url string `json:"url"`
+	}
 	var validFrom, validTo string
 	if t.ValidFrom != nil {
 		validFrom = t.ValidFrom.Format(time.DateOnly)
@@ -230,15 +238,27 @@ func (t RewardTask) MarshalJSON() ([]byte, error) {
 	if t.ValidTo != nil {
 		validTo = t.ValidTo.Format(time.DateOnly)
 	}
+	var url, id string
+	if t.LogoUrl != "" {
+		url = t.LogoUrl
+	}
+	if t.LogoId != "" {
+		id = t.LogoId
+	}
 
 	return json.Marshal(struct {
 		Alias
 		ValidFrom string `json:"valid_from"`
 		ValidTo   string `json:"valid_to"`
+		Logo      Logo   `json:"logo"`
 	}{
 		Alias:     Alias(t),
 		ValidFrom: validFrom,
 		ValidTo:   validTo,
+		Logo: Logo{
+			Id:  id,
+			Url: url,
+		},
 	})
 }
 

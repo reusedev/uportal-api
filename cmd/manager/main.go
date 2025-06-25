@@ -172,5 +172,10 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 			orders := api.Group("/recharge-orders", middleware.AdminAuth())
 			handler.RegisterAdminOrderRoutes(orders, orderHandler)
 		}
+		// 文件上传
+		{
+			public := api.Group("/public", middleware.AdminAuth())
+			public.POST("/upload", service.Upload)
+		}
 	}
 }

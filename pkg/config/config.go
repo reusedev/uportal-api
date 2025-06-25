@@ -84,6 +84,10 @@ type Config struct {
 		ReturnUrl  string `yaml:"returnUrl"`  // 支付完成返回地址
 		IsProd     bool   `yaml:"isProd"`     // 是否生产环境
 	} `yaml:"alipay"`
+
+	DrawApi struct {
+		UploadFileUrl string `yaml:"upload_file_url"`
+	} `yaml:"draw_api"` // 绘图API配置
 }
 
 // LoadConfig 加载配置文件

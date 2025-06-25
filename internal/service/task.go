@@ -52,6 +52,14 @@ type CreateTaskRequest struct {
 	Repeatable      *int8  `json:"repeatable" binding:"required"`
 	Status          *int8  `json:"status" binding:"required"`
 	TaskKey         string `json:"task_key" binding:"required"`
+	Action          string `json:"action" binding:"required"` // 任务触发动作
+	Params          string `json:"params"`
+	Logo            *Logo  `json:"logo"`
+}
+
+type Logo struct {
+	Id  string `json:"id"`
+	Url string `json:"url"`
 }
 
 // CreateTask 创建任务
@@ -65,6 +73,7 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		Repeatable:      *req.Repeatable,
 		Status:          *req.Status, // 默认启用
 		TaskKey:         req.TaskKey,
+		Action:          req.Action,
 	}
 	from, _ := time.Parse(time.DateOnly, req.ValidFrom)
 	task.ValidFrom = &from
@@ -73,6 +82,13 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		if err == nil {
 			task.ValidTo = &to
 		}
+	}
+	if req.Params != "" {
+		task.Params = req.Params
+	}
+	if req.Logo != nil {
+		task.LogoUrl = req.Logo.Url
+		task.LogoId = req.Logo.Id
 	}
 
 	if err := s.db.Create(task).Error; err != nil {
@@ -95,6 +111,9 @@ type UpdateTaskRequest struct {
 	ValidTo         string `json:"valid_to"`
 	Repeatable      *int8  `json:"repeatable" binding:"required"`
 	TaskKey         string `json:"task_key" binding:"required"`
+	Action          string `json:"action" binding:"required"` // 任务触发动作
+	Params          string `json:"params"`
+	Logo            *Logo  `json:"logo"`
 }
 
 // UpdateTask 更新任务
@@ -115,6 +134,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		"valid_from":       &from,
 		"repeatable":       req.Repeatable,
 		"task_key":         req.TaskKey,
+		"action":           req.Action,
 	}
 	if req.ValidTo != "" {
 		to, err := time.Parse(time.DateOnly, req.ValidTo)
@@ -122,7 +142,13 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 			updates["valid_to"] = &to
 		}
 	}
-
+	if req.Params != "" {
+		updates["params"] = req.Params
+	}
+	if req.Logo != nil {
+		updates["logo_url"] = req.Logo.Url
+		updates["logo_id"] = req.Logo.Id
+	}
 	if err := s.db.Model(task).Updates(updates).Error; err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "更新任务失败", err)
 	}
