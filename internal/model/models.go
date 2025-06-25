@@ -219,6 +219,7 @@ type RewardTask struct {
 	ValidTo         *time.Time `gorm:"column:valid_to;type:date" json:"-"`                                                // 任务截止时间
 	Repeatable      int8       `gorm:"column:repeatable;not null;default:1" json:"repeatable"`                            // 是否可重复完成：1=是，0=否
 	Action          string     `gorm:"column:action;type:varchar(100);not null" json:"action"`
+	ActionText      string     `gorm:"column:action_text;type:varchar(100);not null" json:"action_text"`
 	Params          string     `gorm:"column:params;type:varchar(255)" json:"params"`     // 任务参数，JSON格式
 	LogoId          string     `gorm:"column:logo_id;type:varchar(50)" json:"logo_id"`    // 任务图标ID
 	LogoUrl         string     `gorm:"column:logo_url;type:varchar(100)" json:"logo_url"` // 任务图标URL

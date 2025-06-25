@@ -55,6 +55,7 @@ type CreateTaskRequest struct {
 	Action          string `json:"action" binding:"required"` // 任务触发动作
 	Params          string `json:"params"`
 	Logo            *Logo  `json:"logo"`
+	ActionText      string `json:"action_text" binding:"required"` // 任务触发动作文本描述
 }
 
 type Logo struct {
@@ -74,6 +75,7 @@ func (s *TaskService) CreateTask(ctx context.Context, req *CreateTaskRequest) (*
 		Status:          *req.Status, // 默认启用
 		TaskKey:         req.TaskKey,
 		Action:          req.Action,
+		ActionText:      req.ActionText,
 	}
 	from, _ := time.Parse(time.DateOnly, req.ValidFrom)
 	task.ValidFrom = &from
@@ -114,6 +116,7 @@ type UpdateTaskRequest struct {
 	Action          string `json:"action" binding:"required"` // 任务触发动作
 	Params          string `json:"params"`
 	Logo            *Logo  `json:"logo"`
+	ActionText      string `json:"action_text" binding:"required"` // 任务触发动作文本描述
 }
 
 // UpdateTask 更新任务
@@ -135,6 +138,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *UpdateTaskRequest) (*
 		"repeatable":       req.Repeatable,
 		"task_key":         req.TaskKey,
 		"action":           req.Action,
+		"action_text":      req.ActionText,
 	}
 	if req.ValidTo != "" {
 		to, err := time.Parse(time.DateOnly, req.ValidTo)
@@ -167,7 +171,7 @@ func (s *TaskService) DeleteTask(ctx context.Context, taskID int) error {
 // GetTask 获取任务详情
 func (s *TaskService) GetTask(ctx context.Context, taskID int) (*model.RewardTask, error) {
 	var task model.RewardTask
-	if err := s.db.First(&task, taskID).Error; err != nil {
+	if err := s.db.Where("task_id = ?", taskID).First(&task).Error; err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New(errors.ErrCodeNotFound, "任务不存在", nil)
 		}
@@ -368,8 +372,7 @@ func (s *TaskService) getUserTotalTaskCompletionCount(ctx context.Context, userI
 
 // CompleteTaskRequest 完成任务请求
 type CompleteTaskRequest struct {
-	TaskID    int                    `json:"task_id" binding:"required"`
-	ExtraData map[string]interface{} `json:"extra_data"`
+	TaskID int `json:"task_id" binding:"required"`
 }
 
 // TaskCompletionResult 任务完成结果
@@ -439,10 +442,10 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID string, req *Comp
 	}
 
 	// 验证任务完成条件
-	if err := s.verifyTaskCompletion(ctx, tx, userID, task, req.ExtraData); err != nil {
-		tx.Rollback()
-		return nil, err
-	}
+	//if err := s.verifyTaskCompletion(ctx, tx, userID, task, req.ExtraData); err != nil {
+	//	tx.Rollback()
+	//	return nil, err
+	//}
 
 	// 发放奖励
 	if err := s.grantTaskReward(ctx, tx, userID, task); err != nil {

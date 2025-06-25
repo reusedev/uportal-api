@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS `recharge_orders` (
                                    KEY `idx_recharge_orders_plan` (`plan_id`),
                                    CONSTRAINT `fk_recharge_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
                                    CONSTRAINT `fk_recharge_orders_plan` FOREIGN KEY (`plan_id`) REFERENCES `recharge_plans`(`plan_id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=223764
   COMMENT='充值订单表';
 
 -- 10. 退款记录表，记录充值退款详情

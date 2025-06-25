@@ -109,12 +109,13 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, orderID int64, de
 
 	// 创建支付订单
 	svc := jsapi.JsapiApiService{Client: s.wxPayClient}
+	tradeNo := strconv.Itoa(int(order.OrderID))
 	resp, _, err := svc.PrepayWithRequestPayment(ctx,
 		jsapi.PrepayRequest{
 			Appid:       core.String(s.config.Wechat.Pay.AppID),
 			Mchid:       core.String(s.config.Wechat.Pay.MchID),
 			Description: core.String(description),
-			OutTradeNo:  order.TransactionID,
+			OutTradeNo:  core.String(tradeNo),
 			NotifyUrl:   core.String(s.config.Wechat.Pay.NotifyUrl),
 			Amount: &jsapi.Amount{
 				Total:    core.Int64(int64(amount * 100)), // 转换为分
