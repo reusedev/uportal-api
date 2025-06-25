@@ -63,6 +63,10 @@ CREATE TABLE IF NOT EXISTS `reward_tasks` (
                                 `valid_from`    DATE     DEFAULT NULL           COMMENT '任务生效时间，NULL表示即时生效',
                                 `valid_to`      DATE     DEFAULT NULL           COMMENT '任务截止时间，NULL表示永久有效',
                                 `repeatable`    TINYINT      NOT NULL DEFAULT 1     COMMENT '是否可重复完成：1=是，0=否',
+                                `action`        VARCHAR(100) NOT NULL               COMMENT '',
+                                `params`        VARCHAR(255) NOT NULL               COMMENT '',
+                                `logo_id`       VARCHAR(50) NOT NULL               COMMENT '',
+                                `logo_url`      VARCHAR(100) NOT NULL               COMMENT '',
                                 `status`        TINYINT      NOT NULL DEFAULT 1     COMMENT '任务状态：1=启用，0=停用',
                                 PRIMARY KEY (`task_id`),
                                 UNIQUE KEY `uk_task_key` (`task_key`)

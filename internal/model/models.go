@@ -221,7 +221,7 @@ type RewardTask struct {
 	Action          string     `gorm:"column:action;type:varchar(100);not null" json:"action"`
 	Params          string     `gorm:"column:params;type:varchar(255)" json:"params"`     // 任务参数，JSON格式
 	LogoId          string     `gorm:"column:logo_id;type:varchar(50)" json:"logo_id"`    // 任务图标ID
-	LogoUrl         string     `gorm:"column:logo_url;type:varchar(255)" json:"logo_url"` // 任务图标URL
+	LogoUrl         string     `gorm:"column:logo_url;type:varchar(100)" json:"logo_url"` // 任务图标URL
 	Status          int8       `gorm:"column:status;not null;default:1" json:"status"`    // 任务状态：1=启用，0=停用
 }
 
