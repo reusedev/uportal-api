@@ -201,12 +201,9 @@ func (h *PaymentHandler) CloseAlipayOrder(c *gin.Context) {
 func RegisterPaymentRoutes(r *gin.RouterGroup, h *PaymentHandler, authMiddleware gin.HandlerFunc) {
 	payments := r.Group("/payments")
 	{
-		// 需要认证的路由
-		auth := payments.Group("")
-		auth.Use(authMiddleware)
 		{
 			// 微信支付
-			wx := auth.Group("/wechat")
+			wx := payments.Group("/wechat", authMiddleware)
 			{
 				wx.POST("/orders/:id", h.CreateWxPayOrder)
 				wx.GET("/orders/:id", h.QueryWxPayOrder)
@@ -214,7 +211,7 @@ func RegisterPaymentRoutes(r *gin.RouterGroup, h *PaymentHandler, authMiddleware
 			}
 
 			// 支付宝支付
-			alipay := auth.Group("/alipay")
+			alipay := payments.Group("/alipay", authMiddleware)
 			{
 				alipay.POST("/orders/:id", h.CreateAlipayOrder)
 				alipay.GET("/orders/:id", h.QueryAlipayOrder)

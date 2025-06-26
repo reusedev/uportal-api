@@ -36,6 +36,8 @@ func Migrate(db *gorm.DB) error {
 		&TokenRecord{},         // 代币记录表
 		&PaymentNotifyRecord{}, // 支付通知记录表
 		&InviteRecord{},        // 邀请记录表
+		&Notification{},
+		&TaskCompletionRecord{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create tables: %v", err)

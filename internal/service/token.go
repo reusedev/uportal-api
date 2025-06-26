@@ -80,6 +80,9 @@ type CreateRechargePlanRequest struct {
 	Currency    string `json:"currency" binding:"required"`
 	Description string `json:"description" binding:"required,max=200"`
 	Status      *int8  `json:"status" binding:"required,oneof=1 2"` // 1:启用, 2:禁用
+	Name        string `json:"name" binding:"required,max=100"`
+	Tag         string `json:"tag" binding:"required,max=100"`
+	IsRecommend *int8  `json:"is_recommend" binding:"required"` // 是否推荐 0:推荐, 1:不推荐
 }
 
 type ListRechargePlanRequest struct {
@@ -109,6 +112,9 @@ func (s *TokenService) CreateRechargePlan(ctx context.Context, req *CreateRechar
 		Description: &description,
 		Status:      *req.Status,
 		Currency:    req.Currency,
+		Name:        req.Name,
+		Tag:         req.Tag,
+		IsRecommend: *req.IsRecommend,
 	}
 
 	err := model.CreateRechargePlan(s.db, plan)
@@ -127,6 +133,9 @@ type UpdateRechargePlanRequest struct {
 	Price       *int    `json:"price"`
 	Description *string `json:"description"`
 	Status      *int    `json:"status"`
+	Name        string  `json:"name" binding:"required,max=100"`
+	Tag         string  `json:"tag" binding:"required,max=100"`
+	IsRecommend *int8   `json:"is_recommend" binding:"required"` // 是否推荐 0:推荐, 1:不推荐
 }
 
 // UpdateRechargePlan 更新充值套餐
@@ -143,6 +152,9 @@ func (s *TokenService) UpdateRechargePlan(ctx context.Context, req *UpdateRechar
 	updates := map[string]interface{}{
 		"token_amount": req.TokenAmount,
 		"currency":     req.Currency,
+		"name":         req.Name,
+		"tag":          req.Tag,
+		"is_recommend": *req.IsRecommend,
 	}
 	if req.Price != nil {
 		updates["price"] = float64(*req.Price)

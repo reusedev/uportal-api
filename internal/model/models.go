@@ -105,8 +105,11 @@ type RechargePlan struct {
 	TokenAmount int       `gorm:"column:token_amount;not null" json:"token_amount"`                  // 方案提供的代币数量
 	Price       float64   `gorm:"column:price;type:decimal(10,2);not null" json:"price"`             // 售价(元)
 	Currency    string    `gorm:"column:currency;type:char(3);not null;default:CNY" json:"currency"` // 货币类型代码
+	Name        string    `gorm:"column:name;type:varchar(100);not null" json:"name"`                // 名称
+	Tag         string    `gorm:"column:tag;type:varchar(30);not null" json:"tag"`                   // 标签
 	Description *string   `gorm:"column:description;type:varchar(100)" json:"description"`           // 方案描述
 	Status      int8      `gorm:"column:status;not null;default:1" json:"status"`                    // 方案状态：1=可用，0=下架
+	IsRecommend int8      `gorm:"column:is_recommend;not null;default:1" json:"is_recommend"`        // 是否推荐：1=推荐，0=不推荐
 	CreatedAt   time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`       // 创建时间
 	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`       // 更新时间
 }
@@ -292,9 +295,9 @@ type TaskCompletionRecord struct {
 	UserID      string    `gorm:"column:user_id;type:varchar(13);not null" json:"user_id"`
 	TaskID      int       `gorm:"column:task_id;not null" json:"task_id"`
 	TokenReward int       `gorm:"column:token_reward;not null" json:"token_reward"`
-	CompletedAt time.Time `gorm:"column:completed_at;not null;default:CURRENT_TIMESTAMP" json:"completed_at"`
-	CreatedAt   time.Time `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"`
+	CompletedAt time.Time `gorm:"column:completed_at;not null;autoCreateTime" json:"completed_at"`
+	CreatedAt   time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`
 }
 
 // Notification 通知
@@ -305,8 +308,8 @@ type Notification struct {
 	Title     string    `gorm:"column:title;not null;size:128" json:"title"`
 	Content   string    `gorm:"column:content;not null;type:text" json:"content"`
 	Status    int8      `gorm:"column:status;not null;default:0" json:"status"`
-	CreatedAt time.Time `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"`
+	CreatedAt time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`
 }
 
 // InviteRecord 邀请记录表结构体
