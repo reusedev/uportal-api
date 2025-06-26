@@ -105,8 +105,8 @@ type RechargePlan struct {
 	TokenAmount int       `gorm:"column:token_amount;not null" json:"token_amount"`                  // 方案提供的代币数量
 	Price       float64   `gorm:"column:price;type:decimal(10,2);not null" json:"price"`             // 售价(元)
 	Currency    string    `gorm:"column:currency;type:char(3);not null;default:CNY" json:"currency"` // 货币类型代码
-	Name        string    `gorm:"column:name;type:varchar(100);not null" json:"name"`                // 名称
-	Tag         string    `gorm:"column:tag;type:varchar(30);not null" json:"tag"`                   // 标签
+	Name        string    `gorm:"column:name;type:varchar(30);not null" json:"name"`                 // 名称
+	Tag         string    `gorm:"column:tag;type:varchar(20);not null" json:"tag"`                   // 标签
 	Description *string   `gorm:"column:description;type:varchar(100)" json:"description"`           // 方案描述
 	Status      int8      `gorm:"column:status;not null;default:1" json:"status"`                    // 方案状态：1=可用，0=下架
 	IsRecommend int8      `gorm:"column:is_recommend;not null;default:1" json:"is_recommend"`        // 是否推荐：1=推荐，0=不推荐

@@ -66,13 +66,14 @@ type Config struct {
 			AppSecret string `yaml:"appSecret"` // 小程序AppSecret
 		} `yaml:"miniProgram"`
 		Pay struct {
-			AppID      string `yaml:"appId"`      // 支付AppID
-			MchID      string `yaml:"mchId"`      // 商户号
-			MchApiKey  string `yaml:"mchApiKey"`  // 商户API密钥
-			NotifyUrl  string `yaml:"notifyUrl"`  // 支付回调通知地址
-			CertFile   string `yaml:"certFile"`   // 证书文件路径
-			KeyFile    string `yaml:"keyFile"`    // 密钥文件路径
-			RootCaFile string `yaml:"rootCaFile"` // 根证书文件路径
+			AppID       string `yaml:"appId"` // 支付AppID
+			MchID       string `yaml:"mchId"` // 商户号
+			MchSerialNo string `json:"mchSerialNo"`
+			MchApiKey   string `yaml:"mchApiKey"`  // 商户API密钥
+			NotifyUrl   string `yaml:"notifyUrl"`  // 支付回调通知地址
+			CertFile    string `yaml:"certFile"`   // 证书文件路径
+			KeyFile     string `yaml:"keyFile"`    // 密钥文件路径
+			RootCaFile  string `yaml:"rootCaFile"` // 根证书文件路径
 		} `yaml:"pay"`
 	} `yaml:"wechat"`
 

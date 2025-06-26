@@ -11,6 +11,10 @@ import (
 	"testing"
 )
 
+var (
+	mchCertificateSerialNumber = "14475E681C83F8B662FF84A02FF284CC8ABC4073"
+)
+
 func TestNewAdminService(t *testing.T) {
 	password, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 	t.Logf(string(password))
@@ -18,7 +22,7 @@ func TestNewAdminService(t *testing.T) {
 
 func TestNewAlipayService(t *testing.T) {
 	// 加载商户证书
-	mchPrivateKey, err := utils.LoadPrivateKey("cert/apiclient_key.pem")
+	mchPrivateKey, err := utils.LoadPrivateKeyWithPath("/Users/love/GolandProjects/shuzilm/uportal-api/cert/apiclient_key.pem")
 	if err != nil {
 		panic(err)
 	}
@@ -26,7 +30,7 @@ func TestNewAlipayService(t *testing.T) {
 	// 创建微信支付客户端
 	opts := []core.ClientOption{
 		option.WithWechatPayAutoAuthCipher("1719916090",
-			"9fb930a1bce42a9115c2d5c08df36d36", mchPrivateKey, "cert/apiclient_cert.pem"),
+			mchCertificateSerialNumber, mchPrivateKey, "9fb930a1bce42a9115c2d5c08df36d36"),
 	}
 	c, err := core.NewClient(context.Background(), opts...)
 	if err != nil {

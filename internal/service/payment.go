@@ -41,14 +41,14 @@ type PaymentService struct {
 // NewPaymentService 创建支付服务
 func NewPaymentService(db *gorm.DB, redis *redis.Client, orderSvc *OrderService, cfg *config.Config) (*PaymentService, error) {
 	// 加载商户证书
-	mchPrivateKey, err := utils.LoadPrivateKey(cfg.Wechat.Pay.KeyFile)
+	mchPrivateKey, err := utils.LoadPrivateKeyWithPath(cfg.Wechat.Pay.KeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("load merchant private key error: %v", err)
 	}
 
 	// 创建微信支付客户端
 	opts := []core.ClientOption{
-		option.WithWechatPayAutoAuthCipher(cfg.Wechat.Pay.MchID, cfg.Wechat.Pay.MchApiKey, mchPrivateKey, cfg.Wechat.Pay.CertFile),
+		option.WithWechatPayAutoAuthCipher(cfg.Wechat.Pay.MchID, cfg.Wechat.Pay.MchSerialNo, mchPrivateKey, cfg.Wechat.Pay.MchApiKey),
 	}
 	client, err := core.NewClient(context.Background(), opts...)
 	if err != nil {
@@ -57,8 +57,10 @@ func NewPaymentService(db *gorm.DB, redis *redis.Client, orderSvc *OrderService,
 
 	// 创建回调处理器
 	certificateVisitor := downloader.MgrInstance().GetCertificateVisitor(cfg.Wechat.Pay.MchID)
-	handler := notify.NewNotifyHandler(cfg.Wechat.Pay.MchApiKey, verifiers.NewSHA256WithRSAVerifier(certificateVisitor))
-
+	handler, err := notify.NewRSANotifyHandler(cfg.Wechat.Pay.MchApiKey, verifiers.NewSHA256WithRSAVerifier(certificateVisitor))
+	if err != nil {
+		return nil, fmt.Errorf("create notify handler error: %v", err)
+	}
 	return &PaymentService{
 		db:            db,
 		redis:         redis,
@@ -267,7 +269,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 	// 检查订单状态
 	if order.Status != model.OrderStatusPending {
 		tx.Rollback()
-		return fmt.Errorf("invalid order status: %s", order.Status)
+		return fmt.Errorf("invalid order status: %d", order.Status)
 	}
 
 	// 检查支付金额
@@ -494,8 +496,8 @@ func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, s
 	logs.Business().Info("订单状态更新成功",
 		zap.Int64("order_id", orderID),
 		//zap.String("order_no", order.OrderNo),
-		zap.String("old_status", string(order.Status)),
-		zap.String("new_status", string(status)),
+		zap.Int8("old_status", order.Status),
+		zap.Int8("new_status", status),
 	)
 
 	return nil
