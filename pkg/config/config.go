@@ -68,7 +68,7 @@ type Config struct {
 		Pay struct {
 			AppID       string `yaml:"appId"` // 支付AppID
 			MchID       string `yaml:"mchId"` // 商户号
-			MchSerialNo string `json:"mchSerialNo"`
+			MchSerialNo string `yaml:"mchSerialNo"`
 			MchApiKey   string `yaml:"mchApiKey"`  // 商户API密钥
 			NotifyUrl   string `yaml:"notifyUrl"`  // 支付回调通知地址
 			CertFile    string `yaml:"certFile"`   // 证书文件路径
