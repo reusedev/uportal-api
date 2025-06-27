@@ -205,7 +205,7 @@ func (h *PaymentHandler) CloseAlipayOrder(c *gin.Context) {
 func RegisterPaymentRoutes(r *gin.RouterGroup, h *PaymentHandler, t *TokenHandler) {
 
 	r.POST("create_order", h.CreateWxPayOrder)
-	r.POST("/plan_list", t.ListRechargePlans)
+	r.POST("/plan_list", t.ListApiRechargePlans)
 	r.POST("/result", h.QueryWxPayOrder)
 
 	r.POST("/orders/:id/close", h.CloseWxPayOrder)
