@@ -105,6 +105,18 @@ func (h *TokenHandler) ListRechargePlans(c *gin.Context) {
 	response.Success(c, plans)
 }
 
+// ListApiRechargePlans 获取充值套餐列表
+func (h *TokenHandler) ListApiRechargePlans(c *gin.Context) {
+
+	plans, err := h.tokenService.ListRechargePlans(c, nil)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, plans)
+}
+
 // GetUserTokenBalance 获取用户Token余额
 func (h *TokenHandler) GetUserTokenBalance(c *gin.Context) {
 	userID := c.GetString(consts.UserId)
