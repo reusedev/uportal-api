@@ -107,8 +107,8 @@ func (h *TokenHandler) ListRechargePlans(c *gin.Context) {
 
 // ListApiRechargePlans 获取充值套餐列表
 func (h *TokenHandler) ListApiRechargePlans(c *gin.Context) {
-
-	plans, err := h.tokenService.ListRechargePlans(c, nil)
+	status := int8(1)
+	plans, err := h.tokenService.ListRechargePlans(c, &status)
 	if err != nil {
 		response.Error(c, err)
 		return

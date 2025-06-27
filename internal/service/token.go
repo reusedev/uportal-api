@@ -75,14 +75,14 @@ type ListUserTokenResp struct {
 
 // CreateRechargePlanRequest 创建充值套餐请求
 type CreateRechargePlanRequest struct {
-	TokenAmount int    `json:"token_amount" binding:"required,min=1"`
-	Price       int    `json:"price" binding:"required"`
-	Currency    string `json:"currency" binding:"required"`
-	Description string `json:"description" binding:"required,max=200"`
-	Status      *int8  `json:"status" binding:"required,oneof=1 2"` // 1:启用, 2:禁用
-	Name        string `json:"name" binding:"required,max=100"`
-	Tag         string `json:"tag" binding:"required,max=100"`
-	IsRecommend *int8  `json:"is_recommend" binding:"required"` // 是否推荐 0:推荐, 1:不推荐
+	TokenAmount int     `json:"token_amount" binding:"required,min=1"`
+	Price       float64 `json:"price" binding:"required"`
+	Currency    string  `json:"currency" binding:"required"`
+	Description string  `json:"description" binding:"required,max=200"`
+	Status      *int8   `json:"status" binding:"required,oneof=1 2"` // 1:启用, 2:禁用
+	Name        string  `json:"name" binding:"required,max=100"`
+	Tag         string  `json:"tag" binding:"required,max=100"`
+	IsRecommend *int8   `json:"is_recommend" binding:"required"` // 是否推荐 0:推荐, 1:不推荐
 }
 
 type ListRechargePlanRequest struct {
@@ -127,15 +127,15 @@ func (s *TokenService) CreateRechargePlan(ctx context.Context, req *CreateRechar
 
 // UpdateRechargePlanRequest 更新充值套餐请求
 type UpdateRechargePlanRequest struct {
-	ID          int64   `json:"plan_id" binding:"required,min=1"`
-	Currency    string  `json:"currency" binding:"required"`
-	TokenAmount int     `json:"token_amount" binding:"required"`
-	Price       *int    `json:"price"`
-	Description *string `json:"description"`
-	Status      *int    `json:"status"`
-	Name        string  `json:"name" binding:"required,max=100"`
-	Tag         string  `json:"tag" binding:"required,max=100"`
-	IsRecommend *int8   `json:"is_recommend" binding:"required"` // 是否推荐 0:推荐, 1:不推荐
+	ID          int64    `json:"plan_id" binding:"required,min=1"`
+	Currency    string   `json:"currency" binding:"required"`
+	TokenAmount int      `json:"token_amount" binding:"required"`
+	Price       *float64 `json:"price"`
+	Description *string  `json:"description"`
+	Status      *int     `json:"status"`
+	Name        string   `json:"name" binding:"required,max=100"`
+	Tag         string   `json:"tag" binding:"required,max=100"`
+	IsRecommend *int8    `json:"is_recommend" binding:"required"` // 是否推荐 0:推荐, 1:不推荐
 }
 
 // UpdateRechargePlan 更新充值套餐
