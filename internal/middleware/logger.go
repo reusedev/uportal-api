@@ -17,7 +17,9 @@ func Logger(logger *zap.Logger) gin.HandlerFunc {
 
 		// 处理请求
 		c.Next()
-
+		if path == "/" {
+			return
+		}
 		// 记录请求信息
 		cost := time.Since(start)
 		logger.Info("request",
