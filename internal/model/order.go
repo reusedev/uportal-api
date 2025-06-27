@@ -17,6 +17,14 @@ const (
 	OrderStatusRefunded  int8 = 3 // 已退款
 )
 
+var (
+	OrderStatusText = map[int8]string{
+		OrderStatusPending:   "pending",
+		OrderStatusCompleted: "success",
+		OrderStatusCancelled: "error",
+	}
+)
+
 // CreateOrder 创建订单
 func CreateOrder(db *gorm.DB, order *RechargeOrder) error {
 	return db.Create(order).Error

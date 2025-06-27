@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"io"
 	"strconv"
 
@@ -26,21 +28,21 @@ func NewPaymentHandler(paymentService *service.PaymentService, alipayService *se
 
 // CreateWxPayOrder 创建微信支付订单
 func (h *PaymentHandler) CreateWxPayOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	var req service.CreateWxPayOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-
-	// 获取订单信息
-	order, err := h.paymentService.GetOrder(c.Request.Context(), orderID)
+	// 获取支付方案信息
+	plan, err := h.paymentService.GetPlan(c.Request.Context(), req.PlanId)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
+	userId := c.GetString(consts.UserId)
 
 	// 创建支付订单
-	resp, err := h.paymentService.CreateWxPayOrder(c.Request.Context(), orderID, "", order.AmountPaid)
+	resp, err := h.paymentService.CreateWxPayOrder(c.Request.Context(), userId, plan)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -52,6 +54,8 @@ func (h *PaymentHandler) CreateWxPayOrder(c *gin.Context) {
 // HandleWxPayNotify 处理微信支付回调
 func (h *PaymentHandler) HandleWxPayNotify(c *gin.Context) {
 	// 读取请求体
+	fmt.Println("wechat notify")
+
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInternal, "读取请求体失败", err))
@@ -79,14 +83,14 @@ func (h *PaymentHandler) HandleWxPayNotify(c *gin.Context) {
 
 // QueryWxPayOrder 查询微信支付订单
 func (h *PaymentHandler) QueryWxPayOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	var req service.QueryOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
 
 	// 查询支付订单
-	resp, err := h.paymentService.QueryWxPayOrder(c.Request.Context(), orderID)
+	resp, err := h.paymentService.QueryWxPayOrder(c.Request.Context(), req.OrderId)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -198,29 +202,25 @@ func (h *PaymentHandler) CloseAlipayOrder(c *gin.Context) {
 }
 
 // RegisterPaymentRoutes 注册支付相关路由
-func RegisterPaymentRoutes(r *gin.RouterGroup, h *PaymentHandler, authMiddleware gin.HandlerFunc) {
-	payments := r.Group("/payments")
-	{
-		{
-			// 微信支付
-			wx := payments.Group("/wechat", authMiddleware)
-			{
-				wx.POST("/orders/:id", h.CreateWxPayOrder)
-				wx.GET("/orders/:id", h.QueryWxPayOrder)
-				wx.POST("/orders/:id/close", h.CloseWxPayOrder)
-			}
+func RegisterPaymentRoutes(r *gin.RouterGroup, h *PaymentHandler, t *TokenHandler) {
 
-			// 支付宝支付
-			alipay := payments.Group("/alipay", authMiddleware)
-			{
-				alipay.POST("/orders/:id", h.CreateAlipayOrder)
-				alipay.GET("/orders/:id", h.QueryAlipayOrder)
-				alipay.POST("/orders/:id/close", h.CloseAlipayOrder)
-			}
-		}
+	r.POST("create_order", h.CreateWxPayOrder)
+	r.POST("/plan_list", t.ListRechargePlans)
+	r.POST("/result", h.QueryWxPayOrder)
 
-		// 支付回调（不需要认证）
-		payments.POST("/wechat/notify", h.HandleWxPayNotify)
-		payments.POST("/alipay/notify", h.HandleAlipayNotify)
-	}
+	r.POST("/orders/:id/close", h.CloseWxPayOrder)
+	// 支付宝支付
+	//alipay := payments.Group("/alipay", authMiddleware)
+	//{
+	//	alipay.POST("/orders/:id", h.CreateAlipayOrder)
+	//	alipay.GET("/orders/:id", h.QueryAlipayOrder)
+	//	alipay.POST("/orders/:id/close", h.CloseAlipayOrder)
+
+}
+
+// RegisterPaymentNotifyRoutes 注册支付回调相关路由
+func RegisterPaymentNotifyRoutes(r *gin.RouterGroup, h *PaymentHandler) {
+	// 支付回调（不需要认证）
+	r.POST("/wechat/notify", h.HandleWxPayNotify)
+	r.POST("/alipay/notify", h.HandleAlipayNotify)
 }

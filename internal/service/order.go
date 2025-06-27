@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	stderrors "errors"
 	"time"
 
@@ -147,7 +146,7 @@ func (s *OrderService) GetUserOrders(ctx context.Context, userID int64, page, pa
 }
 
 // UpdateOrderStatus 更新订单状态
-func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, status int8, paymentInfo map[string]interface{}) error {
+func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, status int8) error {
 	// 获取订单信息
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
@@ -168,12 +167,7 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, sta
 	}
 
 	// 如果支付成功，记录支付信息
-	if status == model.OrderStatusCompleted && paymentInfo != nil {
-		paymentInfoJSON, err := json.Marshal(paymentInfo)
-		if err != nil {
-			return errors.New(errors.ErrCodeInternal, "序列化支付信息失败", err)
-		}
-		updates["payment_info"] = string(paymentInfoJSON)
+	if status == model.OrderStatusCompleted {
 		updates["paid_at"] = time.Now()
 	}
 

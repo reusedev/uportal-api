@@ -174,7 +174,12 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		handler.RegisterOrderRoutes(order, orderHandler, middleware.Auth())
 
 		// 支付相关路由
-		handler.RegisterPaymentRoutes(api, paymentHandler, middleware.Auth())
+		payment := api.Group("/payment", middleware.Auth())
+		handler.RegisterPaymentRoutes(payment, paymentHandler, tokenHandler)
+
+		// 支付回调接口
+		payments := api.Group("/payments")
+		handler.RegisterPaymentNotifyRoutes(payments, paymentHandler)
 
 		// 用户任务相关路由
 		tasks := api.Group("/reward-tasks")

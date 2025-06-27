@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	stderrors "errors"
 	"fmt"
 	"net/url"
@@ -82,9 +81,7 @@ func (s *AlipayService) CreateAlipayOrder(ctx context.Context, orderID int64, de
 	}
 
 	// 更新订单状态为支付中
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusPending, map[string]interface{}{
-		"payment_method": "alipay",
-	})
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusPending)
 	if err != nil {
 		return "", err
 	}
@@ -213,19 +210,7 @@ func (s *AlipayService) HandleAlipayNotify(ctx context.Context, notifyData map[s
 		return apperrors.New(apperrors.ErrCodeInvalidParams, "支付金额不匹配", nil)
 	}
 
-	// 更新订单状态
-	paymentInfo := map[string]interface{}{
-		"transaction_id": tradeNo,
-		"payment_time":   time.Now(),
-		"payment_method": "alipay",
-		"trade_status":   notifyData["trade_status"],
-	}
-	paymentInfoJSON, _ := json.Marshal(paymentInfo)
-
-	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled, map[string]interface{}{
-		"payment_info": string(paymentInfoJSON),
-		"paid_at":      time.Now(),
-	})
+	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled)
 	if err != nil {
 		tx.Rollback()
 		return apperrors.New(apperrors.ErrCodeInternal, "更新订单状态失败", err)
@@ -298,7 +283,7 @@ func (s *AlipayService) CloseAlipayOrder(ctx context.Context, orderID int64) err
 	}
 
 	// 更新订单状态为已取消
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusCancelled, nil)
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusCancelled)
 	if err != nil {
 		return apperrors.New(apperrors.ErrCodeInternal, "更新订单状态失败", err)
 	}

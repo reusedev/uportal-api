@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"log"
 	"net/http"
 	"strconv"
@@ -36,6 +37,24 @@ type PaymentService struct {
 	wxPayClient   *core.Client
 	notifyHandler *notify.Handler
 	config        *config.Config
+}
+
+type CreateWxPayOrderRequest struct {
+	PlanId int64 `json:"plan_id" binding:"required"`
+}
+
+type QueryOrderResp struct {
+	Status  string `json:"status"` // success,error, pending
+	Balance int    `json:"balance"`
+}
+
+type QueryOrderRequest struct {
+	OrderId int64 `json:"order_id" binding:"required"`
+}
+
+type CreateWxPayOrderResp struct {
+	*jsapi.PrepayWithRequestPaymentResponse
+	OrderId string `json:"order_id"`
 }
 
 // NewPaymentService 创建支付服务
@@ -82,31 +101,29 @@ func (s *PaymentService) releaseLock(ctx context.Context, key string) error {
 }
 
 // CreateWxPayOrder 创建微信支付订单
-func (s *PaymentService) CreateWxPayOrder(ctx context.Context, orderID int64, description string, amount float64) (*jsapi.PrepayWithRequestPaymentResponse, error) {
-	// 获取订单信息
-	order, err := s.orderSvc.GetOrder(ctx, orderID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 检查订单状态
-	if order.Status != model.OrderStatusPending {
-		return nil, errors.New(errors.ErrCodeInvalidParams, "订单状态不正确", nil)
-	}
-
-	// 检查支付金额
-	if order.AmountPaid != amount {
-		return nil, errors.New(errors.ErrCodeInvalidParams, "支付金额不正确", nil)
-	}
+func (s *PaymentService) CreateWxPayOrder(ctx context.Context, userID string, plan *model.RechargePlan) (*CreateWxPayOrderResp, error) {
 
 	// 获取用户的微信OpenID
 	var userAuth model.UserAuth
-	err = s.db.Where("user_id = ? AND provider = ?", order.UserID, "wechat").First(&userAuth).Error
+	err := s.db.Where("user_id = ? AND provider = ?", userID, "wechat").First(&userAuth).Error
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New(errors.ErrCodeInvalidParams, "用户未绑定微信账号", nil)
 		}
 		return nil, errors.New(errors.ErrCodeInternal, "获取用户微信信息失败", err)
+	}
+	order := &model.RechargeOrder{
+		UserID:        userID,
+		PlanID:        &plan.PlanID,
+		TokenAmount:   plan.TokenAmount,
+		AmountPaid:    plan.Price,
+		PaymentMethod: consts.Wechat,
+		Status:        model.OrderStatusPending,
+		CreatedAt:     time.Now(),
+	}
+	err = s.db.Create(order).Error
+	if err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "创建充值订单失败", err)
 	}
 
 	// 创建支付订单
@@ -116,11 +133,11 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, orderID int64, de
 		jsapi.PrepayRequest{
 			Appid:       core.String(s.config.Wechat.Pay.AppID),
 			Mchid:       core.String(s.config.Wechat.Pay.MchID),
-			Description: core.String(description),
+			Description: core.String(*plan.Description),
 			OutTradeNo:  core.String(tradeNo),
 			NotifyUrl:   core.String(s.config.Wechat.Pay.NotifyUrl),
 			Amount: &jsapi.Amount{
-				Total:    core.Int64(int64(amount * 100)), // 转换为分
+				Total:    core.Int64(int64(order.AmountPaid * 100)), // 转换为分
 				Currency: core.String("CNY"),
 			},
 			Payer: &jsapi.Payer{
@@ -133,14 +150,16 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, orderID int64, de
 	}
 
 	// 更新订单状态为支付中
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusPending, map[string]interface{}{
-		"payment_method": "wechat",
-	})
-	if err != nil {
-		return nil, err
+	//s.db.Model(&model.RechargeOrder{}).Update("transaction_id", resp.PrepayId).
+	//if err != nil {
+	//	return nil, err
+	//}
+	ret := &CreateWxPayOrderResp{
+		PrepayWithRequestPaymentResponse: resp,
+		OrderId:                          strconv.Itoa(int(order.OrderID)),
 	}
 
-	return resp, nil
+	return ret, nil
 }
 
 // HandleWxPayNotify 处理微信支付回调
@@ -162,6 +181,8 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 	if err != nil {
 		return fmt.Errorf("parse notify request error: %v", err)
 	}
+
+	fmt.Printf("%+v", notifyReq)
 
 	// 验证回调通知
 	if notifyReq.EventType != "TRANSACTION.SUCCESS" {
@@ -280,10 +301,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 	}
 
 	// 更新订单状态
-	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled, map[string]interface{}{
-		"transaction_id": *transaction.TransactionId,
-		"payment_time":   time.Now(),
-	})
+	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("update order status error: %v", err)
@@ -354,23 +372,39 @@ func (s *PaymentService) RetryFailedNotifications(ctx context.Context) error {
 }
 
 // QueryWxPayOrder 查询微信支付订单
-func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID int64) (*payments.Transaction, error) {
+func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID int64) (*QueryOrderResp, error) {
 	// 获取订单信息
 	order, err := s.orderSvc.GetOrder(ctx, orderID)
 	if err != nil {
 		return nil, err
 	}
-
+	resp := &QueryOrderResp{Balance: order.TokenAmount, Status: "pending"}
+	if order.Status != model.OrderStatusPending {
+		resp.Status = model.OrderStatusText[order.Status]
+		return resp, nil
+	}
 	// 查询微信支付订单
 	svc := jsapi.JsapiApiService{Client: s.wxPayClient}
-	resp, _, err := svc.QueryOrderByOutTradeNo(ctx, jsapi.QueryOrderByOutTradeNoRequest{
-		OutTradeNo: order.TransactionID,
+	ret, _, err := svc.QueryOrderByOutTradeNo(ctx, jsapi.QueryOrderByOutTradeNoRequest{
+		OutTradeNo: core.String(strconv.Itoa(int(order.OrderID))),
 		Mchid:      core.String(s.config.Wechat.Pay.MchID),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("query wx pay order error: %v", err)
 	}
+	var status int8
+	switch *ret.TradeType {
+	case "SUCCESS":
+		resp.Status = "success"
+		status = model.OrderStatusCompleted
+	case "PAYERROR":
+		resp.Status = "error"
+		status = model.OrderStatusCancelled
+	}
+	if status != 0 {
+		s.orderSvc.UpdateOrderStatus(ctx, orderID, status)
 
+	}
 	return resp, nil
 }
 
@@ -398,7 +432,7 @@ func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) err
 	}
 
 	// 更新订单状态为已取消
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusCancelled, nil)
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusCancelled)
 	if err != nil {
 		return err
 	}
@@ -414,6 +448,18 @@ func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*model.Re
 			return nil, errors.New(errors.ErrCodeNotFound, "订单不存在", nil)
 		}
 		return nil, errors.New(errors.ErrCodeInternal, "查询订单失败", err)
+	}
+	return order, nil
+}
+
+// GetPlan 获取支付方案
+func (s *PaymentService) GetPlan(ctx context.Context, PlanId int64) (*model.RechargePlan, error) {
+	order, err := model.GetRechargePlan(s.db, PlanId)
+	if err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New(errors.ErrCodeNotFound, "支付方案不存在", nil)
+		}
+		return nil, errors.New(errors.ErrCodeInternal, "查询支付方案失败", err)
 	}
 	return order, nil
 }
