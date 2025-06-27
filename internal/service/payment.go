@@ -285,7 +285,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 	}
 
 	// 更新订单状态
-	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled)
+	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCompleted, transaction.TransactionId)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("update order status error: %v", err)
@@ -301,6 +301,26 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 	}); err != nil {
 		tx.Rollback()
 		return fmt.Errorf("update notify record error: %v", err)
+	}
+
+	// 更新用户代币余额
+	if err := tx.Model(order.User).Update("token_balance", gorm.Expr("token_balance + ?", order.TokenAmount)).Error; err != nil {
+		tx.Rollback()
+		return errors.New(errors.ErrCodeInternal, "更新代币余额失败", err)
+	}
+
+	// 创建代币变动记录
+	tokenRecord := &model.TokenRecord{
+		UserID:       order.User.UserID,
+		ChangeAmount: order.TokenAmount,
+		ChangeType:   Recharge,
+		BalanceAfter: order.User.TokenBalance + order.TokenAmount,
+		Remark:       model.StringPtr(getRewardRemark(Recharge)),
+	}
+
+	if err := tx.Create(tokenRecord).Error; err != nil {
+		tx.Rollback()
+		return errors.New(errors.ErrCodeInternal, "创建代币记录失败", err)
 	}
 
 	// 提交事务
@@ -362,7 +382,7 @@ func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID int64) (*Q
 	if err != nil {
 		return nil, err
 	}
-	resp := &QueryOrderResp{Balance: order.TokenAmount, Status: "pending"}
+	resp := &QueryOrderResp{Balance: order.User.TokenBalance, Status: "pending"}
 	if order.Status != model.OrderStatusPending {
 		resp.Status = model.OrderStatusText[order.Status]
 		return resp, nil
@@ -386,7 +406,7 @@ func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID int64) (*Q
 		status = model.OrderStatusCancelled
 	}
 	if status != 0 {
-		s.orderSvc.UpdateOrderStatus(ctx, orderID, status)
+		s.orderSvc.UpdateOrderStatus(ctx, orderID, status, nil)
 
 	}
 	return resp, nil
@@ -416,7 +436,7 @@ func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) err
 	}
 
 	// 更新订单状态为已取消
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusCancelled)
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusCancelled, nil)
 	if err != nil {
 		return err
 	}

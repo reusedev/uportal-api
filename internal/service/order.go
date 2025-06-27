@@ -146,7 +146,7 @@ func (s *OrderService) GetUserOrders(ctx context.Context, userID int64, page, pa
 }
 
 // UpdateOrderStatus 更新订单状态
-func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, status int8) error {
+func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, status int8, transactionId *string) error {
 	// 获取订单信息
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
@@ -169,6 +169,9 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, sta
 	// 如果支付成功，记录支付信息
 	if status == model.OrderStatusCompleted {
 		updates["paid_at"] = time.Now()
+	}
+	if transactionId != nil {
+		updates["transaction_id"] = transactionId
 	}
 
 	err = model.UpdateOrder(s.db, orderID, updates)

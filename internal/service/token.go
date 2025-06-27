@@ -394,6 +394,8 @@ func getRewardRemark(rewardType string) string {
 		return "反馈奖励"
 	case RewardAd:
 		return "观看广告奖励"
+	case Recharge:
+		return "充值"
 	default:
 		return "其他奖励"
 	}

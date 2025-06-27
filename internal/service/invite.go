@@ -200,6 +200,7 @@ const (
 	RewardTypeShare      = "SHARE"       // 分享奖励
 	RewardTypeFeedback   = "FEEDBACK"    // 反馈奖励
 	RewardAd             = "rewardad"    // 激励视频奖励
+	Recharge             = "recharge"
 )
 
 // 定义奖励类型对应的代币数

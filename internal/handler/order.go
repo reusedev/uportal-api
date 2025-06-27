@@ -161,7 +161,7 @@ func (h *OrderHandler) CancelOrder(c *gin.Context) {
 		return
 	}
 
-	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, model.OrderStatusCancelled)
+	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, model.OrderStatusCancelled, nil)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -190,7 +190,7 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, req.Status)
+	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, req.Status, nil)
 	if err != nil {
 		response.Error(c, err)
 		return

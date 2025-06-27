@@ -81,7 +81,7 @@ func (s *AlipayService) CreateAlipayOrder(ctx context.Context, orderID int64, de
 	}
 
 	// 更新订单状态为支付中
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusPending)
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusPending, nil)
 	if err != nil {
 		return "", err
 	}
@@ -128,7 +128,7 @@ func (s *AlipayService) HandleAlipayNotify(ctx context.Context, notifyData map[s
 	}
 
 	// 检查是否已处理过该通知
-	existingRecord, err := model.GetNotifyRecord(tx, 0, tradeNo)
+	existingRecord, err := model.GetNotifyRecord(tx, "", tradeNo)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			// 记录不存在，继续处理
@@ -210,7 +210,7 @@ func (s *AlipayService) HandleAlipayNotify(ctx context.Context, notifyData map[s
 		return apperrors.New(apperrors.ErrCodeInvalidParams, "支付金额不匹配", nil)
 	}
 
-	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled)
+	err = s.orderSvc.UpdateOrderStatus(ctx, order.OrderID, model.OrderStatusCancelled, nil)
 	if err != nil {
 		tx.Rollback()
 		return apperrors.New(apperrors.ErrCodeInternal, "更新订单状态失败", err)
@@ -283,7 +283,7 @@ func (s *AlipayService) CloseAlipayOrder(ctx context.Context, orderID int64) err
 	}
 
 	// 更新订单状态为已取消
-	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusCancelled)
+	err = s.orderSvc.UpdateOrderStatus(ctx, orderID, model.OrderStatusCancelled, nil)
 	if err != nil {
 		return apperrors.New(apperrors.ErrCodeInternal, "更新订单状态失败", err)
 	}
