@@ -319,7 +319,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 		ChangeAmount: order.TokenAmount,
 		ChangeType:   Recharge,
 		BalanceAfter: order.User.TokenBalance + order.TokenAmount,
-		Remark:       model.StringPtr(getRewardRemark(Recharge)),
+		Remark:       model.StringPtr(order.Plan.Name + "套餐" + getRewardRemark(Recharge)),
 	}
 
 	if err := tx.Create(tokenRecord).Error; err != nil {
