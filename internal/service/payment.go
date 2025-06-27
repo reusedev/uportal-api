@@ -166,26 +166,15 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, userID string, pl
 func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Request) error {
 	// 解析回调通知
 	var transaction payments.Transaction
-	//notifyReq, err := s.notifyHandler.ParseNotifyRequest(ctx, request, &transaction)
-	//if err != nil {
-	//	return fmt.Errorf("parse notify request error: %v", err)
-	//}
-	notifyReq := &notify.Request{
-		EventType: "TRANSACTION.SUCCESS",
-	}
-
-	transaction = payments.Transaction{
-		OutTradeNo:    core.String("223767"),
-		TransactionId: core.String("4200002646202506276089512435"),
-		Amount: &payments.TransactionAmount{
-			Total: core.Int64(1),
-		},
+	notifyReq, err := s.notifyHandler.ParseNotifyRequest(ctx, request, &transaction)
+	if err != nil {
+		return fmt.Errorf("parse notify request error: %v", err)
 	}
 
 	// 验证回调通知
-	//if notifyReq.EventType != "TRANSACTION.SUCCESS" {
-	//	return fmt.Errorf("unexpected event type: %s", notifyReq.EventType)
-	//}
+	if notifyReq.EventType != "TRANSACTION.SUCCESS" {
+		return fmt.Errorf("unexpected event type: %s", notifyReq.EventType)
+	}
 
 	// 获取订单号
 	orderNo := *transaction.OutTradeNo
