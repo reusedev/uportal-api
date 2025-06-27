@@ -88,9 +88,9 @@ func (h *PaymentHandler) QueryWxPayOrder(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-
+	orderID, _ := strconv.Atoi(req.OrderId)
 	// 查询支付订单
-	resp, err := h.paymentService.QueryWxPayOrder(c.Request.Context(), req.OrderId)
+	resp, err := h.paymentService.QueryWxPayOrder(c.Request.Context(), int64(orderID))
 	if err != nil {
 		response.Error(c, err)
 		return

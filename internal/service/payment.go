@@ -49,7 +49,7 @@ type QueryOrderResp struct {
 }
 
 type QueryOrderRequest struct {
-	OrderId int64 `json:"order_id" binding:"required"`
+	OrderId string `json:"order_id" binding:"required"`
 }
 
 type CreateWxPayOrderResp struct {
