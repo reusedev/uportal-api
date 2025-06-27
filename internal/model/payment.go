@@ -10,7 +10,7 @@ func CreateNotifyRecord(db *gorm.DB, record *PaymentNotifyRecord) error {
 }
 
 // GetNotifyRecord 获取通知记录
-func GetNotifyRecord(db *gorm.DB, orderID int64, transactionID string) (*PaymentNotifyRecord, error) {
+func GetNotifyRecord(db *gorm.DB, orderID string, transactionID string) (*PaymentNotifyRecord, error) {
 	var record PaymentNotifyRecord
 	err := db.Where("order_id = ? AND transaction_id = ?", orderID, transactionID).First(&record).Error
 	if err != nil {

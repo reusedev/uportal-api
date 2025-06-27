@@ -163,26 +163,13 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, userID string, pl
 }
 
 // HandleWxPayNotify 处理微信支付回调
-func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []byte, headers map[string]string) error {
-	// 创建 HTTP 请求
-	req, err := http.NewRequestWithContext(ctx, "POST", "", nil)
-	if err != nil {
-		return fmt.Errorf("create request error: %v", err)
-	}
-
-	// 设置请求头
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-
+func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Request) error {
 	// 解析回调通知
 	var transaction payments.Transaction
-	notifyReq, err := s.notifyHandler.ParseNotifyRequest(ctx, req, &transaction)
+	notifyReq, err := s.notifyHandler.ParseNotifyRequest(ctx, request, &transaction)
 	if err != nil {
 		return fmt.Errorf("parse notify request error: %v", err)
 	}
-
-	fmt.Printf("%+v", notifyReq)
 
 	// 验证回调通知
 	if notifyReq.EventType != "TRANSACTION.SUCCESS" {
@@ -213,11 +200,10 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 	}
 
 	// 检查是否已处理过该通知
-	existingRecord, err := model.GetNotifyRecord(tx, 0, *transaction.TransactionId)
+	existingRecord, err := model.GetNotifyRecord(tx, orderNo, *transaction.TransactionId)
 	if err == nil {
 		// 如果已处理成功，直接返回成功
 		if existingRecord.ProcessStatus == model.NotifyStatusSuccess {
-			log.Printf("Notification for transaction %s already processed successfully", *transaction.TransactionId)
 			if err := tx.Commit().Error; err != nil {
 				return fmt.Errorf("commit transaction error: %v", err)
 			}
@@ -257,6 +243,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 	// 获取分布式锁
 	lockKey := fmt.Sprintf("payment_notify_lock:%d:%s", order.OrderID, *transaction.TransactionId)
 	acquired, err := s.acquireLock(ctx, lockKey, 30*time.Second)
+	defer s.releaseLock(ctx, lockKey)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("acquire lock error: %v", err)
@@ -265,11 +252,8 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, requestBody []by
 		tx.Rollback()
 		return fmt.Errorf("failed to acquire lock, another process is handling this notification")
 	}
-	defer s.releaseLock(ctx, lockKey)
-
 	// 幂等性检查：如果订单已经支付成功，直接返回成功
-	if order.Status == model.OrderStatusCancelled {
-		log.Printf("Order %s already paid, skip processing", orderNo)
+	if order.Status == model.OrderStatusCompleted {
 		// 更新通知记录为成功
 		now := time.Now()
 		notifyRecord.ProcessStatus = model.NotifyStatusSuccess
@@ -349,15 +333,15 @@ func (s *PaymentService) RetryFailedNotifications(ctx context.Context) error {
 			continue
 		}
 
-		// 重新处理通知
-		headers := map[string]string{
-			"Wechatpay-Signature": record.TransactionID, // 这里需要保存原始签名
-			"Wechatpay-Timestamp": record.NotifyTime.Format(time.RFC3339),
-			"Wechatpay-Nonce":     strconv.FormatInt(record.RecordID, 10),
-			"Wechatpay-Serial":    "1", // 这里需要保存原始证书序列号
-		}
+		//// 重新处理通知
+		//headers := map[string]string{
+		//	"Wechatpay-Signature": record.TransactionID, // 这里需要保存原始签名
+		//	"Wechatpay-Timestamp": record.NotifyTime.Format(time.RFC3339),
+		//	"Wechatpay-Nonce":     strconv.FormatInt(record.RecordID, 10),
+		//	"Wechatpay-Serial":    "1", // 这里需要保存原始证书序列号
+		//}
 
-		err = s.HandleWxPayNotify(ctx, nil, headers)
+		err = s.HandleWxPayNotify(ctx, nil)
 		if err != nil {
 			log.Printf("Retry failed for record %d: %v", record.RecordID, err)
 		}
@@ -393,7 +377,7 @@ func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID int64) (*Q
 		return nil, fmt.Errorf("query wx pay order error: %v", err)
 	}
 	var status int8
-	switch *ret.TradeType {
+	switch *ret.TradeState {
 	case "SUCCESS":
 		resp.Status = "success"
 		status = model.OrderStatusCompleted

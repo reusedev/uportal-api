@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"runtime/debug"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,7 @@ func Recovery(logger *zap.Logger) gin.HandlerFunc {
 		defer func() {
 			if err := recover(); err != nil {
 				// 记录堆栈信息
+				fmt.Println(string(debug.Stack()))
 				logger.Error("panic recovered",
 					zap.Any("error", err),
 					zap.String("stack", string(debug.Stack())),

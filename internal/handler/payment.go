@@ -1,9 +1,8 @@
 package handler
 
 import (
-	"fmt"
 	"github.com/reusedev/uportal-api/pkg/consts"
-	"io"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -53,32 +52,15 @@ func (h *PaymentHandler) CreateWxPayOrder(c *gin.Context) {
 
 // HandleWxPayNotify 处理微信支付回调
 func (h *PaymentHandler) HandleWxPayNotify(c *gin.Context) {
-	// 读取请求体
-	fmt.Println("wechat notify")
-
-	body, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInternal, "读取请求体失败", err))
-		return
-	}
-
-	// 获取请求头
-	headers := make(map[string]string)
-	for k, v := range c.Request.Header {
-		if len(v) > 0 {
-			headers[k] = v[0]
-		}
-	}
-
 	// 处理回调
-	err = h.paymentService.HandleWxPayNotify(c.Request.Context(), body, headers)
+	err := h.paymentService.HandleWxPayNotify(c.Request.Context(), c.Request)
 	if err != nil {
-		response.Error(c, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "FAIL", "message": "处理回调失败"})
 		return
 	}
 
 	// 返回成功
-	c.String(200, "success")
+	c.Status(200)
 }
 
 // QueryWxPayOrder 查询微信支付订单
