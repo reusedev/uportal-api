@@ -43,7 +43,7 @@ func GetOrderByID(db *gorm.DB, orderID int64) (*RechargeOrder, error) {
 // GetOrderByOrderNo 根据订单号获取订单
 func GetOrderByOrderNo(db *gorm.DB, orderNo string) (*RechargeOrder, error) {
 	var order RechargeOrder
-	err := db.Preload("User").Where("order_no = ?", orderNo).First(&order).Error
+	err := db.Preload("User").Where("order_id = ?", orderNo).First(&order).Error
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func GenerateOrderNo() string {
 func CanUpdateOrderStatus(oldStatus, newStatus int8) bool {
 	switch oldStatus {
 	case OrderStatusPending:
-		return newStatus == OrderStatusCancelled
+		return newStatus == OrderStatusCancelled || newStatus == OrderStatusCompleted
 	case OrderStatusRefunded:
 		return newStatus == OrderStatusCompleted
 	default:

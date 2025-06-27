@@ -60,7 +60,7 @@ func (h *PaymentHandler) HandleWxPayNotify(c *gin.Context) {
 	}
 
 	// 返回成功
-	c.Status(200)
+	c.JSON(200, gin.H{"code": "SUCCESS"})
 }
 
 // QueryWxPayOrder 查询微信支付订单
