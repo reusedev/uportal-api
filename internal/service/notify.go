@@ -7,6 +7,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/consts"
+	"github.com/reusedev/uportal-api/pkg/logs"
 	message "github.com/reusedev/uportal-api/pkg/notify"
 	"github.com/reusedev/uportal-api/pkg/wechat_token"
 	"gorm.io/gorm"
@@ -45,6 +46,7 @@ func newData(openId, templateId, workId string, msg map[string]message.Kv) strin
 		Data:       msg,
 	}
 	d, _ := json.Marshal(data)
+	logs.Business().Info(string(d))
 	return string(d)
 }
 
