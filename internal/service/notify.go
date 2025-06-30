@@ -37,9 +37,10 @@ func newDrawTask(req *SendReq) map[string]message.Kv {
 	}
 }
 
-func newData(openId, templateId string, msg map[string]message.Kv) string {
+func newData(openId, templateId, workId string, msg map[string]message.Kv) string {
 	data := message.MessageData{
 		Touser:     openId,
+		Page:       "/pages/works/detail?id=" + workId,
 		TemplateId: templateId,
 		Data:       msg,
 	}
@@ -74,7 +75,7 @@ func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
 		return err
 	}
 	msg := newDrawTask(req)
-	data := newData(userAuth.ProviderUserID, consts.CompleteNotificationTmpId, msg)
+	data := newData(userAuth.ProviderUserID, consts.CompleteNotificationTmpId, req.Id, msg)
 	t := wechat_token.GetToken()
 	for i := 0; i < 3; i++ {
 		err = message.SendMessage(t, data)
