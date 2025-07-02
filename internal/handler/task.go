@@ -287,10 +287,10 @@ func (h *TaskHandler) CreateConsumptionRule(c *gin.Context) {
 // UpdateConsumptionRuleRequest 更新代币消耗规则请求
 type UpdateConsumptionRuleRequest struct {
 	FeatureId   int     `json:"feature_id" binding:"required,min=1"`
-	FeatureName string  `json:"feature_name"`
-	FeatureDesc string  `json:"feature_desc"`
-	TokenCost   *int64  `json:"token_cost,omitempty"`
-	FeatureCode string  `json:"feature_code"`
+	FeatureName *string `json:"feature_name"`
+	FeatureDesc *string `json:"feature_desc"`
+	TokenCost   *int64  `json:"token_cost"`
+	FeatureCode *string `json:"feature_code"`
 	Status      *int8   `json:"status"`
 	Class       *string `json:"classify" binding:"required"`
 }

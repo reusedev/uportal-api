@@ -237,17 +237,17 @@ func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *Up
 
 	// 更新规则
 	updates := make(map[string]interface{})
-	if req.FeatureName != "" {
-		updates["feature_name"] = req.FeatureName
+	if req.FeatureName != nil {
+		updates["feature_name"] = *req.FeatureName
 	}
-	if req.FeatureDesc != "" {
-		updates["feature_desc"] = req.FeatureDesc
+	if req.FeatureDesc != nil {
+		updates["feature_desc"] = *req.FeatureDesc
 	}
 	if req.TokenCost != nil {
 		updates["token_cost"] = *req.TokenCost
 	}
-	if req.FeatureCode != "" {
-		updates["feature_code"] = req.FeatureCode
+	if req.FeatureCode != nil {
+		updates["feature_code"] = *req.FeatureCode
 	}
 	if req.Status != nil {
 		updates["status"] = *req.Status
