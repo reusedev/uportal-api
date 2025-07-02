@@ -3,6 +3,9 @@ package service
 import (
 	"context"
 	stderrors "errors"
+	"fmt"
+	"github.com/reusedev/uportal-api/pkg/consts"
+	"math/rand"
 	"time"
 
 	"github.com/reusedev/uportal-api/internal/model"
@@ -23,13 +26,18 @@ func NewOrderService(db *gorm.DB) *OrderService {
 // CreateOrder 创建订单
 func (s *OrderService) CreateOrder(ctx context.Context, userID string, amount float64, productID string, productName string) (*model.RechargeOrder, error) {
 	// 创建订单
+	id, err := s.GenerateOrderId("")
+	if err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "创建订单失败", err)
+	}
 	order := &model.RechargeOrder{
+		OrderID:    id,
 		UserID:     userID,
 		AmountPaid: amount,
 		Status:     int8(model.OrderStatusPending),
 	}
 
-	err := model.CreateOrder(s.db, order)
+	err = model.CreateOrder(s.db, order)
 	if err != nil {
 		return nil, errors.New(errors.ErrCodeInternal, "创建订单失败", err)
 	}
@@ -37,8 +45,21 @@ func (s *OrderService) CreateOrder(ctx context.Context, userID string, amount fl
 	return order, nil
 }
 
+// GenerateOrderId 生成订单 ID
+func (s *OrderService) GenerateOrderId(prefix string) (string, error) {
+	// 创建订单
+	today := time.Now().Format("20060102")
+	now := time.Now().Format("20060102150405")
+	seq, err := model.RedisClient.Incr(context.Background(), consts.OrderSeq+today).Result()
+	if err != nil {
+		return "", err
+	}
+	id := fmt.Sprintf("%s%s%04d%02d", prefix, now, seq, rand.Intn(100))
+	return id, nil
+}
+
 // GetOrder 获取订单信息
-func (s *OrderService) GetOrder(ctx context.Context, orderID int64) (*model.RechargeOrder, error) {
+func (s *OrderService) GetOrder(ctx context.Context, orderID string) (*model.RechargeOrder, error) {
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
@@ -146,7 +167,7 @@ func (s *OrderService) GetUserOrders(ctx context.Context, userID int64, page, pa
 }
 
 // UpdateOrderStatus 更新订单状态
-func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID int64, status int8, transactionId *string) error {
+func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID string, status int8, transactionId *string) error {
 	// 获取订单信息
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {

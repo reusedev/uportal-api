@@ -1,9 +1,9 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/reusedev/uportal-api/pkg/consts"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/internal/service"
@@ -46,6 +46,7 @@ func (h *PaymentHandler) CreateWxPayOrder(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
+	fmt.Printf("%+v", resp)
 
 	response.Success(c, resp)
 }
@@ -70,9 +71,8 @@ func (h *PaymentHandler) QueryWxPayOrder(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	orderID, _ := strconv.Atoi(req.OrderId)
 	// 查询支付订单
-	resp, err := h.paymentService.QueryWxPayOrder(c.Request.Context(), int64(orderID))
+	resp, err := h.paymentService.QueryWxPayOrder(c.Request.Context(), req.OrderId)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -83,14 +83,14 @@ func (h *PaymentHandler) QueryWxPayOrder(c *gin.Context) {
 
 // CloseWxPayOrder 关闭微信支付订单
 func (h *PaymentHandler) CloseWxPayOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	orderID := c.Param("id")
+	if orderID == "" {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", nil))
 		return
 	}
 
 	// 关闭支付订单
-	err = h.paymentService.CloseWxPayOrder(c.Request.Context(), orderID)
+	err := h.paymentService.CloseWxPayOrder(c.Request.Context(), orderID)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -101,9 +101,9 @@ func (h *PaymentHandler) CloseWxPayOrder(c *gin.Context) {
 
 // CreateAlipayOrder 创建支付宝支付订单
 func (h *PaymentHandler) CreateAlipayOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	orderID := c.Param("id")
+	if orderID == "" {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", nil))
 		return
 	}
 
@@ -149,9 +149,9 @@ func (h *PaymentHandler) HandleAlipayNotify(c *gin.Context) {
 
 // QueryAlipayOrder 查询支付宝支付订单
 func (h *PaymentHandler) QueryAlipayOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	orderID := c.Param("id")
+	if orderID == "" {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", nil))
 		return
 	}
 
@@ -167,14 +167,14 @@ func (h *PaymentHandler) QueryAlipayOrder(c *gin.Context) {
 
 // CloseAlipayOrder 关闭支付宝支付订单
 func (h *PaymentHandler) CloseAlipayOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	orderID := c.Param("id")
+	if orderID == "" {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", nil))
 		return
 	}
 
 	// 关闭支付订单
-	err = h.alipayService.CloseAlipayOrder(c.Request.Context(), orderID)
+	err := h.alipayService.CloseAlipayOrder(c.Request.Context(), orderID)
 	if err != nil {
 		response.Error(c, err)
 		return

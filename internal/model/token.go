@@ -2,7 +2,6 @@ package model
 
 import (
 	"gorm.io/gorm/clause"
-	"strconv"
 	"time"
 
 	"github.com/reusedev/uportal-api/pkg/errors"
@@ -248,8 +247,7 @@ func AddToken(db *gorm.DB, userID string, amount int64, recordType int, orderID 
 			ChangeTime:   time.Now(),
 		}
 		if orderID != "" {
-			orderIDInt, _ := strconv.ParseInt(orderID, 10, 64)
-			record.OrderID = &orderIDInt
+			record.OrderID = &orderID
 		}
 		return CreateTokenRecord(tx, record)
 	})

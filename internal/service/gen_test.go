@@ -3,17 +3,36 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/go-redis/redis/v8"
+	"github.com/reusedev/uportal-api/internal/model"
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/option"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/jsapi"
 	"github.com/wechatpay-apiv3/wechatpay-go/utils"
 	"golang.org/x/crypto/bcrypt"
+	"math/rand"
 	"testing"
+	"time"
 )
 
 var (
 	mchCertificateSerialNumber = "14475E681C83F8B662FF84A02FF284CC8ABC4073"
 )
+
+func TestUpload(t *testing.T) {
+	model.RedisClient = redis.NewClient(&redis.Options{})
+	// 创建订单
+	prefix := ""
+	today := time.Now().Format("20060102")
+	now := time.Now().Format("20060102150405")
+	seq, err := model.RedisClient.Incr(context.Background(), consts.OrderSeq+today).Result()
+	if err != nil {
+		return
+	}
+	id := fmt.Sprintf("%s%s%04d%02d", prefix, now, seq, rand.Intn(100))
+	t.Log(id)
+}
 
 func TestNewAdminService(t *testing.T) {
 	password, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)

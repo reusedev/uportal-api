@@ -52,12 +52,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 // GetOrder 获取订单详情
 func (h *OrderHandler) GetOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
-		return
-	}
-
+	orderID := c.Param("id")
 	order, err := h.orderService.GetOrder(c.Request.Context(), orderID)
 	if err != nil {
 		response.Error(c, err)
@@ -76,9 +71,9 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 
 // GetAdminOrder 获取订单详情
 func (h *OrderHandler) GetAdminOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	orderID := c.Param("id")
+	if orderID != "" {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", nil))
 		return
 	}
 
@@ -142,9 +137,9 @@ func (h *OrderHandler) GetUserOrders(c *gin.Context) {
 
 // CancelOrder 取消订单
 func (h *OrderHandler) CancelOrder(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	orderID := c.Param("id")
+	if orderID == "" {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", nil))
 		return
 	}
 
@@ -178,9 +173,9 @@ type UpdateOrderStatusRequest struct {
 
 // UpdateOrderStatus 更新订单状态（管理员接口）
 func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
-	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", err))
+	orderID := c.Param("id")
+	if orderID == "" {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", nil))
 		return
 	}
 
@@ -190,7 +185,7 @@ func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	err = h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, req.Status, nil)
+	err := h.orderService.UpdateOrderStatus(c.Request.Context(), orderID, req.Status, nil)
 	if err != nil {
 		response.Error(c, err)
 		return

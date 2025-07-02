@@ -31,7 +31,7 @@ func CreateOrder(db *gorm.DB, order *RechargeOrder) error {
 }
 
 // GetOrderByID 根据ID获取订单
-func GetOrderByID(db *gorm.DB, orderID int64) (*RechargeOrder, error) {
+func GetOrderByID(db *gorm.DB, orderID string) (*RechargeOrder, error) {
 	var order RechargeOrder
 	err := db.Preload("User").First(&order, orderID).Error
 	if err != nil {
@@ -51,7 +51,7 @@ func GetOrderByOrderNo(db *gorm.DB, orderNo string) (*RechargeOrder, error) {
 }
 
 // UpdateOrder 更新订单
-func UpdateOrder(db *gorm.DB, orderID int64, updates map[string]interface{}) error {
+func UpdateOrder(db *gorm.DB, orderID string, updates map[string]interface{}) error {
 	return db.Model(&RechargeOrder{}).Where("order_id = ?", orderID).Updates(updates).Error
 }
 

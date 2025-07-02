@@ -41,3 +41,7 @@ const (
 const (
 	Wechat = "wechat"
 )
+
+const (
+	OrderSeq = "order_"
+)

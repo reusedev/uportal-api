@@ -127,7 +127,7 @@ func (t RechargePlan) MarshalJSON() ([]byte, error) {
 
 // RechargeOrder 充值订单表结构体
 type RechargeOrder struct {
-	OrderID       int64         `gorm:"column:order_id;primaryKey;autoIncrement" json:"order_id"`                                                                            // 订单ID，主键，自增
+	OrderID       string        `gorm:"column:order_id;type:varchar(22);primaryKey" json:"order_id"`                                                                         // 订单ID，主键，自增
 	UserID        string        `gorm:"column:user_id;type:varchar(13);not null;index:idx_recharge_orders_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
 	PlanID        *int          `gorm:"column:plan_id;index:idx_recharge_orders_plan;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"plan_id"`                          // 方案ID
 	TokenAmount   int           `gorm:"column:token_amount;not null" json:"token_amount"`                                                                                    // 本次订单获得的代币数量
@@ -163,19 +163,19 @@ func (t RechargeOrder) MarshalJSON() ([]byte, error) {
 
 // Refund 退款记录表结构体
 type Refund struct {
-	RefundID     int64         `gorm:"column:refund_id;primaryKey;autoIncrement" json:"refund_id"`                                                                  // 退款ID，主键，自增
-	OrderID      int64         `gorm:"column:order_id;not null;index:idx_refunds_order;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order_id"`               // 原订单ID
-	UserID       string        `gorm:"column:user_id;type:varchar(13);not null;index:idx_refunds_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
-	RefundAmount float64       `gorm:"column:refund_amount;type:decimal(10,2);not null" json:"refund_amount"`                                                       // 退款金额(元)
-	RefundTokens int           `gorm:"column:refund_tokens;not null" json:"refund_tokens"`                                                                          // 收回代币数
-	RefundMethod string        `gorm:"column:refund_method;type:varchar(20);not null" json:"refund_method"`                                                         // 退款方式
-	Status       int8          `gorm:"column:status;not null;default:0" json:"status"`                                                                              // 退款状态：0=处理中，1=成功，2=失败
-	AdminID      *int          `gorm:"column:admin_id;index:idx_refunds_admin;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin_id"`                       // 操作管理员ID
-	Reason       *string       `gorm:"column:reason;type:varchar(255)" json:"reason"`                                                                               // 退款原因说明
-	RefundTime   time.Time     `gorm:"column:refund_time;not null;autoCreateTime" json:"refund_time"`                                                               // 退款完成时间
-	User         User          `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                      // 关联用户信息
-	Order        RechargeOrder `gorm:"foreignKey:OrderID;references:OrderID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order,omitempty"`                   // 关联订单信息
-	Admin        *AdminUser    `gorm:"foreignKey:AdminID;references:AdminID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin,omitempty"`                  // 关联管理员信息
+	RefundID     int64         `gorm:"column:refund_id;primaryKey;autoIncrement" json:"refund_id"`                                                                     // 退款ID，主键，自增
+	OrderID      string        `gorm:"column:order_id;type:varchar(22);not null;index:idx_refunds_order;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order_id"` // 原订单ID
+	UserID       string        `gorm:"column:user_id;type:varchar(13);not null;index:idx_refunds_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`    // 用户ID
+	RefundAmount float64       `gorm:"column:refund_amount;type:decimal(10,2);not null" json:"refund_amount"`                                                          // 退款金额(元)
+	RefundTokens int           `gorm:"column:refund_tokens;not null" json:"refund_tokens"`                                                                             // 收回代币数
+	RefundMethod string        `gorm:"column:refund_method;type:varchar(20);not null" json:"refund_method"`                                                            // 退款方式
+	Status       int8          `gorm:"column:status;not null;default:0" json:"status"`                                                                                 // 退款状态：0=处理中，1=成功，2=失败
+	AdminID      *int          `gorm:"column:admin_id;index:idx_refunds_admin;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin_id"`                          // 操作管理员ID
+	Reason       *string       `gorm:"column:reason;type:varchar(255)" json:"reason"`                                                                                  // 退款原因说明
+	RefundTime   time.Time     `gorm:"column:refund_time;not null;autoCreateTime" json:"refund_time"`                                                                  // 退款完成时间
+	User         User          `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                         // 关联用户信息
+	Order        RechargeOrder `gorm:"foreignKey:OrderID;references:OrderID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order,omitempty"`                      // 关联订单信息
+	Admin        *AdminUser    `gorm:"foreignKey:AdminID;references:AdminID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin,omitempty"`                     // 关联管理员信息
 }
 
 // TokenConsumeRule 代币消耗功能表结构体
@@ -198,7 +198,7 @@ type TokenRecord struct {
 	ChangeType   string            `gorm:"column:change_type;type:varchar(20);not null" json:"source"`                                                                        // 变动类型
 	TaskID       *int              `gorm:"column:task_id;index:idx_token_records_task;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"task_id"`                          // 任务ID来源
 	FeatureID    *int              `gorm:"column:feature_id;index:idx_token_records_feature;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"feature_id"`                 // 功能ID来源
-	OrderID      *int64            `gorm:"column:order_id;index:idx_token_records_order;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"order_id"`                       // 订单ID来源
+	OrderID      *string           `gorm:"column:order_id;type:varchar(22);index:idx_token_records_order;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"order_id"`      // 订单ID来源
 	AdminID      *int64            `gorm:"column:admin_id;index:idx_token_records_admin;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin_id"`                       // 管理员ID来源
 	Remark       *string           `gorm:"column:remark;type:varchar(255)" json:"remark"`                                                                                     // 备注说明
 	ChangeTime   time.Time         `gorm:"column:change_time;not null;autoCreateTime" json:"created_at"`                                                                      // 变动时间
@@ -276,7 +276,7 @@ type SystemConfig struct {
 // PaymentNotifyRecord 支付回调通知记录
 type PaymentNotifyRecord struct {
 	RecordID      int64          `gorm:"column:record_id;primaryKey;autoIncrement" json:"record_id"`
-	OrderID       int64          `gorm:"column:order_id;not null;uniqueIndex:uk_order_transaction" json:"order_id"`
+	OrderID       string         `gorm:"column:order_id;type:varchar(22);not null;uniqueIndex:uk_order_transaction" json:"order_id"`
 	TransactionID string         `gorm:"column:transaction_id;type:varchar(64);not null;uniqueIndex:uk_order_transaction" json:"transaction_id"`
 	NotifyType    string         `gorm:"column:notify_type;type:varchar(32);not null" json:"notify_type"`
 	NotifyTime    time.Time      `gorm:"column:notify_time;not null;autoCreateTime" json:"notify_time"`

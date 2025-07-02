@@ -8,7 +8,6 @@ import (
 	"github.com/reusedev/uportal-api/pkg/consts"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -128,13 +127,12 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, userID string, pl
 
 	// 创建支付订单
 	svc := jsapi.JsapiApiService{Client: s.wxPayClient}
-	tradeNo := strconv.Itoa(int(order.OrderID))
 	resp, _, err := svc.PrepayWithRequestPayment(ctx,
 		jsapi.PrepayRequest{
 			Appid:       core.String(s.config.Wechat.Pay.AppID),
 			Mchid:       core.String(s.config.Wechat.Pay.MchID),
 			Description: core.String(*plan.Description),
-			OutTradeNo:  core.String(tradeNo),
+			OutTradeNo:  core.String(order.OrderID),
 			NotifyUrl:   core.String(s.config.Wechat.Pay.NotifyUrl),
 			Amount: &jsapi.Amount{
 				Total:    core.Int64(int64(order.AmountPaid * 100)), // 转换为分
@@ -156,7 +154,7 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, userID string, pl
 	//}
 	ret := &CreateWxPayOrderResp{
 		PrepayWithRequestPaymentResponse: resp,
-		OrderId:                          strconv.Itoa(int(order.OrderID)),
+		OrderId:                          order.OrderID,
 	}
 
 	return ret, nil
@@ -192,7 +190,6 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 
 	// 创建通知记录
 	notifyRecord := &model.PaymentNotifyRecord{
-		OrderID:       0, // 稍后更新
 		TransactionID: *transaction.TransactionId,
 		NotifyType:    notifyReq.EventType,
 		NotifyTime:    time.Now(),
@@ -241,7 +238,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 	}
 
 	// 获取分布式锁
-	lockKey := fmt.Sprintf("payment_notify_lock:%d:%s", order.OrderID, *transaction.TransactionId)
+	lockKey := fmt.Sprintf("payment_notify_lock:%s:%s", order.OrderID, *transaction.TransactionId)
 	acquired, err := s.acquireLock(ctx, lockKey, 30*time.Second)
 	defer s.releaseLock(ctx, lockKey)
 	if err != nil {
@@ -318,6 +315,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 		UserID:       order.User.UserID,
 		ChangeAmount: order.TokenAmount,
 		ChangeType:   Recharge,
+		OrderID:      &order.OrderID,
 		BalanceAfter: order.User.TokenBalance + order.TokenAmount,
 		Remark:       model.StringPtr(order.Plan.Name + "套餐" + getRewardRemark(Recharge)),
 	}
@@ -346,7 +344,7 @@ func (s *PaymentService) RetryFailedNotifications(ctx context.Context) error {
 
 	for _, record := range records {
 		// 获取分布式锁
-		lockKey := fmt.Sprintf("payment_notify_retry_lock:%d:%s", record.OrderID, record.TransactionID)
+		lockKey := fmt.Sprintf("payment_notify_retry_lock:%s:%s", record.OrderID, record.TransactionID)
 		acquired, err := s.acquireLock(ctx, lockKey, 30*time.Second)
 		if err != nil {
 			log.Printf("Failed to acquire lock for retry: %v", err)
@@ -380,7 +378,7 @@ func (s *PaymentService) RetryFailedNotifications(ctx context.Context) error {
 }
 
 // QueryWxPayOrder 查询微信支付订单
-func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID int64) (*QueryOrderResp, error) {
+func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID string) (*QueryOrderResp, error) {
 	// 获取订单信息
 	order, err := s.orderSvc.GetOrder(ctx, orderID)
 	if err != nil {
@@ -416,7 +414,7 @@ func (s *PaymentService) QueryWxPayOrder(ctx context.Context, orderID int64) (*Q
 }
 
 // CloseWxPayOrder 关闭微信支付订单
-func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) error {
+func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID string) error {
 	// 获取订单信息
 	order, err := s.orderSvc.GetOrder(ctx, orderID)
 	if err != nil {
@@ -448,7 +446,7 @@ func (s *PaymentService) CloseWxPayOrder(ctx context.Context, orderID int64) err
 }
 
 // GetOrder 获取订单信息
-func (s *PaymentService) GetOrder(ctx context.Context, orderID int64) (*model.RechargeOrder, error) {
+func (s *PaymentService) GetOrder(ctx context.Context, orderID string) (*model.RechargeOrder, error) {
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
@@ -489,7 +487,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID string, amount 
 	}
 
 	logs.Business().Info("订单创建成功",
-		zap.Int64("order_id", order.OrderID),
+		zap.String("order_id", order.OrderID),
 		zap.String("user_id", userID),
 		//zap.String("order_no", order.OrderNo),
 		zap.Float64("amount", amount),
@@ -511,7 +509,7 @@ func (s *PaymentService) GetOrderByOrderNo(ctx context.Context, orderNo string) 
 }
 
 // UpdateOrderStatus 更新订单状态
-func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, status int8, paymentInfo map[string]interface{}) error {
+func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID string, status int8, paymentInfo map[string]interface{}) error {
 	// 获取订单信息
 	order, err := model.GetOrderByID(s.db, orderID)
 	if err != nil {
@@ -547,7 +545,7 @@ func (s *PaymentService) UpdateOrderStatus(ctx context.Context, orderID int64, s
 	}
 
 	logs.Business().Info("订单状态更新成功",
-		zap.Int64("order_id", orderID),
+		zap.String("order_id", orderID),
 		//zap.String("order_no", order.OrderNo),
 		zap.Int8("old_status", order.Status),
 		zap.Int8("new_status", status),

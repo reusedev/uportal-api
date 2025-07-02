@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS `user_login_log` (
 
 -- 9. 充值订单表，记录每笔充值交易
 CREATE TABLE IF NOT EXISTS `recharge_orders` (
-                                   `order_id`      BIGINT        NOT NULL AUTO_INCREMENT COMMENT '订单ID，主键，自增',
+                                   `order_id`      VARCHAR(22)        NOT NULL AUTO_INCREMENT COMMENT '订单ID，主键，自增',
                                    `user_id`      VARCHAR(13) NOT NULL           COMMENT '用户ID，外键关联 users.user_id',
                                    `plan_id`       INT           DEFAULT NULL           COMMENT '方案ID，外键关联 recharge_plans.plan_id',
                                    `token_amount`  INT           NOT NULL               COMMENT '本次订单获得的代币数量',
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS `recharge_orders` (
 -- 10. 退款记录表，记录充值退款详情
 CREATE TABLE IF NOT EXISTS `refunds` (
                            `refund_id`    BIGINT        NOT NULL AUTO_INCREMENT COMMENT '退款ID，主键，自增',
-                           `order_id`     BIGINT        NOT NULL               COMMENT '原订单ID，外键关联 recharge_orders.order_id',
+                           `order_id`     VARCHAR(22)        NOT NULL               COMMENT '原订单ID，外键关联 recharge_orders.order_id',
                            `user_id`     VARCHAR(13) Not NULL             COMMENT '用户ID，外键关联 users.user_id',
                            `refund_amount` DECIMAL(10,2) NOT NULL               COMMENT '退款金额(元)',
                            `refund_tokens` INT           NOT NULL               COMMENT '收回代币数',
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `token_records` (
                                  `change_type`  VARCHAR(20) NOT NULL              COMMENT '变动类型，如 TASK_REWARD、FEATURE_COST、PURCHASE、REFUND、ADMIN_ADJUST',
                                  `task_id`      INT        DEFAULT NULL           COMMENT '任务ID来源，外键关联 reward_tasks.task_id',
                                  `feature_id`   INT        DEFAULT NULL           COMMENT '功能ID来源，外键关联 token_consume_rules.feature_id',
-                                 `order_id`     BIGINT     DEFAULT NULL           COMMENT '订单ID来源，外键关联 recharge_orders.order_id',
+                                 `order_id`     VARCHAR(22)     DEFAULT NULL           COMMENT '订单ID来源，外键关联 recharge_orders.order_id',
                                  `admin_id`     INT        DEFAULT NULL           COMMENT '管理员ID来源，外键关联 admin_users.admin_id',
                                  `remark`       VARCHAR(255) DEFAULT NULL         COMMENT '备注说明，如 新用户注册奖励、功能消费等',
                                  `change_time`  DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '变动时间',
@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS `token_records` (
 -- 12. 支付回调通知记录表
 CREATE TABLE IF NOT EXISTS `payment_notify_records` (
     `record_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID',
-    `order_id` BIGINT NOT NULL COMMENT '订单ID',
+    `order_id` VARCHAR(22) NOT NULL COMMENT '订单ID',
     `transaction_id` VARCHAR(64) NOT NULL COMMENT '微信支付交易号',
     `notify_type` VARCHAR(32) NOT NULL COMMENT '通知类型',
     `notify_time` DATETIME NOT NULL COMMENT '通知时间',

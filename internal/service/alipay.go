@@ -48,7 +48,7 @@ func NewAlipayService(db *gorm.DB, orderSvc *OrderService, cfg *config.Config) (
 }
 
 // CreateAlipayOrder 创建支付宝支付订单
-func (s *AlipayService) CreateAlipayOrder(ctx context.Context, orderID int64, description string, amount float64) (string, error) {
+func (s *AlipayService) CreateAlipayOrder(ctx context.Context, orderID string, description string, amount float64) (string, error) {
 	// 获取订单信息
 	order, err := s.orderSvc.GetOrder(ctx, orderID)
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *AlipayService) HandleAlipayNotify(ctx context.Context, notifyData map[s
 
 	// 创建通知记录
 	notifyRecord := &model.PaymentNotifyRecord{
-		OrderID:       0, // 稍后更新
+		OrderID:       "", // 稍后更新
 		TransactionID: tradeNo,
 		NotifyType:    "alipay_trade_success",
 		NotifyTime:    time.Now(),
@@ -241,7 +241,7 @@ func (s *AlipayService) HandleAlipayNotify(ctx context.Context, notifyData map[s
 }
 
 // QueryAlipayOrder 查询支付宝支付订单
-func (s *AlipayService) QueryAlipayOrder(ctx context.Context, orderID int64) (*alipay.TradeQueryRsp, error) {
+func (s *AlipayService) QueryAlipayOrder(ctx context.Context, orderID string) (*alipay.TradeQueryRsp, error) {
 	// 获取订单信息
 	order, err := s.orderSvc.GetOrder(ctx, orderID)
 	if err != nil {
@@ -261,7 +261,7 @@ func (s *AlipayService) QueryAlipayOrder(ctx context.Context, orderID int64) (*a
 }
 
 // CloseAlipayOrder 关闭支付宝支付订单
-func (s *AlipayService) CloseAlipayOrder(ctx context.Context, orderID int64) error {
+func (s *AlipayService) CloseAlipayOrder(ctx context.Context, orderID string) error {
 	// 获取订单信息
 	order, err := s.orderSvc.GetOrder(ctx, orderID)
 	if err != nil {
