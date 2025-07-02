@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/reusedev/uportal-api/pkg/consts"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -111,7 +112,12 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, userID string, pl
 		}
 		return nil, errors.New(errors.ErrCodeInternal, "获取用户微信信息失败", err)
 	}
+	orderId, err := generateOrderNo("")
+	if err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "创建充值订单失败", err)
+	}
 	order := &model.RechargeOrder{
+		OrderID:       orderId,
 		UserID:        userID,
 		PlanID:        &plan.PlanID,
 		TokenAmount:   plan.TokenAmount,
@@ -564,8 +570,16 @@ func (s *PaymentService) GetUserOrders(ctx context.Context, userID int64, page, 
 }
 
 // 生成订单号
-func generateOrderNo() string {
-	return fmt.Sprintf("%d%d", time.Now().UnixNano(), time.Now().UnixNano()%1000)
+func generateOrderNo(prefix string) (string, error) {
+	// 创建订单
+	today := time.Now().Format("20060102")
+	now := time.Now().Format("20060102150405")
+	seq, err := model.RedisClient.Incr(context.Background(), consts.OrderSeq+today).Result()
+	if err != nil {
+		return "", err
+	}
+	id := fmt.Sprintf("%s%s%04d%02d", prefix, now, seq, rand.Intn(100))
+	return id, nil
 }
 
 // 检查订单状态是否可以更新
