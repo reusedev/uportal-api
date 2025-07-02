@@ -33,7 +33,7 @@ func CreateOrder(db *gorm.DB, order *RechargeOrder) error {
 // GetOrderByID 根据ID获取订单
 func GetOrderByID(db *gorm.DB, orderID string) (*RechargeOrder, error) {
 	var order RechargeOrder
-	err := db.Preload("User").First(&order, orderID).Error
+	err := db.Preload("User").Where("order_id = ?", orderID).First(&order).Error
 	if err != nil {
 		return nil, err
 	}
