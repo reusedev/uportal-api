@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	stdErrors "errors"
-	"github.com/go-redis/redis/v8"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/reusedev/uportal-api/pkg/logs"
@@ -24,24 +22,10 @@ func NewNotifyService(db *gorm.DB) *NotifyService {
 	return &NotifyService{db: db}
 }
 
-func newDrawTask(req *SendReq) map[string]message.Kv {
-	remark := "制作已完成，请点击前往查看"
-	if req.Remarks != "" {
-		remark = req.Remarks
-	}
-	return map[string]message.Kv{
-		"thing1":  {Value: req.Theme},
-		"thing2":  {Value: req.Style},
-		"phrase3": {Value: req.Result},
-		"time4":   {Value: req.CreatedTime},
-		"thing5":  {Value: remark},
-	}
-}
-
-func newData(openId, templateId, workId string, msg map[string]message.Kv) string {
+func newData(openId, templateId, page string, msg map[string]message.Kv) string {
 	data := message.MessageData{
 		Touser:     openId,
-		Page:       "/pages/works/detail?id=" + workId,
+		Page:       page,
 		TemplateId: templateId,
 		Data:       msg,
 	}
@@ -62,22 +46,12 @@ func (notifyService *NotifyService) Notify(ctx context.Context, req *SubscribeRe
 }
 
 func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
-	key := req.Id
-	userId, err := model.RedisClient.Get(ctx, key).Result()
-	if err != nil {
-		if stdErrors.Is(err, redis.Nil) {
-			return nil
-		} else {
-			return err
-		}
-	}
 	var userAuth model.UserAuth
-	err = n.db.Where("user_id = ?", userId).First(&userAuth).Error
+	err := n.db.Where("user_id = ?", req.UserId).First(&userAuth).Error
 	if err != nil {
 		return err
 	}
-	msg := newDrawTask(req)
-	data := newData(userAuth.ProviderUserID, consts.CompleteNotificationTmpId, req.Id, msg)
+	data := newData(userAuth.ProviderUserID, req.TemplateId, req.Page, req.Data)
 	t := wechat_token.GetToken()
 	for i := 0; i < 3; i++ {
 		err = message.SendMessage(t, data)
@@ -88,11 +62,10 @@ func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
 	if err != nil {
 		return err
 	}
-	model.RedisClient.Del(ctx, key)
 	notification := model.Notification{
-		UserID:    userId,
-		Type:      "一次性订阅消息",
-		Title:     "AI绘画完成通知",
+		UserID:    req.UserId,
+		Type:      req.Type,
+		Title:     req.Title,
 		Content:   data,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -111,10 +84,10 @@ type Message struct {
 }
 
 type SendReq struct {
-	Id          string `json:"id" binding:"required"`
-	Theme       string `json:"theme" binding:"required"`
-	Style       string `json:"style" binding:"required"`
-	Result      string `json:"result" binding:"required"`
-	CreatedTime string `json:"created_time" binding:"required"`
-	Remarks     string `json:"remarks"`
+	UserId     string                `json:"user_id"`
+	Data       map[string]message.Kv `json:"data" binding:"required"`
+	Page       string                `json:"page" binding:"required"`
+	TemplateId string                `json:"template_id" binding:"required"`
+	Type       string                `json:"type" binding:"required"`
+	Title      string                `json:"title" binding:"required"`
 }

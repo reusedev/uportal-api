@@ -253,7 +253,7 @@ func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *Up
 		updates["status"] = *req.Status
 	}
 	if req.Class != "" {
-		updates["classify"] = req.Class
+		updates["class"] = req.Class
 	}
 
 	if err := s.db.Model(&rule).Updates(updates).Error; err != nil {
