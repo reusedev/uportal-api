@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"encoding/json"
+	stdErrors "errors"
+	"github.com/go-redis/redis/v8"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/reusedev/uportal-api/pkg/logs"
@@ -46,8 +48,18 @@ func (notifyService *NotifyService) Notify(ctx context.Context, req *SubscribeRe
 }
 
 func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
+	key := req.Sign
+	_, err := model.RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		if stdErrors.Is(err, redis.Nil) {
+			return nil
+		} else {
+			return err
+		}
+	}
+
 	var userAuth model.UserAuth
-	err := n.db.Where("user_id = ?", req.UserId).First(&userAuth).Error
+	err = n.db.Where("user_id = ?", req.UserId).First(&userAuth).Error
 	if err != nil {
 		return err
 	}
@@ -62,6 +74,7 @@ func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
 	if err != nil {
 		return err
 	}
+	model.RedisClient.Del(ctx, key)
 	notification := model.Notification{
 		UserID:    req.UserId,
 		Type:      req.Type,
@@ -84,7 +97,8 @@ type Message struct {
 }
 
 type SendReq struct {
-	UserId     string                `json:"user_id"`
+	UserId     string                `json:"user_id" binding:"required"`
+	Sign       string                `json:"sign" binding:"required"` // 订阅标识ID
 	Data       map[string]message.Kv `json:"data" binding:"required"`
 	Page       string                `json:"page" binding:"required"`
 	TemplateId string                `json:"template_id" binding:"required"`
