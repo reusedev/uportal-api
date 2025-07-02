@@ -72,7 +72,7 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 // GetAdminOrder 获取订单详情
 func (h *OrderHandler) GetAdminOrder(c *gin.Context) {
 	orderID := c.Param("id")
-	if orderID != "" {
+	if orderID == "" {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的订单ID", nil))
 		return
 	}
