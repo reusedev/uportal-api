@@ -25,13 +25,13 @@ func NewTokenService(db *gorm.DB) *TokenService {
 
 // UpdateConsumptionRuleRequest 更新消费规则请求
 type UpdateConsumptionRuleRequest struct {
-	ID          int64  `json:"id" binding:"required,min=1"`
-	FeatureName string `json:"feature_name" binding:"required,max=100"`
-	FeatureDesc string `json:"feature_desc" binding:"required,max=255"`
-	TokenCost   *int64 `json:"token_cost" binding:"required,min=1"`
-	FeatureCode string `json:"feature_code" binding:"required,max=50"`
-	Status      *int8  `json:"status" binding:"required,oneof=1 2"`
-	Class       string `json:"class" binding:"required,max=100"`
+	ID          int64   `json:"id" binding:"required,min=1"`
+	FeatureName string  `json:"feature_name" binding:"required,max=100"`
+	FeatureDesc string  `json:"feature_desc" binding:"required,max=255"`
+	TokenCost   *int64  `json:"token_cost" binding:"required,min=1"`
+	FeatureCode string  `json:"feature_code" binding:"required,max=50"`
+	Status      *int8   `json:"status" binding:"required,oneof=1 2"`
+	Class       *string `json:"class" binding:"required,max=100"`
 }
 
 // DeleteConsumptionRule 删除Token消费规则
