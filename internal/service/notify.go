@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	stdErrors "errors"
+	"fmt"
+	"time"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/consts"
@@ -11,7 +14,6 @@ import (
 	message "github.com/reusedev/uportal-api/pkg/notify"
 	"github.com/reusedev/uportal-api/pkg/wechat_token"
 	"gorm.io/gorm"
-	"time"
 )
 
 // NotifyService 消息通知服务
@@ -69,6 +71,9 @@ func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
 		err = message.SendMessage(t, data)
 		if err == nil {
 			break
+		} else {
+			logs.Business().Error(fmt.Sprintf("send message failed %d : err: %s, data: %s, token: %s", i, err, data, t))
+			time.Sleep(time.Second * 2 * time.Duration(i+1))
 		}
 	}
 	if err != nil {
