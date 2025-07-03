@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
-	"github.com/reusedev/uportal-api/pkg/consts"
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/reusedev/uportal-api/pkg/consts"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
@@ -131,13 +132,24 @@ func (s *PaymentService) CreateWxPayOrder(ctx context.Context, userID string, pl
 		return nil, errors.New(errors.ErrCodeInternal, "创建充值订单失败", err)
 	}
 
+	// 微信支付 description 最大127字节，超出需截断
+	desc := ""
+	if plan.Description != nil {
+		desc = *plan.Description
+	}
+	descRunes := []rune(desc)
+	for len([]byte(string(descRunes))) > 127 {
+		descRunes = descRunes[:len(descRunes)-1]
+	}
+	desc = string(descRunes)
+
 	// 创建支付订单
 	svc := jsapi.JsapiApiService{Client: s.wxPayClient}
 	resp, _, err := svc.PrepayWithRequestPayment(ctx,
 		jsapi.PrepayRequest{
 			Appid:       core.String(s.config.Wechat.Pay.AppID),
 			Mchid:       core.String(s.config.Wechat.Pay.MchID),
-			Description: core.String(*plan.Description),
+			Description: core.String(desc),
 			OutTradeNo:  core.String(order.OrderID),
 			NotifyUrl:   core.String(s.config.Wechat.Pay.NotifyUrl),
 			Amount: &jsapi.Amount{
