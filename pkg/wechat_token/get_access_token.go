@@ -1,31 +1,55 @@
 package wechat_token
 
 import (
-	jsoniter "github.com/json-iterator/go"
-	"github.com/reusedev/uportal-api/pkg/logs"
+	"bytes"
+	"fmt"
 	"io"
 	"net/http"
-	"net/url"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
-const (
-	getTokenUrl = "https://api.weixin.qq.com/cgi-bin/token"
-)
+// GetStableAccessToken 官方文档：https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/mp-access-token/getStableAccessToken.html
+func getStableAccessToken(appId, secret string, forceRefresh bool) (string, error) {
+	type reqBody struct {
+		GrantType    string `json:"grant_type"`
+		AppID        string `json:"appid"`
+		Secret       string `json:"secret"`
+		ForceRefresh bool   `json:"force_refresh,omitempty"`
+	}
+	type respBody struct {
+		AccessToken string `json:"access_token"`
+		ExpiresIn   int    `json:"expires_in"`
+		ErrCode     int    `json:"errcode"`
+		ErrMsg      string `json:"errmsg"`
+	}
 
-// GetToken1 官方文档：https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/mp-access-token/getAccessToken.html
-func getToken(appId, secret string) string {
-	u, _ := url.Parse(getTokenUrl)
-	query := u.Query()
-	query.Set("grant_type", "client_credential")
-	query.Set("appid", appId)
-	query.Set("secret", secret)
-	u.RawQuery = query.Encode()
-	resp, err := http.Get(u.String())
+	body := reqBody{
+		GrantType:    "client_credential",
+		AppID:        appId,
+		Secret:       secret,
+		ForceRefresh: forceRefresh,
+	}
+
+	data, err := jsoniter.Marshal(body)
 	if err != nil {
-		logs.Business().Error(err.Error())
-		return ""
+		return "", err
+	}
+	resp, err := http.Post("https://api.weixin.qq.com/cgi-bin/stable_token", "application/json", bytes.NewReader(data))
+	if err != nil {
+		return "", err
 	}
 	defer resp.Body.Close()
 	all, err := io.ReadAll(resp.Body)
-	return jsoniter.Get(all, "access_token").ToString()
+	if err != nil {
+		return "", err
+	}
+	var result respBody
+	if err := jsoniter.Unmarshal(all, &result); err != nil {
+		return "", err
+	}
+	if result.ErrCode != 0 {
+		return "", fmt.Errorf("wechat error: %d %s", result.ErrCode, result.ErrMsg)
+	}
+	return result.AccessToken, nil
 }
