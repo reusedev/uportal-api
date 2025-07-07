@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/internal/service"
+	"github.com/reusedev/uportal-api/pkg/config"
 	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"github.com/reusedev/uportal-api/pkg/response"
@@ -23,6 +24,15 @@ func (h *NotifyHandler) Subscribe(c *gin.Context) {
 	var req service.SubscribeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	if len(req.Message) == 0 {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", nil))
+		return
+	}
+	req.AccessKey = req.Message[config.GlobalConfig.SubMessage.TemplateId]
+	if len(req.AccessKey) == 0 {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", nil))
 		return
 	}
 	userId := c.GetString(consts.UserId)

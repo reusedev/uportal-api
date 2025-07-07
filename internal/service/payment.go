@@ -191,15 +191,10 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 	if notifyReq.EventType != "TRANSACTION.SUCCESS" {
 		return fmt.Errorf("unexpected event type: %s", notifyReq.EventType)
 	}
-
 	// 获取订单号
 	orderNo := *transaction.OutTradeNo
-
 	// 开启事务
 	tx := s.db.Begin()
-	if tx.Error != nil {
-		return fmt.Errorf("start transaction error: %v", tx.Error)
-	}
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
@@ -258,11 +253,11 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 	// 获取分布式锁
 	lockKey := fmt.Sprintf("payment_notify_lock:%s:%s", order.OrderID, *transaction.TransactionId)
 	acquired, err := s.acquireLock(ctx, lockKey, 30*time.Second)
-	defer s.releaseLock(ctx, lockKey)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("acquire lock error: %v", err)
 	}
+	defer s.releaseLock(ctx, lockKey)
 	if !acquired {
 		tx.Rollback()
 		return fmt.Errorf("failed to acquire lock, another process is handling this notification")
@@ -273,7 +268,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 		now := time.Now()
 		notifyRecord.ProcessStatus = model.NotifyStatusSuccess
 		notifyRecord.ProcessTime = &now
-		if err := model.UpdateNotifyRecord(tx, notifyRecord.RecordID, map[string]interface{}{
+		if err = model.UpdateNotifyRecord(tx, notifyRecord.RecordID, map[string]interface{}{
 			"process_status": notifyRecord.ProcessStatus,
 			"process_time":   notifyRecord.ProcessTime,
 		}); err != nil {
@@ -314,7 +309,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 	now := time.Now()
 	notifyRecord.ProcessStatus = model.NotifyStatusSuccess
 	notifyRecord.ProcessTime = &now
-	if err := model.UpdateNotifyRecord(tx, notifyRecord.RecordID, map[string]interface{}{
+	if err = model.UpdateNotifyRecord(tx, notifyRecord.RecordID, map[string]interface{}{
 		"process_status": notifyRecord.ProcessStatus,
 		"process_time":   notifyRecord.ProcessTime,
 	}); err != nil {
@@ -323,7 +318,7 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 	}
 
 	// 更新用户代币余额
-	if err := tx.Model(order.User).Update("token_balance", gorm.Expr("token_balance + ?", order.TokenAmount)).Error; err != nil {
+	if err = tx.Model(order.User).Update("token_balance", gorm.Expr("token_balance + ?", order.TokenAmount)).Error; err != nil {
 		tx.Rollback()
 		return errors.New(errors.ErrCodeInternal, "更新代币余额失败", err)
 	}
@@ -338,17 +333,15 @@ func (s *PaymentService) HandleWxPayNotify(ctx context.Context, request *http.Re
 		Remark:       model.StringPtr(order.Plan.Name + "套餐" + getRewardRemark(Recharge)),
 	}
 
-	if err := tx.Create(tokenRecord).Error; err != nil {
+	if err = tx.Create(tokenRecord).Error; err != nil {
 		tx.Rollback()
 		return errors.New(errors.ErrCodeInternal, "创建代币记录失败", err)
 	}
 
 	// 提交事务
-	if err := tx.Commit().Error; err != nil {
+	if err = tx.Commit().Error; err != nil {
 		return fmt.Errorf("commit transaction error: %v", err)
 	}
-
-	log.Printf("Successfully processed payment notification for order %s, transaction %s", orderNo, *transaction.TransactionId)
 	return nil
 }
 

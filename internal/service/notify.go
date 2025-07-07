@@ -40,7 +40,7 @@ func newData(openId, templateId, page string, msg map[string]message.Kv) string 
 
 func (notifyService *NotifyService) Notify(ctx context.Context, req *SubscribeReq, userId string) error {
 	key := req.Id
-	if req.Message.DrawTask == consts.Accept {
+	if req.AccessKey == consts.Accept {
 		_, err := model.RedisClient.Set(ctx, key, userId, time.Hour*1).Result()
 		if err != nil {
 			return err
@@ -93,8 +93,9 @@ func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
 }
 
 type SubscribeReq struct {
-	Id      string  `json:"id" binding:"required"`
-	Message Message `json:"message" binding:"required"`
+	Id        string            `json:"id" binding:"required"`
+	Message   map[string]string `json:"message" binding:"required"`
+	AccessKey string
 }
 
 type Message struct {

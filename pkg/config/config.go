@@ -89,6 +89,20 @@ type Config struct {
 	DrawApi struct {
 		UploadFileUrl string `yaml:"upload_file_url"`
 	} `yaml:"draw_api"` // 绘图API配置
+	SubMessage SubMessageBusiness `yaml:"subMessage"` // 订阅消息配置
+}
+
+// SubMessageBusiness 业务相关的订阅消息
+type SubMessageBusiness struct {
+	TemplateId string `yaml:"templateId"`
+}
+
+// SubMessageUser 用户相关的订阅消息
+type SubMessageUser struct {
+	TemplateId string `yaml:"templateId"` // 模版ID
+	Page       string `yaml:"page"`       // 跳转页面
+	Type       string `yaml:"type"`       // 消息类型
+	Title      string `yaml:"title"`      // 消息标题
 }
 
 // LoadConfig 加载配置文件
