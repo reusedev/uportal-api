@@ -227,6 +227,7 @@ type RewardTask struct {
 	LogoId          string     `gorm:"column:logo_id;type:varchar(50)" json:"logo_id"`    // 任务图标ID
 	LogoUrl         string     `gorm:"column:logo_url;type:varchar(150)" json:"logo_url"` // 任务图标URL
 	Status          int8       `gorm:"column:status;not null;default:1" json:"status"`    // 任务状态：1=启用，0=停用
+	DailyFinish     int        `gorm:"-" json:"daily_finish"`                             // 今日完成次数
 }
 
 func (t RewardTask) MarshalJSON() ([]byte, error) {

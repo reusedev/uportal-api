@@ -302,47 +302,15 @@ func (s *TaskService) GetAvailableTasks(ctx context.Context, userID string) ([]*
 	}
 
 	// 过滤掉已达到每日限制的任务
-	var availableTasks []*model.RewardTask
-	for _, task := range tasks {
-		if task.DailyLimit > 0 {
-			count, err := s.getUserTaskCompletionCount(ctx, userID, task.TaskID)
-			if err != nil {
-				return nil, err
-			}
-			if count >= int64(task.DailyLimit) {
-				continue
-			}
+	for index, task := range tasks {
+		count, err := s.getUserTaskCompletionCount(ctx, userID, task.TaskID)
+		if err != nil {
+			return nil, err
 		}
-
-		// 检查间隔时间
-		if task.IntervalSeconds > 0 {
-			lastCompletion, err := s.getLastTaskCompletion(ctx, s.db, userID, task.TaskID)
-			if err != nil {
-				return nil, err
-			}
-			if lastCompletion != nil {
-				nextAvailableTime := lastCompletion.Add(time.Duration(task.IntervalSeconds) * time.Second)
-				if now.Before(nextAvailableTime) {
-					continue
-				}
-			}
-		}
-
-		// 检查是否可重复完成
-		if task.Repeatable == 0 {
-			completed, err := s.hasCompletedTask(ctx, s.db, userID, task.TaskID)
-			if err != nil {
-				return nil, err
-			}
-			if completed {
-				continue
-			}
-		}
-
-		availableTasks = append(availableTasks, task)
+		tasks[index].DailyFinish = int(count)
 	}
 
-	return availableTasks, nil
+	return tasks, nil
 }
 
 // getUserTaskCompletionCount 获取用户任务完成次数
