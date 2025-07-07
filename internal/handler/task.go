@@ -3,7 +3,8 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/pkg/consts"
-
+	"github.com/reusedev/uportal-api/pkg/logs"
+	"go.uber.org/zap"
 	"github.com/reusedev/uportal-api/internal/service"
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"github.com/reusedev/uportal-api/pkg/response"
@@ -137,6 +138,7 @@ func (h *TaskHandler) CompleteTask(c *gin.Context) {
 
 	result, err := h.taskService.CompleteTask(c.Request.Context(), userID, &req)
 	if err != nil {
+		logs.Business().Error("[CompleteTask] 完成任务失败: userID=", zap.String("userID", userID), zap.Error(err), zap.Any("req", req))
 		response.Error(c, err)
 		return
 	}

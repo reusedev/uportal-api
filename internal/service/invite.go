@@ -38,7 +38,7 @@ func (s *InviteService) GenerateInviteCode(userID int64) string {
 func (s *InviteService) GetInviteLink(ctx context.Context, userID int64) (string, error) {
 	// 检查用户是否存在
 	var user model.User
-	if err := s.db.First(&user, userID).Error; err != nil {
+	if err := s.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return "", errors.New(errors.ErrCodeUserNotFound, "用户不存在", nil)
 		}
@@ -64,7 +64,7 @@ func (s *InviteService) ValidateInviteCode(ctx context.Context, inviteCode strin
 
 	// 检查邀请人是否存在且状态正常
 	var user model.User
-	if err := s.db.First(&user, userID).Error; err != nil {
+	if err := s.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return 0, errors.New(errors.ErrCodeUserNotFound, "邀请人不存在", nil)
 		}

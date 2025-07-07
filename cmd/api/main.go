@@ -182,7 +182,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		handler.RegisterPaymentNotifyRoutes(payments, paymentHandler)
 
 		// 用户任务相关路由
-		tasks := api.Group("/reward-tasks")
+		tasks := api.Group("/reward-tasks", middleware.Auth())
 		handler.RegisterTaskRoutes(tasks, taskHandler)
 
 		// 通知

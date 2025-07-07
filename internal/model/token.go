@@ -1,8 +1,9 @@
 package model
 
 import (
-	"gorm.io/gorm/clause"
 	"time"
+
+	"gorm.io/gorm/clause"
 
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"gorm.io/gorm"
@@ -177,7 +178,7 @@ func GetUserTokenIsBuy(db *gorm.DB, userID, featureCode string, num int) (int, e
 			return err
 		}
 		var user User
-		err = tx.Model(&User{}).Where("id = ?", userID).First(&user).Error
+		err = tx.Where("id = ?", userID).First(&user).Error
 		if err != nil {
 			return err
 		}
@@ -274,7 +275,7 @@ func CreateTokenConsumptionRecord(db *gorm.DB, userID string, featureID int, amo
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
 		var user User
-		err := tx.First(&user, userID).Error
+		err := tx.Where("id = ?", userID).First(&user).Error
 		if err != nil {
 			return err
 		}
@@ -311,7 +312,7 @@ func CreateTokenRewardRecord(db *gorm.DB, userID string, taskID int, amount int,
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
 		var user User
-		err := tx.First(&user, userID).Error
+		err := tx.Where("id = ?", userID).First(&user).Error
 		if err != nil {
 			return err
 		}

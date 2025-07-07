@@ -466,7 +466,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID string, req *Comp
 		return nil, errors.New(errors.ErrCodeInternal, "提交事务失败", err)
 	}
 
-	token, err := s.getUserToken(ctx, tx, userID)
+	token, err := s.getUserToken(ctx, s.db, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -543,8 +543,8 @@ func (s *TaskService) verifyTaskCompletion(ctx context.Context, tx *gorm.DB, use
 	return nil
 }
 
-func (s *TaskService) getUserToken(ctx context.Context, tx *gorm.DB, userID string) (int64, error) {
-	return model.GetUserTokenBalance(tx, userID)
+func (s *TaskService) getUserToken(ctx context.Context, db *gorm.DB, userID string) (int64, error) {
+	return model.GetUserTokenBalance(db, userID)
 }
 
 // grantTaskReward 发放任务奖励
@@ -552,7 +552,7 @@ func (s *TaskService) grantTaskReward(ctx context.Context, tx *gorm.DB, userID s
 	// 获取用户信息并加行锁
 	var user model.User
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-		First(&user, userID).Error; err != nil {
+		Where("id = ?", userID).First(&user).Error; err != nil {
 		return errors.New(errors.ErrCodeInternal, "获取用户信息失败", err)
 	}
 
@@ -602,7 +602,7 @@ func (s *TaskService) recordTaskCompletion(ctx context.Context, tx *gorm.DB, use
 func (s *TaskService) sendTaskCompletionNotification(ctx context.Context, userID string, task *model.RewardTask) {
 	// 获取用户信息
 	var user model.User
-	if err := s.db.First(&user, userID).Error; err != nil {
+	if err := s.db.Where("id = ?", userID).First(&user).Error; err != nil {
 		s.logger.Error("获取用户信息失败", zap.Error(err))
 		return
 	}
