@@ -38,6 +38,7 @@ func Migrate(db *gorm.DB) error {
 		&InviteRecord{},        // 邀请记录表
 		&Notification{},
 		&TaskCompletionRecord{},
+		&MessageSubscribe{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create tables: %v", err)
@@ -67,6 +68,7 @@ func Migrate(db *gorm.DB) error {
 		{"payment_notify_records", "order_id", "recharge_orders", "order_id"},
 		{"invite_records", "inviter_id", "users", "id"},
 		{"invite_records", "invitee_id", "users", "id"},
+		{"message_subscribe", "user_id", "users", "id"},
 	}
 
 	for _, c := range constraints {
