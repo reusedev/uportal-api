@@ -261,3 +261,18 @@ CREATE TABLE IF NOT EXISTS `invite_records` (
     CONSTRAINT `fk_invite_invitee` FOREIGN KEY (`invitee_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   COMMENT='邀请记录表，记录用户邀请关系和奖励发放状态';
+
+-- 消息订阅表
+CREATE TABLE IF NOT EXISTS `message_subscribe` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID，主键，自增',
+    `user_id` VARCHAR(13) NOT NULL  COMMENT '用户 ID',
+    `template_id` VARCHAR(50) NOT NULL  COMMENT '模版ID',
+    `subscribe_cnt` INT NOT NULL COMMENT '订阅次数',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_user_template` (`user_id`, `template_id`),
+    CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3
+    COMMENT='消息订阅表';
+

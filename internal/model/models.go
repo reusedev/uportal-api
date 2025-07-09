@@ -209,6 +209,16 @@ type TokenRecord struct {
 	Admin        *AdminUser        `gorm:"foreignKey:AdminID;references:AdminID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                      // 关联管理员信息
 }
 
+type MessageSubscribe struct {
+	Id           int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	UserID       string    `gorm:"column:user_id;type:varchar(13);not null;index:idx_user_template,unique" json:"user_id"`         // 用户ID
+	TemplateID   string    `gorm:"column:template_id;type:varchar(50);not null;index:idx_user_template,unique" json:"template_id"` // 模板ID
+	SubscribeCnt int       `gorm:"column:subscribe_cnt;not null;default:0" json:"subscribe_cnt"`                                   // 订阅次数
+	CreatedAt    time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                                    // 订单创建时间
+	UpdatedAt    time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`
+	User         User      `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"-"`
+}
+
 // RewardTask 代币任务配置表结构体
 type RewardTask struct {
 	TaskID          int        `gorm:"column:task_id;primaryKey;autoIncrement" json:"task_id"`                            // 任务ID，主键，自增
@@ -228,6 +238,11 @@ type RewardTask struct {
 	LogoUrl         string     `gorm:"column:logo_url;type:varchar(150)" json:"logo_url"` // 任务图标URL
 	Status          int8       `gorm:"column:status;not null;default:1" json:"status"`    // 任务状态：1=启用，0=停用
 	DailyFinish     int        `gorm:"-" json:"daily_finish"`                             // 今日完成次数
+}
+
+// TableName 指定表名
+func (MessageSubscribe) TableName() string {
+	return "message_subscribe"
 }
 
 func (t RewardTask) MarshalJSON() ([]byte, error) {

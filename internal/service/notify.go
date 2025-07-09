@@ -3,13 +3,12 @@ package service
 import (
 	"context"
 	"encoding/json"
-	stdErrors "errors"
 	"fmt"
+	"github.com/reusedev/uportal-api/pkg/consts"
+	"gorm.io/gorm/clause"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/reusedev/uportal-api/internal/model"
-	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/reusedev/uportal-api/pkg/logs"
 	message "github.com/reusedev/uportal-api/pkg/notify"
 	"github.com/reusedev/uportal-api/pkg/wechat_token"
@@ -38,28 +37,60 @@ func newData(openId, templateId, page string, msg map[string]message.Kv) string 
 	return string(d)
 }
 
-func (notifyService *NotifyService) Notify(ctx context.Context, req *SubscribeReq, userId string) error {
-	key := req.Id
-	if req.AccessKey == consts.Accept {
-		_, err := model.RedisClient.Set(ctx, key, userId, time.Hour*1).Result()
-		if err != nil {
-			return err
+func (n *NotifyService) Notify(ctx context.Context, req *SubscribeReq, userId string) error {
+	now := time.Now()
+	var records []model.MessageSubscribe
+	for k, v := range req.Message {
+		if v != consts.Accept {
+			continue
 		}
+		records = append(records, model.MessageSubscribe{
+			UserID:       userId,
+			TemplateID:   k,
+			SubscribeCnt: 1,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		})
 	}
-	return nil
+	if len(records) == 0 {
+		return nil
+	}
+	return n.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "user_id"}, {Name: "template_id"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"updated_at":    now,
+			"subscribe_cnt": gorm.Expr("subscribe_cnt + ?", 1),
+		},
+		),
+	}).Create(&records).Error
 }
 
 func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
-	key := req.Sign
-	_, err := model.RedisClient.Get(ctx, key).Result()
-	if err != nil {
-		if stdErrors.Is(err, redis.Nil) {
-			return nil
-		} else {
+	var access bool
+	err := n.db.Transaction(func(tx *gorm.DB) error {
+		var sub model.MessageSubscribe
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("user_id = ? AND template_id = ?", req.UserId, req.TemplateId).First(&sub).Error
+		if err != nil {
 			return err
 		}
+		if sub.SubscribeCnt > 0 {
+			access = true
+		} else {
+			return nil
+		}
+		sub.SubscribeCnt -= 1
+		if err := tx.Save(&sub).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
-
+	if !access {
+		return nil
+	}
 	var userAuth model.UserAuth
 	err = n.db.Where("user_id = ?", req.UserId).First(&userAuth).Error
 	if err != nil {
@@ -79,7 +110,6 @@ func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
 	if err != nil {
 		return err
 	}
-	model.RedisClient.Del(ctx, key)
 	notification := model.Notification{
 		UserID:    req.UserId,
 		Type:      req.Type,
