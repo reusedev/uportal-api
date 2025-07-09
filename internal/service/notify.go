@@ -128,10 +128,6 @@ type SubscribeReq struct {
 	AccessKey string
 }
 
-type Message struct {
-	DrawTask string `json:"RqmsNBiXK9bClJ83Z0PkCguj1-wmetG6uGRz1qipf5w" binding:"required"`
-}
-
 type SendReq struct {
 	UserId     string                `json:"user_id" binding:"required"`
 	Sign       string                `json:"sign" binding:"required"` // 订阅标识ID
