@@ -107,19 +107,21 @@ func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
 			time.Sleep(time.Second * 2 * time.Duration(i+1))
 		}
 	}
+	var status int8
 	if err != nil {
-		return err
+		status = 1
 	}
 	notification := model.Notification{
 		UserID:    req.UserId,
 		Type:      req.Type,
 		Title:     req.Title,
 		Content:   data,
+		Status:    status,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 	n.db.Create(&notification)
-	return nil
+	return err
 }
 
 type SubscribeReq struct {

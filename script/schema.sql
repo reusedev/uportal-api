@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     type VARCHAR(32) NOT NULL COMMENT '通知类型',
     title VARCHAR(128) NOT NULL COMMENT '通知标题',
     content TEXT NOT NULL COMMENT '通知内容',
-    status TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0-未读，1-已读',
+    status TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0-通知成功，1-通知失败',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_user_status (user_id, status),
