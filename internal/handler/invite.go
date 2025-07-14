@@ -2,12 +2,16 @@ package handler
 
 import (
 	basicErr "errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/internal/service"
+	"github.com/reusedev/uportal-api/pkg/config"
 	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/reusedev/uportal-api/pkg/errors"
+	"github.com/reusedev/uportal-api/pkg/qrcode"
 	"github.com/reusedev/uportal-api/pkg/response"
+	"github.com/reusedev/uportal-api/pkg/wechat_token"
 	"gorm.io/gorm"
 )
 
@@ -28,9 +32,36 @@ type ReportInviteRequest struct {
 	InviteBy string `json:"invite_by" binding:"required"` // 邀请人ID
 }
 
+type QrcodeInviteRequest struct {
+	Scene string `json:"scene" binding:"required"`
+}
+
 // ReportPointsRewardRequest 代币奖励上报请求
 type ReportPointsRewardRequest struct {
 	Type string `json:"type" binding:"required"` // 奖励类型
+}
+
+func (h *InviteHandler) QrcodeInvite(c *gin.Context) {
+	var req QrcodeInviteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	userID := c.GetString(consts.UserId)
+	savePath := fmt.Sprintf("tmp/%s.png", userID)
+	t := wechat_token.GetToken()
+	err := qrcode.GetQrcode(t, req.Scene, savePath)
+	if err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInternal, "获取专属二维码错误", err))
+		return
+	}
+	//上传
+	uploadFile, err := model.UploadFile(savePath, config.GlobalConfig.DrawApi.UploadFileUrl)
+	if err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "上传文件失败", err))
+		return
+	}
+	response.Success(c, uploadFile.Data.Url)
 }
 
 func (h *InviteHandler) ReportInvite(c *gin.Context) {
@@ -135,4 +166,5 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 // RegisterInviteRoutes 注册邀请相关路由
 func RegisterInviteRoutes(r *gin.RouterGroup, h *InviteHandler) {
 	r.POST("/report", h.ReportInvite)
+	r.POST("/qrcode", h.QrcodeInvite)
 }
