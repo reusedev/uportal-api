@@ -11,13 +11,16 @@ import (
 	"github.com/reusedev/uportal-api/pkg/response"
 )
 
+func init() {
+	os.MkdirAll("tmp", os.ModePerm)
+}
+
 func Upload(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	os.MkdirAll("tmp", os.ModePerm)
 	filePath := "tmp/" + file.Filename
 	if err = c.SaveUploadedFile(file, filePath); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "保存文件失败", err))

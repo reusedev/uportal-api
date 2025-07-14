@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `users` (
                          `language` VARCHAR(10)  NOT NULL DEFAULT 'zh-CN' COMMENT '界面语言偏好，如 zh-CN、en-US 等',
                          `status`  TINYINT       NOT NULL DEFAULT 1      COMMENT '账号状态：1=正常，0=禁用',
                          `token_balance` INT     NOT NULL DEFAULT 0      COMMENT '代币余额',
+                         `qrcode`   VARCHAR(11)  DEFAULT NULL             COMMENT '专属二维码图片ID',
                          `inviter_id` VARCHAR(13) DEFAULT NULL COMMENT '邀请人ID',
                          `created_at` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
                          `updated_at` DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',

@@ -18,11 +18,12 @@ type User struct {
 	AvatarURL    *string        `gorm:"column:avatar_url;type:varchar(255)" json:"avatar"`                       // 头像URL
 	Language     string         `gorm:"column:language;type:varchar(10);not null;default:zh-CN" json:"language"` // 界面语言偏好
 	Status       int8           `gorm:"column:status;not null;default:1;index:idx_users_status" json:"status"`   // 账号状态：1=正常，0=禁用
-	TokenBalance int            `gorm:"column:token_balance;not null;default:0" json:"token_balance"`            // 代币余额
-	InviterID    *string        `gorm:"column:inviter_id;index:idx_users_inviter" json:"inviter_id"`             // 邀请人ID
-	CreatedAt    time.Time      `gorm:"column:created_at;not null;autoCreateTime" json:"-"`                      // 注册时间
-	UpdatedAt    time.Time      `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`             // 记录更新时间
-	LastLoginAt  *time.Time     `gorm:"column:last_login_at" json:"last_login_at"`                               // 最后登录时间
+	TokenBalance int            `gorm:"column:token_balance;not null;default:0" json:"token_balance"`
+	Qrcode       string         `gorm:"column:qrcode;type:varchar(11)" json:"qrcode"`                // 专属二维码图片 ID
+	InviterID    *string        `gorm:"column:inviter_id;index:idx_users_inviter" json:"inviter_id"` // 邀请人ID
+	CreatedAt    time.Time      `gorm:"column:created_at;not null;autoCreateTime" json:"-"`          // 注册时间
+	UpdatedAt    time.Time      `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"` // 记录更新时间
+	LastLoginAt  *time.Time     `gorm:"column:last_login_at" json:"last_login_at"`                   // 最后登录时间
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 	UserAuths    []UserAuth     `gorm:"foreignKey:UserID" json:"-"`                                      // 第三方认证信息（不直接序列化）
 	Inviter      *User          `gorm:"foreignKey:InviterID;references:UserID" json:"inviter,omitempty"` // 邀请人信息

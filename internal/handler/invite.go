@@ -13,6 +13,7 @@ import (
 	"github.com/reusedev/uportal-api/pkg/response"
 	"github.com/reusedev/uportal-api/pkg/wechat_token"
 	"gorm.io/gorm"
+	"strconv"
 )
 
 // InviteHandler 邀请处理器
@@ -48,6 +49,19 @@ func (h *InviteHandler) QrcodeInvite(c *gin.Context) {
 		return
 	}
 	userID := c.GetString(consts.UserId)
+	//检查当前用户是否有专属二维码了
+	var currentUser model.User
+	if err := h.inviteSvc.GetDB().Where("id = ?", userID).First(&currentUser).Error; err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInternal, "获取用户信息失败", err))
+		return
+	}
+	if currentUser.Qrcode != "" {
+		imageUrl := model.GetUrlById(currentUser.Qrcode, config.GlobalConfig.DrawApi.UploadFileUrl, "input")
+		if imageUrl != "" {
+			response.Success(c, imageUrl)
+			return
+		}
+	}
 	savePath := fmt.Sprintf("tmp/%s.png", userID)
 	t := wechat_token.GetToken()
 	err := qrcode.GetQrcode(t, req.Scene, savePath)
@@ -61,6 +75,8 @@ func (h *InviteHandler) QrcodeInvite(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "上传文件失败", err))
 		return
 	}
+	currentUser.Qrcode = strconv.Itoa(uploadFile.Data.Id)
+	h.inviteSvc.GetDB().Save(&currentUser)
 	response.Success(c, uploadFile.Data.Url)
 }
 

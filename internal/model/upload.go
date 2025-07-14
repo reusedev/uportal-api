@@ -32,3 +32,18 @@ func UploadFile(filePath, url string) (*Resp, error) {
 	}
 	return &result, nil
 }
+
+func GetUrlById(id string, url string, tp string) string {
+	if id == "" {
+		return ""
+	}
+	var result Resp
+	_, err := resty.New().R().SetQueryParams(map[string]string{
+		"id":   id,
+		"type": tp,
+	}).SetResult(&result).Get(url)
+	if err != nil {
+		return ""
+	}
+	return result.Data.Url
+}
