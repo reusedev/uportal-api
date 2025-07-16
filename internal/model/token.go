@@ -44,7 +44,7 @@ func DeleteTokenConsumptionRule(db *gorm.DB, id int) error {
 	return db.Delete(&TokenConsumeRule{}, id).Error
 }
 
-// ListTokenConsumptionRules 获取Token消费规则列表
+// ListTokenConsumptionRules 获取Token消费规则列表（后台管理用，返回所有规则）
 func ListTokenConsumptionRules(db *gorm.DB) ([]*TokenConsumeRule, int64, error) {
 	var rules []*TokenConsumeRule
 	var total int64
@@ -66,7 +66,7 @@ func ListTokenConsumptionRules(db *gorm.DB) ([]*TokenConsumeRule, int64, error) 
 func GetTokenConsumptionRules(db *gorm.DB, class string) ([]*TokenConsumeRule, error) {
 	var rules []*TokenConsumeRule
 
-	err := db.Model(&TokenConsumeRule{}).Where("class = ?", class).Find(&rules).Error
+	err := db.Model(&TokenConsumeRule{}).Where("class = ? AND status = ?", class, 1).Find(&rules).Error
 	if err != nil {
 		return nil, err
 	}
