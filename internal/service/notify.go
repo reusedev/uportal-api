@@ -132,7 +132,7 @@ type SubscribeReq struct {
 
 type SendReq struct {
 	UserId     string                `json:"user_id" binding:"required"`
-	Sign       string                `json:"sign" binding:"required"` // 订阅标识ID
+	Sign       string                `json:"sign"` // 订阅标识ID
 	Data       map[string]message.Kv `json:"data" binding:"required"`
 	Page       string                `json:"page" binding:"required"`
 	TemplateId string                `json:"template_id" binding:"required"`
