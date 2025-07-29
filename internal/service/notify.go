@@ -65,6 +65,21 @@ func (n *NotifyService) Notify(ctx context.Context, req *SubscribeReq, userId st
 	}).Create(&records).Error
 }
 
+func (n *NotifyService) BackEndSend(ctx context.Context, req *SendReq) error {
+	data, _ := json.Marshal(req.Data)
+	notify := model.BackendNotify{
+		TemplateID: req.TemplateId,
+		Type:       req.Type,
+		Title:      req.Title,
+		Page:       req.Page,
+		Data:       string(data),
+		Status:     consts.SendReady,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	return n.db.Create(&notify).Error
+}
+
 func (n *NotifyService) Send(ctx context.Context, req *SendReq) error {
 	var access bool
 	err := n.db.Transaction(func(tx *gorm.DB) error {
@@ -131,11 +146,12 @@ type SubscribeReq struct {
 }
 
 type SendReq struct {
-	UserId     string                `json:"user_id" binding:"required"`
+	UserId     string                `json:"user_id"`
 	Sign       string                `json:"sign"` // 订阅标识ID
 	Data       map[string]message.Kv `json:"data" binding:"required"`
 	Page       string                `json:"page" binding:"required"`
 	TemplateId string                `json:"template_id" binding:"required"`
+	BackEnd    bool                  `json:"back_end"`
 	Type       string                `json:"type" binding:"required"`
 	Title      string                `json:"title" binding:"required"`
 }

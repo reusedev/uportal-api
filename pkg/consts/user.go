@@ -34,6 +34,12 @@ const (
 )
 
 const (
+	SendReady  = 0 // 待发送
+	Sending    = 1 // 发送中
+	SendFinish = 2 // 已发送
+)
+
+const (
 	//AI绘画完成通知
 	CompleteNotificationTmpId = "RqmsNBiXK9bClJ83Z0PkCguj1-wmetG6uGRz1qipf5w"
 )

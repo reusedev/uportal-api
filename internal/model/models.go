@@ -342,6 +342,23 @@ type InviteRecord struct {
 	Invitee     User      `gorm:"foreignKey:InviteeID;references:UserID" json:"invitee,omitempty"`                        // 被邀请人信息
 }
 
+type BackendNotify struct {
+	ID         int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	TemplateID string    `gorm:"column:template_id;type:varchar(50);not null;index:idx_user_template,unique" json:"template_id"` // 模板ID
+	Type       string    `gorm:"column:type;not null;type:varchar(50)" json:"type"`                                              // 通知类型
+	Title      string    `gorm:"column:title;not null;type:varchar(50)" json:"title"`                                            // 通知标题
+	Page       string    `gorm:"column:page;not null;type:varchar(50)" json:"page"`                                              // 跳转到的小程序路径
+	Data       string    `gorm:"column:data;not null;type:varchar(50)" json:"data"`
+	Status     int8      `gorm:"column:status;not null;default:0" json:"status"`              // 状态：0=待发送，1=发送中，2=发送完成
+	LastId     string    `gorm:"column:last_id;type:varchar(13);not null" json:"last_id"`     // 发送中的上一个 id
+	CreatedAt  time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"` // 创建时间
+	UpdatedAt  time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"` // 更新时间
+}
+
+func (BackendNotify) TableName() string {
+	return "backend_notify"
+}
+
 // TableName 指定表名
 func (User) TableName() string {
 	return "users"
