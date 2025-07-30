@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/reusedev/uportal-api/pkg/wechat_token"
 	"os"
 	"os/signal"
 	"syscall"
@@ -54,6 +55,8 @@ func main() {
 		logs.Business().Fatal("初始化数据库失败", zap.Error(err))
 	}
 	defer model.CloseDB()
+
+	wechat_token.TokenJob()
 
 	// 4. 创建消息发送处理器
 	processor := service.NewNotifyProcessor(model.DB)
