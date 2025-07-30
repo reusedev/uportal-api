@@ -46,8 +46,10 @@ func (h *NotifyHandler) Send(c *gin.Context) {
 	if req.Backend {
 		if err := h.notifyService.BackEndSend(c.Request.Context(), &req); err != nil {
 			response.Error(c, errors.New(errors.ErrCodeServiceUnavailable, "内部异常", err))
+			return
 		}
 		response.Success(c, nil)
+		return
 	}
 
 	if err := h.notifyService.Send(c.Request.Context(), &req); err != nil {
