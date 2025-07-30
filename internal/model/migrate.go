@@ -39,6 +39,7 @@ func Migrate(db *gorm.DB) error {
 		&Notification{},
 		&TaskCompletionRecord{},
 		&MessageSubscribe{},
+		&BackendNotify{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create tables: %v", err)

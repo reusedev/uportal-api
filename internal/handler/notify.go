@@ -43,7 +43,7 @@ func (h *NotifyHandler) Send(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	if req.BackEnd {
+	if req.Backend {
 		if err := h.notifyService.BackEndSend(c.Request.Context(), &req); err != nil {
 			response.Error(c, errors.New(errors.ErrCodeServiceUnavailable, "内部异常", err))
 		}

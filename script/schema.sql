@@ -277,3 +277,21 @@ CREATE TABLE IF NOT EXISTS `message_subscribe` (
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3
     COMMENT='消息订阅表';
 
+-- 后台通知批量发送表
+CREATE TABLE IF NOT EXISTS `backend_notify` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID，主键，自增',
+    `template_id` VARCHAR(50) NOT NULL COMMENT '微信小程序订阅消息模板ID',
+    `type` VARCHAR(50) NOT NULL COMMENT '通知类型，用于分类管理',
+    `title` VARCHAR(50) NOT NULL COMMENT '通知标题',
+    `page` VARCHAR(50) NOT NULL COMMENT '点击通知跳转的小程序页面路径',
+    `data` TEXT NOT NULL COMMENT '消息模板数据，JSON格式存储',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '发送状态：0=待发送，1=发送中，2=发送完成',
+    `last_id` VARCHAR(13) DEFAULT NULL COMMENT '批量发送时记录的最后一个用户ID，用于断点续传',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_status_created` (`status`, `created_at`),
+    KEY `idx_template_id` (`template_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    COMMENT='后台通知批量发送表，用于管理需要批量发送给用户的订阅消息';
+

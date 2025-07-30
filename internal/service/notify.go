@@ -151,7 +151,7 @@ type SendReq struct {
 	Data       map[string]message.Kv `json:"data" binding:"required"`
 	Page       string                `json:"page" binding:"required"`
 	TemplateId string                `json:"template_id" binding:"required"`
-	BackEnd    bool                  `json:"back_end"`
+	Backend    bool                  `json:"backend"`
 	Type       string                `json:"type" binding:"required"`
 	Title      string                `json:"title" binding:"required"`
 }
