@@ -273,6 +273,11 @@ func RegisterConsumeRuleRoutes(r *gin.RouterGroup, h *TaskHandler) {
 	r.POST("/rule", h.GetConsumeRule) // 用户余额是否充足
 }
 
+// RegisterGoodRoutes
+func RegisterGoodRoutes(r *gin.RouterGroup, h *TaskHandler) {
+	r.POST("/dict", h.GetGoodsDict) // 用户余额是否充足
+}
+
 // RegisterAdminTokenRoutes 注册管理员 Token 相关路由
 func RegisterAdminTokenRoutes(r *gin.RouterGroup, h *TokenHandler) {
 	r.POST("/list", h.ListRechargePlans)

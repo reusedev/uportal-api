@@ -9,6 +9,7 @@ import (
 	"github.com/reusedev/uportal-api/pkg/response"
 	"github.com/reusedev/uportal-api/pkg/utils"
 	"go.uber.org/zap"
+	"strconv"
 )
 
 // TaskHandler 任务处理器
@@ -214,6 +215,23 @@ type GetConsumeRuleResponse struct {
 	Cost  int     `json:"cost"`
 }
 
+type GetGoodsResponse struct {
+	Name     string   `json:"name"`
+	Code     string   `json:"code"`
+	ID       string   `json:"id"`
+	Price    int      `json:"price"`
+	CoverPic CoverPic `json:"cover_pic"`
+}
+
+type ListGoodsResponse struct {
+	Name     string   `json:"name"`
+	Code     string   `json:"code"`
+	ID       string   `json:"id"`
+	Price    int      `json:"price"`
+	CoverPic CoverPic `json:"cover_pic"`
+	Status   int      `json:"status"`
+}
+
 // GetConsumeRule 获取代币消耗规则
 func (h *TaskHandler) GetConsumeRule(c *gin.Context) {
 	var req GetConsumeRuleRequest
@@ -233,6 +251,30 @@ func (h *TaskHandler) GetConsumeRule(c *gin.Context) {
 			Key:   i.FeatureCode,
 			Label: i.FeatureName,
 			Cost:  i.TokenCost,
+		})
+	}
+
+	response.Success(c, resp)
+}
+
+// GetGoodsDict 获取商品字典
+func (h *TaskHandler) GetGoodsDict(c *gin.Context) {
+	goods, err := h.taskService.GetGoods(c.Request.Context())
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	resp := make([]*GetGoodsResponse, 0, len(goods))
+	for _, i := range goods {
+		resp = append(resp, &GetGoodsResponse{
+			Name:  i.Name,
+			Code:  i.Code,
+			ID:    strconv.Itoa(i.ID),
+			Price: i.Price,
+			CoverPic: CoverPic{
+				Id:  i.PicId,
+				Url: i.PicUrl,
+			},
 		})
 	}
 
@@ -269,8 +311,21 @@ func (h *TaskHandler) ListGoods(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
-
-	response.ListResponse(c, goods, total)
+	rets := make([]*ListGoodsResponse, 0, len(goods))
+	for _, i := range goods {
+		rets = append(rets, &ListGoodsResponse{
+			Name:  i.Name,
+			Code:  i.Code,
+			ID:    strconv.Itoa(i.ID),
+			Price: i.Price,
+			CoverPic: CoverPic{
+				Id:  i.PicId,
+				Url: i.PicUrl,
+			},
+			Status: i.Status,
+		})
+	}
+	response.ListResponse(c, rets, total)
 }
 
 // CreateConsumptionRuleRequest 创建代币消耗规则请求
@@ -283,7 +338,7 @@ type CreateConsumptionRuleRequest struct {
 	Class       string `json:"classify" binding:"required"` // 代币消耗规则分类
 }
 
-type CreateGoos struct {
+type CreateGoods struct {
 	Name     string    `json:"name" binding:"required"`
 	Code     string    `json:"code" binding:"required"`
 	Desc     string    `json:"desc"`
@@ -322,7 +377,7 @@ func (h *TaskHandler) CreateConsumptionRule(c *gin.Context) {
 
 // CreateGoods 创建商品
 func (h *TaskHandler) CreateGoods(c *gin.Context) {
-	var req CreateGoos
+	var req CreateGoods
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return

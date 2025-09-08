@@ -233,6 +233,15 @@ func (s *TaskService) GetConsumptionRules(ctx context.Context, class string) ([]
 	return rules, nil
 }
 
+// GetGoods 获取商品列表
+func (s *TaskService) GetGoods(ctx context.Context) ([]*model.Goods, error) {
+	rules, err := model.GetGoods(s.db)
+	if err != nil {
+		return nil, errors.New(errors.ErrCodeInternal, "获取商品列表失败", err)
+	}
+	return rules, nil
+}
+
 // UpdateConsumptionRule 更新消费规则
 func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *UpdateConsumptionRuleRequest) error {
 	// 查找现有规则
@@ -357,6 +366,7 @@ func (s *TaskService) CreateConsumptionRule(ctx context.Context, req *CreateCons
 func (s *TaskService) CreateGood(ctx context.Context, req *CreateGoodRequest) (*model.Goods, error) {
 	good := &model.Goods{
 		Code:   req.Code,
+		Name:   req.Name,
 		Desc:   &req.Desc,
 		Price:  req.Price,
 		PicId:  req.CoverPic.Id,

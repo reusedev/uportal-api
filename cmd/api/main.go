@@ -165,6 +165,9 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		rule := api.Group("/consume")
 		handler.RegisterConsumeRuleRoutes(rule, taskHandler)
 
+		good := api.Group("/goods")
+		handler.RegisterGoodRoutes(good, taskHandler)
+
 		// 云端交互
 		cloud := api.Group("/cloud")
 		handler.RegisterCloudRoutes(cloud, tokenHandler, notifyHandler)

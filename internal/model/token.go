@@ -97,6 +97,17 @@ func GetTokenConsumptionRules(db *gorm.DB, class string) ([]*TokenConsumeRule, e
 	return rules, nil
 }
 
+// GetGoods
+func GetGoods(db *gorm.DB) ([]*Goods, error) {
+	var goods []*Goods
+	err := db.Model(&Goods{}).Where("status = ?", 1).Find(&goods).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return goods, nil
+}
+
 // CreateRechargePlan 创建充值套餐
 func CreateRechargePlan(db *gorm.DB, plan *RechargePlan) error {
 	return db.Create(plan).Error
