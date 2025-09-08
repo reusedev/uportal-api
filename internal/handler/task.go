@@ -417,7 +417,7 @@ type UpdateConsumptionRuleRequest struct {
 }
 
 type UpdateGoods struct {
-	Id       int       `json:"id" binding:"required,min=1"`
+	Id       string    `json:"id" binding:"required,min=1"`
 	Name     string    `json:"name" binding:"required"`
 	Code     string    `json:"code" binding:"required"`
 	Desc     string    `json:"desc"`
@@ -431,7 +431,7 @@ type OperateGoods struct {
 }
 
 type DeleteGoods struct {
-	Id int `json:"id" binding:"required,min=1"`
+	Id string `json:"id" binding:"required,min=1"`
 }
 
 // UpdateConsumptionRule 更新代币消耗规则
@@ -513,8 +513,8 @@ func (h *TaskHandler) UpdateGood(c *gin.Context) {
 			Url: req.CoverPic.Url,
 		}
 	}
-
-	err := h.taskService.UpdateGood(c.Request.Context(), req.Id, goodReq)
+	id, _ := strconv.Atoi(req.Id)
+	err := h.taskService.UpdateGood(c.Request.Context(), id, goodReq)
 	if err != nil {
 		response.Error(c, err)
 		return

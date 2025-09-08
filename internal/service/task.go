@@ -282,7 +282,7 @@ func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *Up
 }
 
 // DeleteGood 更新商品
-func (s *TaskService) DeleteGood(ctx context.Context, id int) error {
+func (s *TaskService) DeleteGood(ctx context.Context, id string) error {
 	// 查找现有规则
 	return s.db.Delete(&model.Goods{}, id).Error
 }
