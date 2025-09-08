@@ -308,8 +308,8 @@ func (s *TaskService) UpdateGood(ctx context.Context, id int, req *UpdateGoodReq
 		updates["desc"] = req.Desc
 	}
 	if req.CoverPic != nil {
-		updates["pic_id"] = req.CoverPic
-		updates["pic_url"] = req.CoverPic
+		updates["pic_id"] = req.CoverPic.Id
+		updates["pic_url"] = req.CoverPic.Url
 	}
 	if req.Status != nil {
 		updates["status"] = *req.Status
