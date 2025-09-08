@@ -426,8 +426,8 @@ type UpdateGoods struct {
 }
 
 type OperateGoods struct {
-	Id     int  `json:"id" binding:"required,min=1"`
-	Status *int `json:"status" binding:"required,oneof=0 1"`
+	Id     string `json:"id" binding:"required,min=1"`
+	Status *int   `json:"status" binding:"required,oneof=0 1"`
 }
 
 type DeleteGoods struct {
@@ -483,7 +483,8 @@ func (h *TaskHandler) OperateGood(c *gin.Context) {
 		return
 	}
 
-	err := h.taskService.UpdateGood(c.Request.Context(), req.Id, &service.UpdateGoodRequest{
+	id, _ := strconv.Atoi(req.Id)
+	err := h.taskService.UpdateGood(c.Request.Context(), id, &service.UpdateGoodRequest{
 		Status: req.Status,
 	})
 	if err != nil {
