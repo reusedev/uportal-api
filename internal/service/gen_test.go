@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/reusedev/uportal-api/internal/model"
 	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
@@ -19,6 +20,18 @@ import (
 var (
 	mchCertificateSerialNumber = "14475E681C83F8B662FF84A02FF284CC8ABC4073"
 )
+
+func TestNewInviteService(t *testing.T) {
+	// 生成JWT token
+	claims := jwt.MapClaims{
+		"sub": "5ug1Bj1RMBo",
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	t.Log(token.SignedString([]byte("your-secret-key")))
+
+}
 
 func TestUpload(t *testing.T) {
 	model.RedisClient = redis.NewClient(&redis.Options{})

@@ -2,13 +2,13 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/reusedev/uportal-api/pkg/consts"
-	"github.com/reusedev/uportal-api/pkg/logs"
-	"go.uber.org/zap"
 	"github.com/reusedev/uportal-api/internal/service"
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"github.com/reusedev/uportal-api/pkg/errors"
+	"github.com/reusedev/uportal-api/pkg/logs"
 	"github.com/reusedev/uportal-api/pkg/response"
 	"github.com/reusedev/uportal-api/pkg/utils"
+	"go.uber.org/zap"
 )
 
 // TaskHandler 任务处理器
@@ -200,6 +200,10 @@ type ListConsumptionRulesRequest struct {
 	Status *int `json:"status,omitempty"` // 可选的状态过滤
 }
 
+// ListGoodsRequest
+type ListGoodsRequest struct {
+}
+
 type GetConsumeRuleRequest struct {
 	Classify string `json:"classify" binding:"required"`
 }
@@ -252,6 +256,23 @@ func (h *TaskHandler) ListConsumptionRules(c *gin.Context) {
 	response.ListResponse(c, rules, total)
 }
 
+// ListGoods 获取商品列表
+func (h *TaskHandler) ListGoods(c *gin.Context) {
+	var req ListGoodsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	goods, total, err := h.taskService.ListGoods(c.Request.Context())
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.ListResponse(c, goods, total)
+}
+
 // CreateConsumptionRuleRequest 创建代币消耗规则请求
 type CreateConsumptionRuleRequest struct {
 	FeatureName string `json:"feature_name"`
@@ -260,6 +281,19 @@ type CreateConsumptionRuleRequest struct {
 	FeatureCode string `json:"feature_code"`
 	Status      *int8  `json:"status"`
 	Class       string `json:"classify" binding:"required"` // 代币消耗规则分类
+}
+
+type CreateGoos struct {
+	Name     string    `json:"name" binding:"required"`
+	Code     string    `json:"code" binding:"required"`
+	Desc     string    `json:"desc"`
+	Price    int       `json:"price" binding:"required"`
+	CoverPic *CoverPic `json:"cover_pic"`
+}
+
+type CoverPic struct {
+	Id  string `json:"id" binding:"required"`
+	Url string `json:"url" binding:"required"`
 }
 
 // CreateConsumptionRule 创建代币消耗规则
@@ -286,6 +320,36 @@ func (h *TaskHandler) CreateConsumptionRule(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// CreateGoods 创建商品
+func (h *TaskHandler) CreateGoods(c *gin.Context) {
+	var req CreateGoos
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	goodReq := &service.CreateGoodRequest{
+		Name:  req.Name,
+		Code:  req.Code,
+		Desc:  req.Desc,
+		Price: req.Price,
+	}
+	if req.CoverPic != nil {
+		goodReq.CoverPic = service.CoverPic{
+			Id:  req.CoverPic.Id,
+			Url: req.CoverPic.Url,
+		}
+	}
+
+	_, err := h.taskService.CreateGood(c.Request.Context(), goodReq)
+
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, nil)
+}
+
 // UpdateConsumptionRuleRequest 更新代币消耗规则请求
 type UpdateConsumptionRuleRequest struct {
 	FeatureId   int     `json:"feature_id" binding:"required,min=1"`
@@ -295,6 +359,24 @@ type UpdateConsumptionRuleRequest struct {
 	FeatureCode *string `json:"feature_code"`
 	Status      *int8   `json:"status"`
 	Class       *string `json:"classify" binding:"required"`
+}
+
+type UpdateGoods struct {
+	Id       int       `json:"id" binding:"required,min=1"`
+	Name     string    `json:"name" binding:"required"`
+	Code     string    `json:"code" binding:"required"`
+	Desc     string    `json:"desc"`
+	Price    int       `json:"price" binding:"required"`
+	CoverPic *CoverPic `json:"cover_pic"`
+}
+
+type OperateGoods struct {
+	Id     int  `json:"id" binding:"required,min=1"`
+	Status *int `json:"status" binding:"required,oneof=0 1"`
+}
+
+type DeleteGoods struct {
+	Id int `json:"id" binding:"required,min=1"`
 }
 
 // UpdateConsumptionRule 更新代币消耗规则
@@ -313,6 +395,71 @@ func (h *TaskHandler) UpdateConsumptionRule(c *gin.Context) {
 		Status:      req.Status,
 		Class:       req.Class,
 	})
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// DeleteGood 删除商品
+func (h *TaskHandler) DeleteGood(c *gin.Context) {
+	var req DeleteGoods
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	err := h.taskService.DeleteGood(c.Request.Context(), req.Id)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// OperateGood 更新代币消耗规则
+func (h *TaskHandler) OperateGood(c *gin.Context) {
+	var req OperateGoods
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+
+	err := h.taskService.UpdateGood(c.Request.Context(), req.Id, &service.UpdateGoodRequest{
+		Status: req.Status,
+	})
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, nil)
+}
+
+// UpdateGood 更新商品
+func (h *TaskHandler) UpdateGood(c *gin.Context) {
+	var req UpdateGoods
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	goodReq := &service.UpdateGoodRequest{
+		Name:  req.Name,
+		Code:  req.Code,
+		Desc:  req.Desc,
+		Price: req.Price,
+	}
+	if req.CoverPic != nil {
+		goodReq.CoverPic = &service.CoverPic{
+			Id:  req.CoverPic.Id,
+			Url: req.CoverPic.Url,
+		}
+	}
+
+	err := h.taskService.UpdateGood(c.Request.Context(), req.Id, goodReq)
 	if err != nil {
 		response.Error(c, err)
 		return

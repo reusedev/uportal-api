@@ -14,6 +14,11 @@ func CreateTokenConsumptionRule(db *gorm.DB, rule *TokenConsumeRule) error {
 	return db.Create(rule).Error
 }
 
+// CreateGood 创建商品
+func CreateGood(db *gorm.DB, good *Goods) error {
+	return db.Create(good).Error
+}
+
 // GetTokenConsumptionRule 获取Token消费规则
 func GetTokenConsumptionRule(db *gorm.DB, id int) (*TokenConsumeRule, error) {
 	var rule TokenConsumeRule
@@ -60,6 +65,24 @@ func ListTokenConsumptionRules(db *gorm.DB) ([]*TokenConsumeRule, int64, error) 
 	}
 
 	return rules, total, nil
+}
+
+// ListGoods
+func ListGoods(db *gorm.DB) ([]*Goods, int64, error) {
+	var goods []*Goods
+	var total int64
+
+	err := db.Model(&Goods{}).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	err = db.Find(&goods).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return goods, total, nil
 }
 
 // GetTokenConsumptionRules 获取Token消费规则列表

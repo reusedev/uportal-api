@@ -355,6 +355,20 @@ type BackendNotify struct {
 	UpdatedAt  time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"` // 更新时间
 }
 
+type Goods struct {
+	ID     int     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`       // 功能ID，主键，自增
+	Code   string  `gorm:"column:code;type:varchar(100);not null" json:"code"` // 商品 code
+	Desc   *string `gorm:"column:desc;type:varchar(255)" json:"desc"`          // 商品描述
+	Price  int     `gorm:"column:price;not null" json:"price"`                 // 单价
+	PicId  string  `gorm:"column:pic_id;type:varchar(50)" json:"pic_id"`       // 图片 ID
+	PicUrl string  `gorm:"column:pic_url;type:varchar(50)" json:"pic_url"`     // 图片 ID
+	Status int8    `gorm:"column:status;not null;default:1" json:"status"`     // 状态：1=启用，0=停用
+}
+
+func (Goods) TableName() string {
+	return "goods"
+}
+
 func (BackendNotify) TableName() string {
 	return "backend_notify"
 }

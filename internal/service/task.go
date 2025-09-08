@@ -215,6 +215,15 @@ func (s *TaskService) ListConsumptionRules(ctx context.Context) ([]*model.TokenC
 	return rules, total, nil
 }
 
+// ListGoods
+func (s *TaskService) ListGoods(ctx context.Context) ([]*model.Goods, int64, error) {
+	rules, total, err := model.ListGoods(s.db)
+	if err != nil {
+		return nil, 0, errors.New(errors.ErrCodeInternal, "获取商品列表失败", err)
+	}
+	return rules, total, nil
+}
+
 // GetConsumptionRules 获取代币消耗规则列表
 func (s *TaskService) GetConsumptionRules(ctx context.Context, class string) ([]*model.TokenConsumeRule, error) {
 	rules, err := model.GetTokenConsumptionRules(s.db, class)
@@ -263,6 +272,47 @@ func (s *TaskService) UpdateConsumptionRule(ctx context.Context, id int, req *Up
 	return nil
 }
 
+// DeleteGood 更新商品
+func (s *TaskService) DeleteGood(ctx context.Context, id int) error {
+	// 查找现有规则
+	return s.db.Delete(&model.Goods{}, id).Error
+}
+
+// UpdateGood 更新商品
+func (s *TaskService) UpdateGood(ctx context.Context, id int, req *UpdateGoodRequest) error {
+	// 查找现有规则
+	var good model.Goods
+	if err := s.db.Where("id = ?", id).First(&good).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.New(errors.ErrCodeNotFound, "商品不存在", err)
+		}
+		return errors.New(errors.ErrCodeInternal, "查询商品失败", err)
+	}
+
+	// 更新规则
+	updates := map[string]interface{}{
+		"name":  req.Name,
+		"code":  req.Code,
+		"price": req.Price,
+	}
+	if req.Desc != "" {
+		updates["desc"] = req.Desc
+	}
+	if req.CoverPic != nil {
+		updates["pic_id"] = req.CoverPic
+		updates["pic_url"] = req.CoverPic
+	}
+	if req.Status != nil {
+		updates["status"] = *req.Status
+	}
+
+	if err := s.db.Model(&good).Updates(updates).Error; err != nil {
+		return errors.New(errors.ErrCodeInternal, "更新商品失败", err)
+	}
+
+	return nil
+}
+
 type CreateConsumptionRuleRequest struct {
 	FeatureName string `json:"feature_name"`
 	FeatureDesc string `json:"feature_desc"`
@@ -270,6 +320,19 @@ type CreateConsumptionRuleRequest struct {
 	FeatureCode string `json:"feature_code"`
 	Status      *int8  `json:"status"`
 	Class       string `json:"class"`
+}
+
+type CreateGoodRequest struct {
+	Name     string   `json:"name" binding:"required"`
+	Code     string   `json:"code" binding:"required"`
+	Desc     string   `json:"desc"`
+	Price    int      `json:"price" binding:"required"`
+	CoverPic CoverPic `json:"cover_pic"`
+}
+
+type CoverPic struct {
+	Id  string `json:"id" binding:"required"`
+	Url string `json:"url" binding:"required"`
 }
 
 // CreateConsumptionRule 创建Token消费规则
@@ -288,6 +351,23 @@ func (s *TaskService) CreateConsumptionRule(ctx context.Context, req *CreateCons
 		return nil, err
 	}
 	return rule, nil
+}
+
+// CreateGood 创建商品
+func (s *TaskService) CreateGood(ctx context.Context, req *CreateGoodRequest) (*model.Goods, error) {
+	good := &model.Goods{
+		Code:   req.Code,
+		Desc:   &req.Desc,
+		Price:  req.Price,
+		PicId:  req.CoverPic.Id,
+		PicUrl: req.CoverPic.Url,
+	}
+
+	err := model.CreateGood(s.db, good)
+	if err != nil {
+		return nil, err
+	}
+	return good, nil
 }
 
 // GetAvailableTasks 获取用户可用的任务列表

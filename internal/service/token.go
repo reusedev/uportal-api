@@ -34,6 +34,16 @@ type UpdateConsumptionRuleRequest struct {
 	Class       *string `json:"class" binding:"required,max=100"`
 }
 
+type UpdateGoodRequest struct {
+	Id       int       `json:"id" binding:"required,min=1"`
+	Name     string    `json:"name" binding:"required"`
+	Code     string    `json:"code" binding:"required"`
+	Desc     string    `json:"desc"`
+	Price    int       `json:"price" binding:"required"`
+	CoverPic *CoverPic `json:"cover_pic"`
+	Status   *int      `json:"status" binding:"required,oneof=1 2"`
+}
+
 // DeleteConsumptionRule 删除Token消费规则
 func (s *TokenService) DeleteConsumptionRule(ctx context.Context, id int) error {
 	// 检查规则是否存在

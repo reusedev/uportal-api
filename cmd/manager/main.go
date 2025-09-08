@@ -162,6 +162,11 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 			reward := api.Group("/token-consume-rules", middleware.AdminAuth())
 			handler.RegisterTokenConsumeRulesRoutes(reward, taskHandler)
 		}
+		// 商品
+		{
+			goods := api.Group("/goods", middleware.AdminAuth())
+			handler.RegisterGoodsRoutes(goods, taskHandler)
+		}
 		// 充值方案
 		{
 			recharge := api.Group("/recharge-plans", middleware.AdminAuth())
