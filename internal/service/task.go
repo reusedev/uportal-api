@@ -297,19 +297,26 @@ func (s *TaskService) UpdateGood(ctx context.Context, id int, req *UpdateGoodReq
 		}
 		return errors.New(errors.ErrCodeInternal, "查询商品失败", err)
 	}
-
-	// 更新规则
-	updates := map[string]interface{}{
-		"name":  req.Name,
-		"code":  req.Code,
-		"price": req.Price,
+	updates := map[string]interface{}{}
+	if req.Name != "" {
+		updates["name"] = req.Desc
+	}
+	if req.Code != "" {
+		updates["code"] = req.Code
+	}
+	if req.Price != 0 {
+		updates["price"] = req.Price
 	}
 	if req.Desc != "" {
 		updates["desc"] = req.Desc
 	}
 	if req.CoverPic != nil {
-		updates["pic_id"] = req.CoverPic.Id
-		updates["pic_url"] = req.CoverPic.Url
+		if req.CoverPic.Id != "" {
+			updates["pic_id"] = req.CoverPic.Id
+		}
+		if req.CoverPic.Url != "" {
+			updates["pic_url"] = req.CoverPic.Url
+		}
 	}
 	if req.Status != nil {
 		updates["status"] = *req.Status
