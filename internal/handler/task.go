@@ -347,8 +347,8 @@ type CreateGoods struct {
 }
 
 type CoverPic struct {
-	Id  string `json:"id" binding:"required"`
-	Url string `json:"url" binding:"required"`
+	Id  string `json:"id"`
+	Url string `json:"url"`
 }
 
 // CreateConsumptionRule 创建代币消耗规则
