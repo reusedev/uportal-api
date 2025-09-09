@@ -299,7 +299,7 @@ func (s *TaskService) UpdateGood(ctx context.Context, id int, req *UpdateGoodReq
 	}
 	updates := map[string]interface{}{}
 	if req.Name != "" {
-		updates["name"] = req.Desc
+		updates["name"] = req.Name
 	}
 	if req.Code != "" {
 		updates["code"] = req.Code
