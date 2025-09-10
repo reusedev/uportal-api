@@ -266,22 +266,22 @@ func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID string, r
 // ConsumeToken 消费Token
 func (s *TokenService) ConsumeToken(ctx context.Context, userID, featureCode, descSuffix string, num int) (int64, error) {
 	// 获取消费规则
-	rule, err := model.GetTokenConsumptionRuleByService(s.db, featureCode)
+	good, err := model.GetGoodByService(s.db, featureCode)
 	if err != nil {
 		return 0, err
 	}
 
 	// 检查规则状态
-	if rule.Status != 1 {
+	if good.Status != 1 {
 		return 0, errors.New(errors.ErrCodeInvalidParams, "该服务已禁用", nil)
 	}
 
 	// 消费Token
 	desc := descSuffix
-	if rule.FeatureDesc != nil {
-		desc = *rule.FeatureDesc + descSuffix
+	if good.Name != "" {
+		desc = good.Name + descSuffix
 	}
-	cost := int64(rule.TokenCost * num)
+	cost := int64(good.Price * num)
 	err = model.ConsumeToken(s.db, userID, cost, featureCode, desc)
 	return cost, err
 }

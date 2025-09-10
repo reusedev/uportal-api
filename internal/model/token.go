@@ -39,6 +39,16 @@ func GetTokenConsumptionRuleByService(db *gorm.DB, serviceType string) (*TokenCo
 	return &rule, nil
 }
 
+// GetGoodByService 根据服务类型获取Token消费规则
+func GetGoodByService(db *gorm.DB, serviceType string) (*Goods, error) {
+	var good Goods
+	err := db.Where("code = ? AND status = 1", serviceType).First(&good).Error
+	if err != nil {
+		return nil, err
+	}
+	return &good, nil
+}
+
 // UpdateTokenConsumptionRule 更新Token消费规则
 func UpdateTokenConsumptionRule(db *gorm.DB, id int, updates map[string]interface{}) error {
 	return db.Model(&TokenConsumeRule{}).Where("feature_id = ?", id).Updates(updates).Error
@@ -206,8 +216,8 @@ func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error 
 func GetUserTokenIsBuy(db *gorm.DB, userID, featureCode string, num int) (int, error) {
 	var isBuy int
 	err := db.Transaction(func(tx *gorm.DB) error {
-		var rewardTask TokenConsumeRule
-		err := tx.Model(&TokenConsumeRule{}).Where("feature_code = ?", featureCode).First(&rewardTask).Error
+		var good Goods
+		err := tx.Model(&Goods{}).Where("code = ?", featureCode).First(&good).Error
 		if err != nil {
 			return err
 		}
@@ -216,7 +226,7 @@ func GetUserTokenIsBuy(db *gorm.DB, userID, featureCode string, num int) (int, e
 		if err != nil {
 			return err
 		}
-		if user.TokenBalance >= rewardTask.TokenCost*num {
+		if user.TokenBalance >= good.Price*num {
 			isBuy = 1
 		}
 		return nil
