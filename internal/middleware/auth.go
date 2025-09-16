@@ -59,7 +59,7 @@ func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": 1002, "message": "未提供认证令牌"})
+			c.JSON(http.StatusOK, gin.H{"code": http.StatusUnauthorized, "message": "未提供认证令牌"})
 			c.Abort()
 			return
 		}
@@ -71,7 +71,7 @@ func Auth() gin.HandlerFunc {
 
 		claims, err := jwt.ParseToken(token)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"code": 1002, "message": "无效的认证令牌"})
+			c.JSON(http.StatusOK, gin.H{"code": http.StatusUnauthorized, "message": "无效的认证令牌"})
 			c.Abort()
 			return
 		}
