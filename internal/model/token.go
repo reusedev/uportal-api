@@ -87,7 +87,7 @@ func ListGoods(db *gorm.DB) ([]*Goods, int64, error) {
 		return nil, 0, err
 	}
 
-	err = db.Preload("Price").Find(&goods).Error
+	err = db.Preload("Prices").Find(&goods).Error
 	if err != nil {
 		return nil, 0, err
 	}

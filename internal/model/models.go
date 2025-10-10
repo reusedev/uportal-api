@@ -363,7 +363,7 @@ type Goods struct {
 	PicId  string  `gorm:"column:pic_id;type:varchar(50)" json:"pic_id"`       // 图片 ID
 	PicUrl string  `gorm:"column:pic_url;type:varchar(50)" json:"pic_url"`     // 图片 ID
 	Status int     `gorm:"column:status;not null;default:1" json:"status"`     // 状态：1=启用，0=停用
-	Prices []Price `gorm:"foreignKey:GoodsID;constraint:OnDelete:CASCADE;"`
+	Prices []Price `gorm:"foreignKey:GoodsID;references:ID;constraint:OnDelete:CASCADE;" json:"prices"`
 }
 
 type Price struct {
