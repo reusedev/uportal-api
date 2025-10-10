@@ -462,8 +462,8 @@ type OperateGoods struct {
 }
 
 type OperatePrice struct {
-	PriceId string `json:"price_id" binding:"required,min=1"`
-	Status  *int   `json:"status" binding:"required,oneof=0 1"`
+	PriceId int  `json:"price_id" binding:"required,min=1"`
+	Status  *int `json:"status" binding:"required,oneof=0 1"`
 }
 
 type DeleteGoods struct {

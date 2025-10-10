@@ -324,22 +324,38 @@ func (s *TaskService) UpdateGood(ctx context.Context, id int, req *UpdateGoodReq
 		return errors.New(errors.ErrCodeInternal, "更新商品失败", err)
 	}
 	if len(req.PriceList) != 0 {
-		priceList := make([]model.Price, 0, len(req.PriceList))
-		for _, price := range req.PriceList {
-			priceList = append(priceList, model.Price{
-				Price:     price.Price,
-				PriceText: price.PriceText,
-				Status:    consts.PriceEnable,
-			})
-		}
-		if err := s.db.Model(&good).Association("Prices").Replace(priceList); err != nil {
-			return errors.New(errors.ErrCodeInternal, "更新商品失败", err)
+		// 方案一：使用事务手动删除并插入新记录
+		err := s.db.Transaction(func(tx *gorm.DB) error {
+			// 先删除旧的价格记录
+			if err := tx.Where("goods_id = ?", good.ID).Delete(&model.Price{}).Error; err != nil {
+				return err
+			}
+
+			// 插入新的价格记录
+			priceList := make([]model.Price, 0, len(req.PriceList))
+			for _, price := range req.PriceList {
+				priceList = append(priceList, model.Price{
+					Price:     price.Price,
+					PriceText: price.PriceText,
+					Status:    consts.PriceEnable,
+					GoodsID:   good.ID,
+				})
+			}
+
+			if len(priceList) > 0 {
+				return tx.Create(&priceList).Error
+			}
+			return nil
+		})
+
+		if err != nil {
+			return errors.New(errors.ErrCodeInternal, "更新商品价格失败", err)
 		}
 	}
 	return nil
 }
 
-func (s *TaskService) UpdatePrice(ctx context.Context, id string, status int) error {
+func (s *TaskService) UpdatePrice(ctx context.Context, id int, status int) error {
 
 	updates := map[string]interface{}{
 		"status": status,

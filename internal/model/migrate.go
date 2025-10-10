@@ -70,6 +70,7 @@ func Migrate(db *gorm.DB) error {
 		{"invite_records", "inviter_id", "users", "id"},
 		{"invite_records", "invitee_id", "users", "id"},
 		{"message_subscribe", "user_id", "users", "id"},
+		{"prices", "goods_id", "goods", "id"},
 	}
 
 	for _, c := range constraints {

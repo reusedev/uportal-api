@@ -380,6 +380,10 @@ func (Goods) TableName() string {
 	return "goods"
 }
 
+func (Price) TableName() string {
+	return "prices"
+}
+
 func (BackendNotify) TableName() string {
 	return "backend_notify"
 }
