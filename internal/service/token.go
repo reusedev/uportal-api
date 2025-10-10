@@ -100,16 +100,15 @@ type ListRechargePlanRequest struct {
 }
 
 type TokenIsBuyRequest struct {
-	UserId      string `json:"user_id" binding:"required"`
-	FeatureCode string `json:"feature_code" binding:"required"`
-	Num         int    `json:"num" binding:"required,min=1"`
+	UserId string `json:"user_id" binding:"required"`
+	Price  int    `json:"price" binding:"required"`
 }
 
 type TokenBuyRequest struct {
-	UserId      string `json:"user_id" binding:"required"`
-	FeatureCode string `json:"feature_code" binding:"required"`
-	Num         int    `json:"num" binding:"required,min=1"`
-	Type        int    `json:"type" binding:"required,oneof=1 2"`
+	UserId string `json:"user_id" binding:"required"`
+	Price  int    `json:"price" binding:"required"`
+	Reason string `json:"reason"`
+	Type   int    `json:"type" binding:"required,oneof=1 2"`
 }
 
 // CreateRechargePlan 创建充值套餐
@@ -225,9 +224,9 @@ func (s *TokenService) GetUserTokenBalance(ctx context.Context, userID string) (
 }
 
 // TokenIsBuy 获取用户Token余额
-func (s *TokenService) TokenIsBuy(ctx context.Context, userID, FeatureCode string, num int) (int, error) {
+func (s *TokenService) TokenIsBuy(ctx context.Context, userID string, price int) (int, error) {
 
-	isBuy, err := model.GetUserTokenIsBuy(s.db, userID, FeatureCode, num)
+	isBuy, err := model.GetUserTokenIsBuy(s.db, userID, price)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
@@ -238,9 +237,9 @@ func (s *TokenService) TokenIsBuy(ctx context.Context, userID, FeatureCode strin
 }
 
 // TokenBuy 用户金币消耗
-func (s *TokenService) TokenBuy(ctx context.Context, userID, FeatureCode string, num int) (int, error) {
+func (s *TokenService) TokenBuy(ctx context.Context, userID string, price int) (int, error) {
 
-	isBuy, err := model.GetUserTokenIsBuy(s.db, userID, FeatureCode, num)
+	isBuy, err := model.GetUserTokenIsBuy(s.db, userID, price)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
@@ -264,25 +263,9 @@ func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID string, r
 }
 
 // ConsumeToken 消费Token
-func (s *TokenService) ConsumeToken(ctx context.Context, userID, featureCode, descSuffix string, num int) (int64, error) {
-	// 获取消费规则
-	good, err := model.GetGoodByService(s.db, featureCode)
-	if err != nil {
-		return 0, err
-	}
-
-	// 检查规则状态
-	if good.Status != 1 {
-		return 0, errors.New(errors.ErrCodeInvalidParams, "该服务已禁用", nil)
-	}
-
-	// 消费Token
-	desc := descSuffix
-	if good.PriceText != "" {
-		desc = good.PriceText + descSuffix
-	}
-	cost := int64(good.Price * num)
-	err = model.ConsumeToken(s.db, userID, cost, featureCode, desc)
+func (s *TokenService) ConsumeToken(ctx context.Context, userID string, desc string, price int) (int64, error) {
+	cost := int64(price)
+	err := model.ConsumeToken(s.db, userID, cost, desc)
 	return cost, err
 }
 

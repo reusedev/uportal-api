@@ -136,7 +136,7 @@ func (h *TokenHandler) TokenIsBuy(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	isBuy, err := h.tokenService.TokenIsBuy(c.Request.Context(), req.UserId, req.FeatureCode, req.Num)
+	isBuy, err := h.tokenService.TokenIsBuy(c.Request.Context(), req.UserId, req.Price)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -152,14 +152,15 @@ func (h *TokenHandler) TokenBuy(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	num := req.Num
+	price := req.Price
 	descSuffix := consts.ConsumeText
 	if req.Type == consts.Return {
-		num *= -1
+		price *= -1
 		descSuffix = consts.ReturnText
 	}
+	reason := req.Reason + descSuffix
 
-	cost, err := h.tokenService.ConsumeToken(c.Request.Context(), req.UserId, req.FeatureCode, descSuffix, num)
+	cost, err := h.tokenService.ConsumeToken(c.Request.Context(), req.UserId, reason, price)
 	if err != nil {
 		response.Error(c, err)
 		return

@@ -213,20 +213,15 @@ func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error 
 }
 
 // GetUserTokenIsBuy 获取用户Token余额
-func GetUserTokenIsBuy(db *gorm.DB, userID, featureCode string, num int) (int, error) {
+func GetUserTokenIsBuy(db *gorm.DB, userID string, price int) (int, error) {
 	var isBuy int
 	err := db.Transaction(func(tx *gorm.DB) error {
-		var good Price
-		err := tx.Model(&Price{}).Where("code = ?", featureCode).First(&good).Error
-		if err != nil {
-			return err
-		}
 		var user User
-		err = tx.Where("id = ?", userID).First(&user).Error
+		err := tx.Where("id = ?", userID).First(&user).Error
 		if err != nil {
 			return err
 		}
-		if user.TokenBalance >= good.Price*num {
+		if user.TokenBalance >= price {
 			isBuy = 1
 		}
 		return nil
@@ -235,7 +230,7 @@ func GetUserTokenIsBuy(db *gorm.DB, userID, featureCode string, num int) (int, e
 }
 
 // ConsumeToken 消费Token
-func ConsumeToken(db *gorm.DB, userID string, amount int64, serviceType string, description string) error {
+func ConsumeToken(db *gorm.DB, userID string, amount int64, description string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
 		balance, err := GetUserTokenBalance(tx, userID)
