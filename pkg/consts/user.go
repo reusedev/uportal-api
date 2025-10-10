@@ -30,6 +30,11 @@ const (
 )
 
 const (
+	PriceEnable  = 1
+	PriceDisable = 0
+)
+
+const (
 	Accept = "accept"
 )
 

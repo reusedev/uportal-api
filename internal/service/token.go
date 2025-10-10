@@ -35,13 +35,13 @@ type UpdateConsumptionRuleRequest struct {
 }
 
 type UpdateGoodRequest struct {
-	Id       int       `json:"id" binding:"required,min=1"`
-	Name     string    `json:"name" binding:"required"`
-	Code     string    `json:"code" binding:"required"`
-	Desc     string    `json:"desc"`
-	Price    int       `json:"price" binding:"required"`
-	CoverPic *CoverPic `json:"cover_pic"`
-	Status   *int      `json:"status" binding:"required,oneof=1 2"`
+	Id        int       `json:"id" binding:"required,min=1"`
+	Name      string    `json:"name" binding:"required"`
+	Code      string    `json:"code" binding:"required"`
+	Desc      string    `json:"desc"`
+	PriceList []Price   `json:"price_list"`
+	CoverPic  *CoverPic `json:"cover_pic"`
+	Status    *int      `json:"status" binding:"required,oneof=1 2"`
 }
 
 // DeleteConsumptionRule 删除Token消费规则
@@ -278,8 +278,8 @@ func (s *TokenService) ConsumeToken(ctx context.Context, userID, featureCode, de
 
 	// 消费Token
 	desc := descSuffix
-	if good.Name != "" {
-		desc = good.Name + descSuffix
+	if good.PriceText != "" {
+		desc = good.PriceText + descSuffix
 	}
 	cost := int64(good.Price * num)
 	err = model.ConsumeToken(s.db, userID, cost, featureCode, desc)

@@ -216,20 +216,20 @@ type GetConsumeRuleResponse struct {
 }
 
 type GetGoodsResponse struct {
-	Name     string   `json:"name"`
-	Code     string   `json:"code"`
-	ID       string   `json:"id"`
-	Price    int      `json:"price"`
-	CoverPic CoverPic `json:"cover_pic"`
+	Name      string   `json:"name"`
+	Code      string   `json:"code"`
+	ID        string   `json:"id"`
+	PriceList []Price  `json:"price_list"`
+	CoverPic  CoverPic `json:"cover_pic"`
 }
 
 type ListGoodsResponse struct {
-	Name     string   `json:"name"`
-	Code     string   `json:"code"`
-	ID       string   `json:"id"`
-	Price    int      `json:"price"`
-	CoverPic CoverPic `json:"cover_pic"`
-	Status   int      `json:"status"`
+	Name      string   `json:"name"`
+	Code      string   `json:"code"`
+	ID        string   `json:"id"`
+	PriceList []Price  `json:"price_list"`
+	CoverPic  CoverPic `json:"cover_pic"`
+	Status    int      `json:"status"`
 }
 
 // GetConsumeRule 获取代币消耗规则
@@ -266,16 +266,25 @@ func (h *TaskHandler) GetGoodsDict(c *gin.Context) {
 	}
 	resp := make([]*GetGoodsResponse, 0, len(goods))
 	for _, i := range goods {
-		resp = append(resp, &GetGoodsResponse{
-			Name:  i.Name,
-			Code:  i.Code,
-			ID:    strconv.Itoa(i.ID),
-			Price: i.Price,
+		ret := &GetGoodsResponse{
+			Name: i.Name,
+			Code: i.Code,
+			ID:   strconv.Itoa(i.ID),
 			CoverPic: CoverPic{
 				Id:  i.PicId,
 				Url: i.PicUrl,
 			},
-		})
+		}
+		for _, j := range i.Prices {
+			ret.PriceList = append(ret.PriceList, Price{
+				Price:     j.Price,
+				Id:        j.ID,
+				Status:    j.Status,
+				PriceText: j.PriceText,
+			})
+		}
+
+		resp = append(resp, ret)
 	}
 
 	response.Success(c, resp)
@@ -313,17 +322,25 @@ func (h *TaskHandler) ListGoods(c *gin.Context) {
 	}
 	rets := make([]*ListGoodsResponse, 0, len(goods))
 	for _, i := range goods {
-		rets = append(rets, &ListGoodsResponse{
-			Name:  i.Name,
-			Code:  i.Code,
-			ID:    strconv.Itoa(i.ID),
-			Price: i.Price,
+		ret := &ListGoodsResponse{
+			Name: i.Name,
+			Code: i.Code,
+			ID:   strconv.Itoa(i.ID),
 			CoverPic: CoverPic{
 				Id:  i.PicId,
 				Url: i.PicUrl,
 			},
 			Status: i.Status,
-		})
+		}
+		for _, j := range i.Prices {
+			ret.PriceList = append(ret.PriceList, Price{
+				Price:     j.Price,
+				Id:        j.ID,
+				Status:    j.Status,
+				PriceText: j.PriceText,
+			})
+		}
+		rets = append(rets, ret)
 	}
 	response.ListResponse(c, rets, total)
 }
@@ -339,11 +356,18 @@ type CreateConsumptionRuleRequest struct {
 }
 
 type CreateGoods struct {
-	Name     string    `json:"name" binding:"required"`
-	Code     string    `json:"code" binding:"required"`
-	Desc     string    `json:"desc"`
-	Price    int       `json:"price" binding:"required"`
-	CoverPic *CoverPic `json:"cover_pic"`
+	Name      string    `json:"name" binding:"required"`
+	Code      string    `json:"code" binding:"required"`
+	Desc      string    `json:"desc"`
+	CoverPic  *CoverPic `json:"cover_pic"`
+	PriceList []Price   `json:"price_list"`
+}
+
+type Price struct {
+	Price     int    `json:"price"`
+	PriceText string `json:"price_text"`
+	Id        int    `json:"id"`
+	Status    int    `json:"status"`
 }
 
 type CoverPic struct {
@@ -383,15 +407,22 @@ func (h *TaskHandler) CreateGoods(c *gin.Context) {
 		return
 	}
 	goodReq := &service.CreateGoodRequest{
-		Name:  req.Name,
-		Code:  req.Code,
-		Desc:  req.Desc,
-		Price: req.Price,
+		Name: req.Name,
+		Code: req.Code,
+		Desc: req.Desc,
 	}
 	if req.CoverPic != nil {
 		goodReq.CoverPic = service.CoverPic{
 			Id:  req.CoverPic.Id,
 			Url: req.CoverPic.Url,
+		}
+	}
+	if len(req.PriceList) != 0 {
+		for _, price := range req.PriceList {
+			goodReq.PriceList = append(goodReq.PriceList, service.Price{
+				Price:     price.Price,
+				PriceText: price.PriceText,
+			})
 		}
 	}
 
@@ -417,17 +448,22 @@ type UpdateConsumptionRuleRequest struct {
 }
 
 type UpdateGoods struct {
-	Id       string    `json:"id" binding:"required,min=1"`
-	Name     string    `json:"name" binding:"required"`
-	Code     string    `json:"code" binding:"required"`
-	Desc     string    `json:"desc"`
-	Price    int       `json:"price" binding:"required"`
-	CoverPic *CoverPic `json:"cover_pic"`
+	Id        string    `json:"id" binding:"required,min=1"`
+	Name      string    `json:"name" binding:"required"`
+	Code      string    `json:"code" binding:"required"`
+	Desc      string    `json:"desc"`
+	CoverPic  *CoverPic `json:"cover_pic"`
+	PriceList []Price   `json:"price_list"`
 }
 
 type OperateGoods struct {
 	Id     string `json:"id" binding:"required,min=1"`
 	Status *int   `json:"status" binding:"required,oneof=0 1"`
+}
+
+type OperatePrice struct {
+	PriceId string `json:"price_id" binding:"required,min=1"`
+	Status  *int   `json:"status" binding:"required,oneof=0 1"`
 }
 
 type DeleteGoods struct {
@@ -476,6 +512,21 @@ func (h *TaskHandler) DeleteGood(c *gin.Context) {
 }
 
 // OperateGood 更新代币消耗规则
+func (h *TaskHandler) OperatePrice(c *gin.Context) {
+	var req OperatePrice
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	err := h.taskService.UpdatePrice(c.Request.Context(), req.PriceId, *req.Status)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	response.Success(c, nil)
+}
+
+// OperateGood 更新代币消耗规则
 func (h *TaskHandler) OperateGood(c *gin.Context) {
 	var req OperateGoods
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -503,15 +554,22 @@ func (h *TaskHandler) UpdateGood(c *gin.Context) {
 		return
 	}
 	goodReq := &service.UpdateGoodRequest{
-		Name:  req.Name,
-		Code:  req.Code,
-		Desc:  req.Desc,
-		Price: req.Price,
+		Name: req.Name,
+		Code: req.Code,
+		Desc: req.Desc,
 	}
 	if req.CoverPic != nil {
 		goodReq.CoverPic = &service.CoverPic{
 			Id:  req.CoverPic.Id,
 			Url: req.CoverPic.Url,
+		}
+	}
+	if len(req.PriceList) != 0 {
+		for _, price := range req.PriceList {
+			goodReq.PriceList = append(goodReq.PriceList, service.Price{
+				Price:     price.Price,
+				PriceText: price.PriceText,
+			})
 		}
 	}
 	id, _ := strconv.Atoi(req.Id)

@@ -4,6 +4,7 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -304,9 +305,6 @@ func (s *TaskService) UpdateGood(ctx context.Context, id int, req *UpdateGoodReq
 	if req.Code != "" {
 		updates["code"] = req.Code
 	}
-	if req.Price != 0 {
-		updates["price"] = req.Price
-	}
 	if req.Desc != "" {
 		updates["desc"] = req.Desc
 	}
@@ -325,6 +323,31 @@ func (s *TaskService) UpdateGood(ctx context.Context, id int, req *UpdateGoodReq
 	if err := s.db.Model(&good).Updates(updates).Error; err != nil {
 		return errors.New(errors.ErrCodeInternal, "更新商品失败", err)
 	}
+	if len(req.PriceList) != 0 {
+		priceList := make([]model.Price, 0, len(req.PriceList))
+		for _, price := range req.PriceList {
+			priceList = append(priceList, model.Price{
+				Price:     price.Price,
+				PriceText: price.PriceText,
+				Status:    consts.PriceEnable,
+			})
+		}
+		if err := s.db.Model(&good).Association("Prices").Replace(priceList); err != nil {
+			return errors.New(errors.ErrCodeInternal, "更新商品失败", err)
+		}
+	}
+	return nil
+}
+
+func (s *TaskService) UpdatePrice(ctx context.Context, id string, status int) error {
+
+	updates := map[string]interface{}{
+		"status": status,
+	}
+
+	if err := s.db.Model(&model.Price{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		return errors.New(errors.ErrCodeInternal, "更新商品失败", err)
+	}
 
 	return nil
 }
@@ -339,11 +362,16 @@ type CreateConsumptionRuleRequest struct {
 }
 
 type CreateGoodRequest struct {
-	Name     string   `json:"name" binding:"required"`
-	Code     string   `json:"code" binding:"required"`
-	Desc     string   `json:"desc"`
-	Price    int      `json:"price" binding:"required"`
-	CoverPic CoverPic `json:"cover_pic"`
+	Name      string `json:"name" binding:"required"`
+	Code      string `json:"code" binding:"required"`
+	Desc      string `json:"desc"`
+	PriceList []Price
+	CoverPic  CoverPic `json:"cover_pic"`
+}
+
+type Price struct {
+	Price     int    `json:"price"`
+	PriceText string `json:"price_text"`
 }
 
 type CoverPic struct {
@@ -375,9 +403,17 @@ func (s *TaskService) CreateGood(ctx context.Context, req *CreateGoodRequest) (*
 		Code:   req.Code,
 		Name:   req.Name,
 		Desc:   &req.Desc,
-		Price:  req.Price,
 		PicId:  req.CoverPic.Id,
 		PicUrl: req.CoverPic.Url,
+	}
+	if len(req.PriceList) != 0 {
+		for _, price := range req.PriceList {
+			good.Prices = append(good.Prices, model.Price{
+				Price:     price.Price,
+				PriceText: price.PriceText,
+				Status:    consts.PriceEnable,
+			})
+		}
 	}
 
 	err := model.CreateGood(s.db, good)

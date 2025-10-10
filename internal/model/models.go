@@ -360,10 +360,20 @@ type Goods struct {
 	Name   string  `gorm:"column:name;not null;size:255" json:"name"`
 	Code   string  `gorm:"column:code;type:varchar(100);not null" json:"code"` // 商品 code
 	Desc   *string `gorm:"column:desc;type:varchar(255)" json:"desc"`          // 商品描述
-	Price  int     `gorm:"column:price;not null" json:"price"`                 // 单价
 	PicId  string  `gorm:"column:pic_id;type:varchar(50)" json:"pic_id"`       // 图片 ID
 	PicUrl string  `gorm:"column:pic_url;type:varchar(50)" json:"pic_url"`     // 图片 ID
 	Status int     `gorm:"column:status;not null;default:1" json:"status"`     // 状态：1=启用，0=停用
+	Prices []Price `gorm:"foreignKey:GoodsID;constraint:OnDelete:CASCADE;"`
+}
+
+type Price struct {
+	ID        int       `gorm:"column:id;primaryKey;autoIncrement" json:"id"`                // 功能ID，主键，自增
+	PriceText string    `gorm:"column:price_text;type:varchar(255)" json:"price_text"`       // 商品描述
+	Price     int       `gorm:"column:price;not null" json:"price"`                          // 单价
+	GoodsID   int       `gorm:"column:goods_id" json:"goods_id"`                             // 商品 ID；外键
+	Status    int       `gorm:"column:status;not null;default:1" json:"status"`              // 状态：1=启用，0=停用
+	CreatedAt time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"` // 创建时间
+	UpdatedAt time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"` // 更新时间
 }
 
 func (Goods) TableName() string {

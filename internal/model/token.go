@@ -40,8 +40,8 @@ func GetTokenConsumptionRuleByService(db *gorm.DB, serviceType string) (*TokenCo
 }
 
 // GetGoodByService 根据服务类型获取Token消费规则
-func GetGoodByService(db *gorm.DB, serviceType string) (*Goods, error) {
-	var good Goods
+func GetGoodByService(db *gorm.DB, serviceType string) (*Price, error) {
+	var good Price
 	err := db.Where("code = ? AND status = 1", serviceType).First(&good).Error
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func ListGoods(db *gorm.DB) ([]*Goods, int64, error) {
 		return nil, 0, err
 	}
 
-	err = db.Find(&goods).Error
+	err = db.Preload("Price").Find(&goods).Error
 	if err != nil {
 		return nil, 0, err
 	}
@@ -216,8 +216,8 @@ func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error 
 func GetUserTokenIsBuy(db *gorm.DB, userID, featureCode string, num int) (int, error) {
 	var isBuy int
 	err := db.Transaction(func(tx *gorm.DB) error {
-		var good Goods
-		err := tx.Model(&Goods{}).Where("code = ?", featureCode).First(&good).Error
+		var good Price
+		err := tx.Model(&Price{}).Where("code = ?", featureCode).First(&good).Error
 		if err != nil {
 			return err
 		}
