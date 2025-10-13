@@ -216,11 +216,11 @@ type GetConsumeRuleResponse struct {
 }
 
 type GetGoodsResponse struct {
-	Name      string   `json:"name"`
-	Code      string   `json:"code"`
-	ID        string   `json:"id"`
-	PriceList []Price  `json:"price_list"`
-	CoverPic  CoverPic `json:"cover_pic"`
+	Name     string   `json:"name"`
+	Code     string   `json:"code"`
+	ID       string   `json:"id"`
+	Price    int      `json:"price"`
+	CoverPic CoverPic `json:"cover_pic"`
 }
 
 type ListGoodsResponse struct {
@@ -275,15 +275,9 @@ func (h *TaskHandler) GetGoodsDict(c *gin.Context) {
 				Url: i.PicUrl,
 			},
 		}
-		for _, j := range i.Prices {
-			ret.PriceList = append(ret.PriceList, Price{
-				Price:     j.Price,
-				Id:        j.ID,
-				Status:    j.Status,
-				PriceText: j.PriceText,
-			})
+		if len(i.Prices) != 0 {
+			ret.Price = i.Prices[0].Price
 		}
-
 		resp = append(resp, ret)
 	}
 
