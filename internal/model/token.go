@@ -110,7 +110,7 @@ func GetTokenConsumptionRules(db *gorm.DB, class string) ([]*TokenConsumeRule, e
 // GetGoods
 func GetGoods(db *gorm.DB) ([]*Goods, error) {
 	var goods []*Goods
-	err := db.Model(&Goods{}).Where("status = ?", 1).Find(&goods).Error
+	err := db.Model(&Goods{}).Preload("Prices").Where("status = ?", 1).Find(&goods).Error
 	if err != nil {
 		return nil, err
 	}
