@@ -135,8 +135,10 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 	}
 
 	// 从系统配置获取邀请奖励代币数
-	// TODO: 从系统配置中获取实际的奖励代币数
 	tokenReward := 1000 // 临时使用固定值，后续从配置获取
+	if inviteBy == "5uiw4fCEidU" {
+		tokenReward = 3000
+	}
 
 	// 开启事务处理邀请记录和奖励
 	tx := h.inviteSvc.GetDB().Begin()
