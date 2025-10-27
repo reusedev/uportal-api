@@ -34,7 +34,8 @@ type ReportInviteRequest struct {
 }
 
 type QrcodeInviteRequest struct {
-	Scene string `json:"scene" binding:"required"`
+	Scene     string `json:"scene" binding:"required"`
+	IsHyaline bool   `json:"is_hyaline"`
 }
 
 // ReportPointsRewardRequest 代币奖励上报请求
@@ -64,7 +65,7 @@ func (h *InviteHandler) QrcodeInvite(c *gin.Context) {
 	}
 	savePath := fmt.Sprintf("tmp/%s.png", userID)
 	t := wechat_token.GetToken()
-	err := qrcode.GetQrcode(t, req.Scene, savePath)
+	err := qrcode.GetQrcode(t, req.Scene, savePath, req.IsHyaline)
 	if err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInternal, "获取专属二维码错误", err))
 		return
