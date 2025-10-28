@@ -93,6 +93,7 @@ func (h *InviteHandler) QrcodeWork(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
+	fmt.Printf("%+v\n", req)
 	userID := c.GetString(consts.UserId)
 	savePath := fmt.Sprintf("tmp/%s.png", userID)
 	t := wechat_token.GetToken()
