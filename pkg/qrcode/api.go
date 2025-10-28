@@ -18,21 +18,26 @@ const (
 type QrcodeDataReq struct {
 	Scene     string `json:"scene"`
 	IsHyaline bool   `json:"is_hyaline"`
+	Page      string `json:"page,omitempty"`
 }
 
 type QrcodeDataResp struct {
 }
 
 // GetQrcode 获取二维码
-func GetQrcode(token, scene, savePath string, isHyaline bool) error {
+func GetQrcode(token, scene, savePath, page string, isHyaline bool) error {
 	if token == "" {
 		return nil
 	}
 	url := getUnlimitedQRCodeUrl + token
 	client := resty.New()
+	body := QrcodeDataReq{Scene: scene, IsHyaline: isHyaline}
+	if page != "" {
+		body.Page = page
+	}
 	resp, err := client.R().
 		SetHeader("Content-Type", "application/json").
-		SetBody(QrcodeDataReq{Scene: scene, IsHyaline: isHyaline}).
+		SetBody(body).
 		SetDoNotParseResponse(true). // 保留原始 []byte
 		Post(url)
 

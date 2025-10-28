@@ -38,6 +38,12 @@ type QrcodeInviteRequest struct {
 	IsHyaline bool   `json:"is_hyaline"`
 }
 
+type QrcodeWorkRequest struct {
+	Scene     string `json:"scene" binding:"required"`
+	Page      string `form:"page" binding:"required"`
+	IsHyaline bool   `json:"is_hyaline"`
+}
+
 // ReportPointsRewardRequest 代币奖励上报请求
 type ReportPointsRewardRequest struct {
 	Type string `json:"type" binding:"required"` // 奖励类型
@@ -65,7 +71,7 @@ func (h *InviteHandler) QrcodeInvite(c *gin.Context) {
 	}
 	savePath := fmt.Sprintf("tmp/%s.png", userID)
 	t := wechat_token.GetToken()
-	err := qrcode.GetQrcode(t, req.Scene, savePath, req.IsHyaline)
+	err := qrcode.GetQrcode(t, req.Scene, "", savePath, req.IsHyaline)
 	if err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInternal, "获取专属二维码错误", err))
 		return
@@ -78,6 +84,29 @@ func (h *InviteHandler) QrcodeInvite(c *gin.Context) {
 	}
 	currentUser.Qrcode = strconv.Itoa(uploadFile.Data.Id)
 	h.inviteSvc.GetDB().Save(&currentUser)
+	response.Success(c, uploadFile.Data.Url)
+}
+
+func (h *InviteHandler) QrcodeWork(c *gin.Context) {
+	var req QrcodeWorkRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	userID := c.GetString(consts.UserId)
+	savePath := fmt.Sprintf("tmp/%s.png", userID)
+	t := wechat_token.GetToken()
+	err := qrcode.GetQrcode(t, req.Scene, savePath, req.Page, req.IsHyaline)
+	if err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInternal, "获取专属二维码错误", err))
+		return
+	}
+	//上传
+	uploadFile, err := model.UploadFile(savePath, config.GlobalConfig.DrawApi.UploadFileUrl)
+	if err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "上传文件失败", err))
+		return
+	}
 	response.Success(c, uploadFile.Data.Url)
 }
 
@@ -186,4 +215,9 @@ func (h *InviteHandler) ReportInvite(c *gin.Context) {
 func RegisterInviteRoutes(r *gin.RouterGroup, h *InviteHandler) {
 	r.POST("/report", h.ReportInvite)
 	r.POST("/qrcode", h.QrcodeInvite)
+}
+
+// RegisterWorkRoutes 注册相关路由
+func RegisterWorkRoutes(r *gin.RouterGroup, h *InviteHandler) {
+	r.POST("/qrcode", h.QrcodeWork)
 }

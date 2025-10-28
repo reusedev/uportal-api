@@ -158,6 +158,10 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		invite := api.Group("invite", middleware.Auth())
 		handler.RegisterInviteRoutes(invite, inviteHandler)
 
+		// 获取作品二维码
+		work := api.Group("work", middleware.Auth())
+		handler.RegisterWorkRoutes(work, inviteHandler)
+
 		// 代币相关路由
 		token := api.Group("/points", middleware.Auth())
 		handler.RegisterTokenRoutes(token, tokenHandler)
