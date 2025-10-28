@@ -159,7 +159,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		handler.RegisterInviteRoutes(invite, inviteHandler)
 
 		// 获取作品二维码
-		work := api.Group("work", middleware.Auth())
+		work := api.Group("works", middleware.Auth())
 		handler.RegisterWorkRoutes(work, inviteHandler)
 
 		// 代币相关路由
