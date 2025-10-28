@@ -38,12 +38,6 @@ type QrcodeInviteRequest struct {
 	IsHyaline bool   `json:"is_hyaline"`
 }
 
-type QrcodeWorkRequest struct {
-	Scene     string `json:"scene" binding:"required"`
-	Page      string `form:"page" binding:"required"`
-	IsHyaline bool   `json:"is_hyaline"`
-}
-
 // ReportPointsRewardRequest 代币奖励上报请求
 type ReportPointsRewardRequest struct {
 	Type string `json:"type" binding:"required"` // 奖励类型
@@ -88,16 +82,16 @@ func (h *InviteHandler) QrcodeInvite(c *gin.Context) {
 }
 
 func (h *InviteHandler) QrcodeWork(c *gin.Context) {
-	var req QrcodeWorkRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var data []byte
+	var err error
+	if data, err = c.GetRawData(); err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	fmt.Printf("%+v\n", req)
 	userID := c.GetString(consts.UserId)
-	savePath := fmt.Sprintf("tmp/%s.png", userID)
+	savePath := fmt.Sprintf("tmp/work_%s.png", userID)
 	t := wechat_token.GetToken()
-	err := qrcode.GetQrcode(t, req.Scene, savePath, req.Page, req.IsHyaline)
+	err = qrcode.GetWorksQrcode(t, savePath, data)
 	if err != nil {
 		response.Error(c, errors.New(errors.ErrCodeInternal, "获取专属二维码错误", err))
 		return
