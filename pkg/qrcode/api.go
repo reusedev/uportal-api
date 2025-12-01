@@ -45,7 +45,7 @@ func GetQrcode(token, scene, savePath, page string, isHyaline bool) error {
 		return err
 	}
 	if resp.StatusCode() != http.StatusOK {
-		logs.Business().Error(fmt.Sprintf("send active failed: %d, url: %s, scene: %s", resp.StatusCode, url, scene))
+		logs.Business().Error(fmt.Sprintf("send active failed: %d, url: %s, scene: %s", resp.StatusCode(), url, scene))
 		return errors.New("send active failed")
 	}
 	defer resp.RawBody().Close()

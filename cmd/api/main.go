@@ -174,7 +174,7 @@ func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
 
 		// 云端交互
 		cloud := api.Group("/cloud")
-		handler.RegisterCloudRoutes(cloud, tokenHandler, notifyHandler)
+		handler.RegisterCloudRoutes(cloud, tokenHandler, notifyHandler, inviteHandler)
 
 		// 订单相关路由
 		order := api.Group("/orders", middleware.Auth())
