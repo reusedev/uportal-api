@@ -11,8 +11,10 @@ import (
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"github.com/reusedev/uportal-api/pkg/qrcode"
 	"github.com/reusedev/uportal-api/pkg/response"
+	"github.com/reusedev/uportal-api/pkg/urllink"
 	"github.com/reusedev/uportal-api/pkg/wechat_token"
 	"gorm.io/gorm"
+	"net/http"
 	"strconv"
 )
 
@@ -134,7 +136,13 @@ func (h *InviteHandler) Qrcode(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "上传文件失败", err))
 		return
 	}
-	response.Success(c, uploadFile.Data.Url)
+	link := urllink.GetUrlLink(req.WorkId)
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"code":    errors.ErrCodeSuccess,
+		"message": "success",
+		"data":    uploadFile.Data.Url,
+		"link":    link,
+	})
 }
 
 func (h *InviteHandler) ReportInvite(c *gin.Context) {

@@ -14,7 +14,7 @@ func TestGetToken(t *testing.T) {
 		panic(fmt.Sprintf("Load config error: %v", err))
 	}
 	wechat_token.TokenJob()
-	//GetUrlLink()
+	GetUrlLink("16")
 	token := wechat_token.GetToken()
 	t.Log(GetScheme(token))
 }
