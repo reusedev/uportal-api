@@ -227,7 +227,7 @@ func GetUserTokenIsBuy(db *gorm.DB, userID string, price int) (int, bool, error)
 		if user.TokenBalance >= price {
 			isBuy = 1
 		}
-		if *user.InviterID == consts.Advertiser {
+		if user.InviterID != nil && *user.InviterID == consts.Advertiser {
 			adUser = true
 		}
 		return nil
