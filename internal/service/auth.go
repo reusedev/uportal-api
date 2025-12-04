@@ -238,6 +238,7 @@ func (s *AuthService) ThirdPartyLogin(ctx context.Context, req *ThirdPartyLoginR
 			TokenBalance: 1000,
 			Status:       1,
 			UserID:       model.GenerateUserID(),
+			IsNew:        true,
 			LastLoginAt:  &now,
 		}
 		logs.Business().Warn("创建登录日志失败",

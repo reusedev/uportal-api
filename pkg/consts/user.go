@@ -56,3 +56,7 @@ const (
 const (
 	OrderSeq = "order_"
 )
+
+const (
+	Advertiser = "5CufYHrGRhd"
+)

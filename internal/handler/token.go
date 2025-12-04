@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/reusedev/uportal-api/pkg/consts"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -136,13 +137,18 @@ func (h *TokenHandler) TokenIsBuy(c *gin.Context) {
 		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
 		return
 	}
-	isBuy, err := h.tokenService.TokenIsBuy(c.Request.Context(), req.UserId, req.Price)
+	isBuy, isAd, err := h.tokenService.TokenIsBuy(c.Request.Context(), req.UserId, req.Price)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
-
-	response.Success(c, isBuy)
+	// 来源广告
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"code":    errors.ErrCodeSuccess,
+		"message": "success",
+		"data":    isBuy,
+		"ad_user": isAd,
+	})
 }
 
 // TokenBuy 用户金币消耗

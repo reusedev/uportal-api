@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"time"
 
 	"gorm.io/gorm/clause"
@@ -213,8 +214,10 @@ func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error 
 }
 
 // GetUserTokenIsBuy 获取用户Token余额
-func GetUserTokenIsBuy(db *gorm.DB, userID string, price int) (int, error) {
+func GetUserTokenIsBuy(db *gorm.DB, userID string, price int) (int, bool, error) {
 	var isBuy int
+	// 广告主
+	var adUser bool
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var user User
 		err := tx.Where("id = ?", userID).First(&user).Error
@@ -224,9 +227,12 @@ func GetUserTokenIsBuy(db *gorm.DB, userID string, price int) (int, error) {
 		if user.TokenBalance >= price {
 			isBuy = 1
 		}
+		if *user.InviterID == consts.Advertiser {
+			adUser = true
+		}
 		return nil
 	})
-	return isBuy, err
+	return isBuy, adUser, err
 }
 
 // ConsumeToken 消费Token

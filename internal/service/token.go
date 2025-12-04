@@ -224,22 +224,22 @@ func (s *TokenService) GetUserTokenBalance(ctx context.Context, userID string) (
 }
 
 // TokenIsBuy 获取用户Token余额
-func (s *TokenService) TokenIsBuy(ctx context.Context, userID string, price int) (int, error) {
+func (s *TokenService) TokenIsBuy(ctx context.Context, userID string, price int) (int, bool, error) {
 
-	isBuy, err := model.GetUserTokenIsBuy(s.db, userID, price)
+	isBuy, isAd, err := model.GetUserTokenIsBuy(s.db, userID, price)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
-			return 0, errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
+			return 0, false, errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
 		}
-		return 0, errors.New(errors.ErrCodeInternal, "获取Token余额失败", err)
+		return 0, false, errors.New(errors.ErrCodeInternal, "获取Token余额失败", err)
 	}
-	return isBuy, nil
+	return isBuy, isAd, nil
 }
 
 // TokenBuy 用户金币消耗
 func (s *TokenService) TokenBuy(ctx context.Context, userID string, price int) (int, error) {
 
-	isBuy, err := model.GetUserTokenIsBuy(s.db, userID, price)
+	isBuy, _, err := model.GetUserTokenIsBuy(s.db, userID, price)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, errors.New(errors.ErrCodeNotFound, "用户不存在", nil)
