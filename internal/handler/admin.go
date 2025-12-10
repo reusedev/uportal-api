@@ -30,12 +30,14 @@ func NewAdminHandler(adminService *service.AdminService, loginService *service.U
 
 // ListUsersRequest 获取用户列表请求
 type ListUsersRequest struct {
-	Page     int      `json:"page" binding:"required,min=1"`
-	Limit    int      `json:"limit" binding:"required,min=1,max=100"`
-	NickName string   `json:"nickname"`
-	Phone    string   `json:"phone"`
-	Status   *int     `json:"status"`
-	Sort     []string `json:"sort" binding:"omitempty,dive,oneof=token_balance created_at updated_at last_login_at"` // 排序字段
+	Page       int      `json:"page" binding:"required,min=1"`
+	Limit      int      `json:"limit" binding:"required,min=1,max=100"`
+	NickName   string   `json:"nickname"`
+	UserId     string   `json:"userid"`
+	InviterId  string   `json:"inviter_id"`
+	SourceType string   `json:"source_type"`
+	Status     *int     `json:"status"`
+	Sort       []string `json:"sort" binding:"omitempty,dive,oneof=token_balance created_at updated_at last_login_at"` // 排序字段
 }
 
 type OperateUsersRequest struct {
@@ -69,12 +71,14 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	}
 
 	users, total, err := h.adminService.ListUsers(c.Request.Context(), &service.ListUsersParams{
-		Page:     req.Page,
-		Limit:    req.Limit,
-		NickName: req.NickName,
-		Phone:    req.Phone,
-		Status:   req.Status,
-		Sort:     sortParams,
+		Page:       req.Page,
+		Limit:      req.Limit,
+		UserId:     req.UserId,
+		InviterId:  req.InviterId,
+		SourceType: req.SourceType,
+		NickName:   req.NickName,
+		Status:     req.Status,
+		Sort:       sortParams,
 	})
 	if err != nil {
 		response.Error(c, err)
@@ -400,6 +404,20 @@ func (h *AdminHandler) DeleteAdmin(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+func (h *AdminHandler) SourceType(c *gin.Context) {
+	data := []map[string]string{
+		{
+			"id":   "1",
+			"name": "广告",
+		},
+		{
+			"id":   "2",
+			"name": "Twitter",
+		},
+	}
+	response.Success(c, data)
+}
+
 // ListTokenRecordsRequest 获取代币记录请求
 type ListTokenRecordsRequest struct {
 	UserID     string `json:"user_id"`
@@ -473,6 +491,7 @@ func RegisterUserManagerRoutes(r *gin.RouterGroup, h *AdminHandler) {
 		r.POST("/tokens/adjust", h.TokenAdjustUser)  // 调整用户代币
 		r.POST("/login-logs", h.ListUserLoginLogs)   // 获取用户登录日志
 		r.POST("/token-records", h.ListTokenRecords) // 获取用户代币记录
+		r.POST("/source_type", h.SourceType)         // 获取用户代币记录
 	}
 }
 

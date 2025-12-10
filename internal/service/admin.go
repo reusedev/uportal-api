@@ -35,12 +35,14 @@ type SortParam struct {
 
 // ListUsersParams 获取用户列表参数
 type ListUsersParams struct {
-	Page     int
-	Limit    int
-	NickName string
-	Phone    string
-	Status   *int
-	Sort     []SortParam // 排序参数
+	Page       int
+	Limit      int
+	NickName   string
+	UserId     string
+	InviterId  string
+	SourceType string
+	Status     *int
+	Sort       []SortParam // 排序参数
 }
 
 // ListUsers 获取用户列表
@@ -51,11 +53,23 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 	if params.NickName != "" {
 		query = query.Where("nickname LIKE ?", "%"+params.NickName+"%")
 	}
-	if params.Phone != "" {
-		query = query.Where("phone LIKE ?", "%"+params.Phone+"%")
-	}
 	if params.Status != nil {
 		query = query.Where("status = ?", *params.Status)
+	}
+	if params.UserId != "" {
+		query = query.Where("id LIKE ?", "%"+params.UserId+"%")
+	}
+	if params.InviterId != "" {
+		query = query.Where("inviter_id LIKE ?", "%"+params.InviterId+"%")
+	}
+	if params.SourceType != "" {
+		InviterId := ""
+		if params.SourceType == "1" {
+			InviterId = "5CufYHrGRhd"
+		} else if params.SourceType == "2" {
+			InviterId = "5CufYHrGRhe"
+		}
+		query = query.Where("inviter_id = ?", InviterId)
 	}
 
 	// 添加排序
