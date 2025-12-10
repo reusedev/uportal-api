@@ -28,6 +28,7 @@ type User struct {
 	UserAuths    []UserAuth     `gorm:"foreignKey:UserID" json:"-"`                                      // 第三方认证信息（不直接序列化）
 	Inviter      *User          `gorm:"foreignKey:InviterID;references:UserID" json:"inviter,omitempty"` // 邀请人信息
 	IsNew        bool           `gorm:"-" json:"is_new"`
+	SourceType   string         `gorm:"-"  json:"source_type"`
 }
 
 // MarshalJSON 自定义 JSON 序列化方法

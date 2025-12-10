@@ -41,6 +41,8 @@ type ListUsersParams struct {
 	UserId     string
 	InviterId  string
 	SourceType string
+	CreatedAt  string
+	LastLogin  string
 	Status     *int
 	Sort       []SortParam // 排序参数
 }
@@ -61,6 +63,12 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 	}
 	if params.InviterId != "" {
 		query = query.Where("inviter_id LIKE ?", "%"+params.InviterId+"%")
+	}
+	if params.CreatedAt != "" {
+		query = query.Where("DATE(created_at) =  ?", params.CreatedAt)
+	}
+	if params.LastLogin != "" {
+		query = query.Where("DATE(last_login_at) =  ?", params.LastLogin)
 	}
 	if params.SourceType != "" {
 		InviterId := ""
@@ -99,7 +107,16 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 		Find(&users).Error; err != nil {
 		return nil, 0, errors.New(errors.ErrCodeInternal, "获取用户列表失败", err)
 	}
-
+	for _, user := range users {
+		if user.InviterID != nil {
+			if *user.InviterID == "5CufYHrGRhd" {
+				user.SourceType = "广告"
+			}
+			if *user.InviterID == "5CufYHrGRhe" {
+				user.SourceType = "Twitter"
+			}
+		}
+	}
 	return users, total, nil
 }
 

@@ -33,6 +33,8 @@ type ListUsersRequest struct {
 	Page       int      `json:"page" binding:"required,min=1"`
 	Limit      int      `json:"limit" binding:"required,min=1,max=100"`
 	NickName   string   `json:"nickname"`
+	CreatedAt  string   `json:"created_at"`
+	LastLogin  string   `json:"last_login_at"`
 	UserId     string   `json:"user_id"`
 	InviterId  string   `json:"inviter_id"`
 	SourceType string   `json:"source_type"`
@@ -78,6 +80,8 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 		SourceType: req.SourceType,
 		NickName:   req.NickName,
 		Status:     req.Status,
+		CreatedAt:  req.CreatedAt,
+		LastLogin:  req.LastLogin,
 		Sort:       sortParams,
 	})
 	if err != nil {
