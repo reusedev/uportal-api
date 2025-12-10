@@ -33,7 +33,7 @@ type ListUsersRequest struct {
 	Page       int      `json:"page" binding:"required,min=1"`
 	Limit      int      `json:"limit" binding:"required,min=1,max=100"`
 	NickName   string   `json:"nickname"`
-	UserId     string   `json:"userid"`
+	UserId     string   `json:"user_id"`
 	InviterId  string   `json:"inviter_id"`
 	SourceType string   `json:"source_type"`
 	Status     *int     `json:"status"`
@@ -491,7 +491,7 @@ func RegisterUserManagerRoutes(r *gin.RouterGroup, h *AdminHandler) {
 		r.POST("/tokens/adjust", h.TokenAdjustUser)  // 调整用户代币
 		r.POST("/login-logs", h.ListUserLoginLogs)   // 获取用户登录日志
 		r.POST("/token-records", h.ListTokenRecords) // 获取用户代币记录
-		r.POST("/source_type", h.SourceType)         // 获取用户代币记录
+		r.POST("/suorce_type", h.SourceType)         // 获取用户代币记录
 	}
 }
 
