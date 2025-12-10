@@ -37,7 +37,7 @@ type ListUsersRequest struct {
 	InviterId  string   `json:"inviter_id"`
 	SourceType string   `json:"source_type"`
 	Status     *int     `json:"status"`
-	Sort       []string `json:"sort" binding:"omitempty,dive,oneof=token_balance created_at updated_at last_login_at"` // 排序字段
+	Sort       []string `json:"sort"` // 排序字段
 }
 
 type OperateUsersRequest struct {
