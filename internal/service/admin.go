@@ -35,16 +35,18 @@ type SortParam struct {
 
 // ListUsersParams 获取用户列表参数
 type ListUsersParams struct {
-	Page       int
-	Limit      int
-	NickName   string
-	UserId     string
-	InviterId  string
-	SourceType string
-	CreatedAt  string
-	LastLogin  string
-	Status     *int
-	Sort       []SortParam // 排序参数
+	Page           int
+	Limit          int
+	NickName       string
+	UserId         string
+	InviterId      string
+	SourceType     string
+	CreatedAtStart string
+	CreatedAtEnd   string
+	LastLoginStart string
+	LastLoginEnd   string
+	Status         *int
+	Sort           []SortParam // 排序参数
 }
 
 // ListUsers 获取用户列表
@@ -64,11 +66,11 @@ func (s *AdminService) ListUsers(ctx context.Context, params *ListUsersParams) (
 	if params.InviterId != "" {
 		query = query.Where("inviter_id LIKE ?", "%"+params.InviterId+"%")
 	}
-	if params.CreatedAt != "" {
-		query = query.Where("DATE(created_at) =  ?", params.CreatedAt)
+	if params.CreatedAtStart != "" {
+		query = query.Where("DATE(created_at) BETWEEN ? AND ?", params.CreatedAtStart, params.CreatedAtEnd)
 	}
-	if params.LastLogin != "" {
-		query = query.Where("DATE(last_login_at) =  ?", params.LastLogin)
+	if params.LastLoginStart != "" {
+		query = query.Where("DATE(last_login_at) BETWEEN ? AND ?", params.LastLoginStart, params.LastLoginEnd)
 	}
 	if params.SourceType != "" {
 		InviterId := ""

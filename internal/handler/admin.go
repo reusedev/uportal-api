@@ -30,16 +30,18 @@ func NewAdminHandler(adminService *service.AdminService, loginService *service.U
 
 // ListUsersRequest 获取用户列表请求
 type ListUsersRequest struct {
-	Page       int      `json:"page" binding:"required,min=1"`
-	Limit      int      `json:"limit" binding:"required,min=1,max=100"`
-	NickName   string   `json:"nickname"`
-	CreatedAt  string   `json:"created_at"`
-	LastLogin  string   `json:"last_login_at"`
-	UserId     string   `json:"user_id"`
-	InviterId  string   `json:"inviter_id"`
-	SourceType string   `json:"source_type"`
-	Status     *int     `json:"status"`
-	Sort       []string `json:"sort"` // 排序字段
+	Page           int      `json:"page" binding:"required,min=1"`
+	Limit          int      `json:"limit" binding:"required,min=1,max=100"`
+	NickName       string   `json:"nickname"`
+	CreatedAtStart string   `json:"created_at_start"`
+	CreatedAtEnd   string   `json:"created_at_end"`
+	LastLoginStart string   `json:"last_login_at_start"`
+	LastLoginEnd   string   `json:"last_login_at_end"`
+	UserId         string   `json:"user_id"`
+	InviterId      string   `json:"inviter_id"`
+	SourceType     string   `json:"source_type"`
+	Status         *int     `json:"status"`
+	Sort           []string `json:"sort"` // 排序字段
 }
 
 type OperateUsersRequest struct {
@@ -73,16 +75,18 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	}
 
 	users, total, err := h.adminService.ListUsers(c.Request.Context(), &service.ListUsersParams{
-		Page:       req.Page,
-		Limit:      req.Limit,
-		UserId:     req.UserId,
-		InviterId:  req.InviterId,
-		SourceType: req.SourceType,
-		NickName:   req.NickName,
-		Status:     req.Status,
-		CreatedAt:  req.CreatedAt,
-		LastLogin:  req.LastLogin,
-		Sort:       sortParams,
+		Page:           req.Page,
+		Limit:          req.Limit,
+		UserId:         req.UserId,
+		InviterId:      req.InviterId,
+		SourceType:     req.SourceType,
+		NickName:       req.NickName,
+		Status:         req.Status,
+		CreatedAtStart: req.CreatedAtStart,
+		CreatedAtEnd:   req.CreatedAtEnd,
+		LastLoginStart: req.LastLoginStart,
+		LastLoginEnd:   req.LastLoginEnd,
+		Sort:           sortParams,
 	})
 	if err != nil {
 		response.Error(c, err)
