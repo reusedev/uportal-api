@@ -1,13 +1,16 @@
 package model
 
 import (
+	stdErrors "errors"
 	"github.com/reusedev/uportal-api/pkg/consts"
-	"time"
-
-	"gorm.io/gorm/clause"
-
 	"github.com/reusedev/uportal-api/pkg/errors"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"time"
+)
+
+var (
+	BalanceErr = stdErrors.New("insufficient balance")
 )
 
 // CreateTokenConsumptionRule 创建Token消费规则
@@ -235,8 +238,14 @@ func GetUserTokenIsBuy(db *gorm.DB, userID string, price int) (int, bool, error)
 	return isBuy, adUser, err
 }
 
+// FindTokenRecord
+func FindTokenRecord(db *gorm.DB, userID, workId string) error {
+	var record TokenRecord
+	return db.Where("user_id = ? AND work_id = ?", userID, workId).First(&record).Error
+}
+
 // ConsumeToken 消费Token
-func ConsumeToken(db *gorm.DB, userID string, amount int64, description string) error {
+func ConsumeToken(db *gorm.DB, userID string, amount int64, description, workId string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 获取用户当前余额
 		balance, err := GetUserTokenBalance(tx, userID)
@@ -246,7 +255,7 @@ func ConsumeToken(db *gorm.DB, userID string, amount int64, description string) 
 
 		// 检查余额是否足够
 		if balance < amount {
-			return gorm.ErrRecordNotFound // TODO: 使用自定义错误
+			return BalanceErr
 		}
 
 		// 更新用户余额
@@ -262,6 +271,7 @@ func ConsumeToken(db *gorm.DB, userID string, amount int64, description string) 
 			BalanceAfter: int(balance - amount),
 			ChangeType:   "CONSUME",
 			Remark:       &description,
+			WorkID:       workId,
 			ChangeTime:   time.Now(),
 		}
 		return CreateTokenRecord(tx, record)

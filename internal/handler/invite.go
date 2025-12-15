@@ -83,6 +83,40 @@ func (h *InviteHandler) QrcodeInvite(c *gin.Context) {
 	response.Success(c, uploadFile.Data.Url)
 }
 
+func (h *InviteHandler) Download(c *gin.Context) {
+	type Req struct {
+		Id string `json:"id" binding:"required"`
+	}
+	var req Req
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	userId := c.GetString(consts.UserId)
+
+	ok, err := h.inviteSvc.DownloadStatus(c.Request.Context(), userId, req.Id)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	if ok {
+		response.Success(c, nil)
+		return
+	}
+	price := 250
+	reason := consts.DownloadText
+	_, err = h.inviteSvc.ConsumeToken(c.Request.Context(), userId, reason, price, req.Id)
+	if err != nil {
+		if basicErr.Is(err, model.BalanceErr) {
+			response.Error(c, errors.New(errors.ErrCodeInsufficientBalance, "余额不足", nil))
+			return
+		}
+		response.Error(c, err)
+		return
+	}
+	response.Success(c, nil)
+}
+
 func (h *InviteHandler) QrcodeWork(c *gin.Context) {
 	var data []byte
 	var err error
@@ -255,4 +289,5 @@ func RegisterInviteRoutes(r *gin.RouterGroup, h *InviteHandler) {
 // RegisterWorkRoutes 注册相关路由
 func RegisterWorkRoutes(r *gin.RouterGroup, h *InviteHandler) {
 	r.POST("/qrcode", h.QrcodeWork)
+	r.POST("/download", h.Download)
 }

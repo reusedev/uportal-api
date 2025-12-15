@@ -53,6 +53,24 @@ func (s *InviteService) GetInviteLink(ctx context.Context, userID int64) (string
 	return fmt.Sprintf("%s/register?invite_code=%s", domain, inviteCode), nil
 }
 
+// DownloadStatus 下载状态
+func (s *InviteService) DownloadStatus(ctx context.Context, userID, workId string) (bool, error) {
+	err := model.FindTokenRecord(s.db, userID, workId)
+	if err != nil {
+		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *InviteService) ConsumeToken(ctx context.Context, userID string, desc string, price int, workId string) (int64, error) {
+	cost := int64(price)
+	err := model.ConsumeToken(s.db, userID, cost, desc, workId)
+	return cost, err
+}
+
 // ValidateInviteCode 验证邀请码
 func (s *InviteService) ValidateInviteCode(ctx context.Context, inviteCode string) (int64, error) {
 	// 从邀请码中提取用户ID（这里需要根据实际生成邀请码的逻辑来实现）

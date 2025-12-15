@@ -265,7 +265,7 @@ func (s *TokenService) GetUserTokenRecords(ctx context.Context, userID string, r
 // ConsumeToken 消费Token
 func (s *TokenService) ConsumeToken(ctx context.Context, userID string, desc string, price int) (int64, error) {
 	cost := int64(price)
-	err := model.ConsumeToken(s.db, userID, cost, desc)
+	err := model.ConsumeToken(s.db, userID, cost, desc, "")
 	return cost, err
 }
 
