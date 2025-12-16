@@ -103,7 +103,7 @@ func (h *InviteHandler) Download(c *gin.Context) {
 		response.Success(c, nil)
 		return
 	}
-	price := 250
+	price := consts.DownloadPrice
 	reason := consts.DownloadText
 	_, err = h.inviteSvc.ConsumeToken(c.Request.Context(), userId, reason, price, req.Id)
 	if err != nil {
