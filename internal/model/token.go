@@ -240,6 +240,7 @@ func GetUserTokenIsBuy(db *gorm.DB, userID string, price int) (int, bool, error)
 
 // FindTokenRecord
 func FindTokenRecord(db *gorm.DB, userID, workId string) error {
+
 	var record TokenRecord
 	return db.Where("user_id = ? AND work_id = ?", userID, workId).First(&record).Error
 }

@@ -114,6 +114,8 @@ func (h *InviteHandler) Download(c *gin.Context) {
 		response.Error(c, err)
 		return
 	}
+	// 扣费成功，更新缓存为已下载
+	h.inviteSvc.SetDownloaded(c.Request.Context(), userId, req.Id)
 	response.Success(c, nil)
 }
 

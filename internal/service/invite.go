@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	stderrors "errors"
 	"fmt"
+	"github.com/reusedev/uportal-api/pkg/consts"
 	"time"
 
 	"github.com/reusedev/uportal-api/internal/model"
@@ -55,13 +56,22 @@ func (s *InviteService) GetInviteLink(ctx context.Context, userID int64) (string
 
 // DownloadStatus 下载状态
 func (s *InviteService) DownloadStatus(ctx context.Context, userID, workId string) (bool, error) {
+	key := fmt.Sprintf("%s_%s_%s", consts.RedisDownloadPrefix, userID, workId)
+	ret, _ := model.RedisClient.Get(context.Background(), key).Result()
+	if ret == consts.Downloaded {
+		return true, nil
+	} else if ret == consts.UnDownloaded {
+		return false, nil
+	}
 	err := model.FindTokenRecord(s.db, userID, workId)
 	if err != nil {
 		if stderrors.Is(err, gorm.ErrRecordNotFound) {
+			model.RedisClient.Set(context.Background(), key, consts.UnDownloaded, time.Hour*24)
 			return false, nil
 		}
 		return false, err
 	}
+	model.RedisClient.Set(context.Background(), key, consts.Downloaded, time.Hour*24)
 	return true, nil
 }
 
@@ -69,6 +79,12 @@ func (s *InviteService) ConsumeToken(ctx context.Context, userID string, desc st
 	cost := int64(price)
 	err := model.ConsumeToken(s.db, userID, cost, desc, workId)
 	return cost, err
+}
+
+// SetDownloaded 设置下载状态缓存为已下载
+func (s *InviteService) SetDownloaded(ctx context.Context, userID, workId string) {
+	key := fmt.Sprintf("%s_%s_%s", consts.RedisDownloadPrefix, userID, workId)
+	model.RedisClient.Set(ctx, key, consts.Downloaded, time.Hour*24)
 }
 
 // ValidateInviteCode 验证邀请码

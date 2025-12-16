@@ -8,3 +8,9 @@ const (
 	DownloadText  = "下载"
 	DownloadPrice = 200
 )
+
+const (
+	RedisDownloadPrefix = "download"
+	Downloaded          = "1"
+	UnDownloaded        = "2"
+)
