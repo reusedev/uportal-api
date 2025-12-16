@@ -146,6 +146,25 @@ type QrcodeReq struct {
 	UserID string `json:"user_id" binding:"required"`
 }
 
+// WorkIsDownload 用户是否下载过作品
+func (h *InviteHandler) WorkIsDownload(c *gin.Context) {
+	var req service.WorkIsDownloadRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, errors.New(errors.ErrCodeInvalidParams, "无效的请求参数", err))
+		return
+	}
+	var data int
+	ok, err := h.inviteSvc.DownloadStatus(c.Request.Context(), req.UserId, req.WorkId)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	if ok {
+		data = 1
+	}
+	response.Success(c, data)
+}
+
 func (h *InviteHandler) Qrcode(c *gin.Context) {
 	var req QrcodeReq
 	if err := c.ShouldBindJSON(&req); err != nil {

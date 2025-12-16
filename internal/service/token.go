@@ -104,6 +104,11 @@ type TokenIsBuyRequest struct {
 	Price  int    `json:"price" binding:"required"`
 }
 
+type WorkIsDownloadRequest struct {
+	UserId string `json:"user_id" binding:"required"`
+	WorkId string `json:"work_id" binding:"required"`
+}
+
 type TokenBuyRequest struct {
 	UserId string `json:"user_id" binding:"required"`
 	Price  int    `json:"price" binding:"required"`
