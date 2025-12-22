@@ -78,7 +78,7 @@ const (
 	ErrCodeWechatPayFailed   = 3001 // 微信支付失败
 
 	// 代币相关错误码 (4000-4999)
-	ErrCodeInsufficientBalance = 4000 // 余额不足
+	ErrCodeInsufficientBalance = -2   // 余额不足
 	ErrCodeInvalidAmount       = 4001 // 无效的金额
 	ErrCodeTaskNotAvailable    = 4002 // 任务不可用
 	ErrCodeTaskLimitExceeded   = 4003 // 任务次数超限
