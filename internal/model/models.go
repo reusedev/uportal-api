@@ -2,457 +2,95 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
-	"github.com/reusedev/uportal-api/pkg/constants"
 	"gorm.io/gorm"
 )
 
-// User 用户表结构体
+// User Telegram 用户表
 type User struct {
-	UserID       string         `gorm:"column:id;type:varchar(13);primaryKey" json:"id"`                         // 用户ID，主键，自增
-	Phone        *string        `gorm:"column:phone;type:varchar(20);uniqueIndex:uk_users_phone" json:"phone"`   // 手机号
-	Email        *string        `gorm:"column:email;type:varchar(100);uniqueIndex:uk_users_email" json:"email"`  // 邮箱
-	PasswordHash *string        `gorm:"column:password_hash;type:varchar(255)" json:"-"`                         // 密码哈希
-	Nickname     *string        `gorm:"column:nickname;type:varchar(50)" json:"nickname"`                        // 用户昵称
-	AvatarURL    *string        `gorm:"column:avatar_url;type:varchar(255)" json:"avatar"`                       // 头像URL
-	Language     string         `gorm:"column:language;type:varchar(10);not null;default:zh-CN" json:"language"` // 界面语言偏好
-	Status       int8           `gorm:"column:status;not null;default:1;index:idx_users_status" json:"status"`   // 账号状态：1=正常，0=禁用
-	TokenBalance int            `gorm:"column:token_balance;not null;default:0" json:"token_balance"`
-	Qrcode       string         `gorm:"column:qrcode;type:varchar(11)" json:"qrcode"`                // 专属二维码图片 ID
-	InviterID    *string        `gorm:"column:inviter_id;index:idx_users_inviter" json:"inviter_id"` // 邀请人ID
-	CreatedAt    time.Time      `gorm:"column:created_at;not null;autoCreateTime" json:"-"`          // 注册时间
-	UpdatedAt    time.Time      `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"` // 记录更新时间
-	LastLoginAt  *time.Time     `gorm:"column:last_login_at" json:"last_login_at"`                   // 最后登录时间
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
-	UserAuths    []UserAuth     `gorm:"foreignKey:UserID" json:"-"`                                      // 第三方认证信息（不直接序列化）
-	Inviter      *User          `gorm:"foreignKey:InviterID;references:UserID" json:"inviter,omitempty"` // 邀请人信息
-	IsNew        bool           `gorm:"-" json:"is_new"`
-	SourceType   string         `gorm:"-"  json:"source_type"`
+	UserID                int64          `gorm:"column:id;primaryKey" json:"id"`
+	FirstName             string         `gorm:"column:first_name;type:varchar(100)" json:"first_name"`
+	LastName              string         `gorm:"column:last_name;type:varchar(100)" json:"last_name"`
+	Username              string         `gorm:"column:username;type:varchar(100)" json:"username"`
+	LanguageCode          string         `gorm:"column:language_code;type:varchar(10)" json:"language_code"`
+	IsBot                 bool           `gorm:"column:is_bot" json:"is_bot"`
+	IsPremium             bool           `gorm:"column:is_premium" json:"is_premium"`
+	AllowsWriteToPm       bool           `gorm:"column:allows_write_to_pm" json:"allows_write_to_pm"`
+	AddedToAttachmentMenu bool           `gorm:"column:added_to_attachment_menu" json:"added_to_attachment_menu"`
+	PhotoURL              string         `gorm:"column:photo_url;type:varchar(500)" json:"photo_url"`
+	TokenBalance          int            `gorm:"column:token_balance;not null;default:0" json:"token_balance"`
+	Status                int8           `gorm:"column:status;not null;default:1" json:"status"`
+	CreatedAt             time.Time      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt             time.Time      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	DeletedAt             gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
-// MarshalJSON 自定义 JSON 序列化方法
-func (u User) MarshalJSON() ([]byte, error) {
-	type Alias User // 创建别名以避免递归调用
-	providers := make([]string, 0, len(u.UserAuths))
-	for _, auth := range u.UserAuths {
-		providers = append(providers, auth.Provider)
-	}
-
-	return json.Marshal(struct {
-		Alias
-		Auths     []string `json:"auth_providers"`
-		CreatedAt string   `json:"created_at"`
-	}{
-		Alias:     Alias(u),
-		Auths:     providers,
-		CreatedAt: u.CreatedAt.Format(constants.TimeFormatDateTime),
-	})
-}
-
-// AdminUser 管理员用户表结构体
-type AdminUser struct {
-	AdminID      int        `gorm:"column:admin_id;primaryKey;autoIncrement" json:"admin_id"`                                // 管理员ID，主键，自增
-	Username     string     `gorm:"column:username;type:varchar(50);not null;uniqueIndex:uk_admin_username" json:"username"` // 登录用户名
-	PasswordHash string     `gorm:"column:password_hash;type:varchar(255);not null" json:"-"`                                // 密码哈希
-	Role         string     `gorm:"column:role;type:varchar(20);not null;default:admin" json:"role"`                         // 角色
-	Status       int8       `gorm:"column:status;not null;default:1" json:"status"`                                          // 账号状态：1=正常，0=停用
-	CreatedAt    time.Time  `gorm:"column:created_at;not null;autoCreateTime" json:"-"`                                      // 创建时间
-	LastLoginAt  *time.Time `gorm:"column:last_login_at" json:"-"`                                                           // 最后登录时间
-}
-
-// MarshalJSON 自定义 JSON 序列化方法
-func (u AdminUser) MarshalJSON() ([]byte, error) {
-	type Alias AdminUser
-	var lastLoginAt string
-	if u.LastLoginAt != nil {
-		lastLoginAt = u.LastLoginAt.Format(constants.TimeFormatDateTime)
-	}
-	// 创建别名以避免递归调用
-	return json.Marshal(struct {
-		Alias
-		CreatedAt   string `json:"created_at"`
-		LastLoginAt string `json:"last_login_at"`
-	}{
-		Alias:       Alias(u),
-		CreatedAt:   u.CreatedAt.Format(constants.TimeFormatDateTime),
-		LastLoginAt: lastLoginAt,
-	})
-}
-
-// UserAuth 用户第三方认证表结构体
-type UserAuth struct {
-	AuthID         int64     `gorm:"column:auth_id;primaryKey;autoIncrement" json:"auth_id"`                                                                        // 认证记录ID，主键，自增
-	UserID         string    `gorm:"column:user_id;type:varchar(13);not null;index:idx_user_auth_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
-	Provider       string    `gorm:"column:provider;type:varchar(20);not null" json:"provider"`                                                                     // 登录平台类型
-	ProviderUserID string    `gorm:"column:provider_user_id;type:varchar(100);not null" json:"provider_user_id"`                                                    // 第三方平台内用户唯一ID
-	CreatedAt      time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                                                                   // 绑定时间
-	User           User      `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                        // 关联用户信息
-}
-
-// UserLoginLog 用户登录日志表结构体
-type UserLoginLog struct {
-	LogID         int64     `gorm:"column:log_id;primaryKey;autoIncrement" json:"log_id"`                                                                          // 日志ID，主键，自增
-	UserID        string    `gorm:"column:user_id;type:varchar(13);not null;index:idx_login_log_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
-	LoginTime     time.Time `gorm:"column:login_time;not null;autoCreateTime" json:"login_time"`                                                                   // 登录时间
-	LoginMethod   string    `gorm:"column:login_method;type:varchar(20);not null" json:"login_method"`                                                             // 登录方式
-	LoginPlatform *string   `gorm:"column:login_platform;type:varchar(20)" json:"login_platform"`                                                                  // 登录平台
-	IPAddress     *string   `gorm:"column:ip_address;type:varchar(45)" json:"ip_address"`                                                                          // 登录IP地址
-	DeviceInfo    *string   `gorm:"column:device_info;type:varchar(100)" json:"device_info"`                                                                       // 设备信息
-	User          User      `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                        // 关联用户信息
-}
-
-// RechargePlan 充值方案表结构体
+// RechargePlan 充值方案表（适配 Telegram Stars）
 type RechargePlan struct {
-	PlanID      int       `gorm:"column:plan_id;primaryKey;autoIncrement" json:"plan_id"`            // 方案ID，主键，自增
-	TokenAmount int       `gorm:"column:token_amount;not null" json:"token_amount"`                  // 方案提供的代币数量
-	Price       float64   `gorm:"column:price;type:decimal(10,2);not null" json:"price"`             // 售价(元)
-	Currency    string    `gorm:"column:currency;type:char(3);not null;default:CNY" json:"currency"` // 货币类型代码
-	Name        string    `gorm:"column:name;type:varchar(30);not null" json:"name"`                 // 名称
-	Tag         string    `gorm:"column:tag;type:varchar(20);not null" json:"tag"`                   // 标签
-	Description *string   `gorm:"column:description;type:varchar(100)" json:"description"`           // 方案描述
-	Status      int8      `gorm:"column:status;not null;default:1" json:"status"`                    // 方案状态：1=可用，0=下架
-	IsRecommend int8      `gorm:"column:is_recommend;not null;default:1" json:"is_recommend"`        // 是否推荐：1=推荐，0=不推荐
-	CreatedAt   time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`       // 创建时间
-	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`       // 更新时间
+	PlanID      int       `gorm:"column:plan_id;primaryKey;autoIncrement" json:"-"`
+	Points      int       `gorm:"column:points;not null" json:"points"`
+	Stars       int       `gorm:"column:stars;not null" json:"stars"`
+	Title       string    `gorm:"column:title;type:varchar(100);not null" json:"title"`
+	Description string    `gorm:"column:description;type:varchar(255)" json:"description"`
+	Bonus       int       `gorm:"column:bonus;not null;default:0" json:"bonus"`
+	Popular     bool      `gorm:"column:popular;not null;default:false" json:"popular"`
+	Status      int8      `gorm:"column:status;not null;default:1" json:"-"`
+	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
 }
 
-func (t RechargePlan) MarshalJSON() ([]byte, error) {
-	type Alias RechargePlan // 创建别名以避免递归调用
+// MarshalJSON 自定义序列化，将 PlanID 转为 string
+func (p RechargePlan) MarshalJSON() ([]byte, error) {
+	type Alias RechargePlan
 	return json.Marshal(struct {
+		ID string `json:"id"`
 		Alias
-		CreatedAt string `json:"created_at"`
 	}{
-		Alias:     Alias(t),
-		CreatedAt: t.CreatedAt.Format(time.DateTime),
+		ID:    fmt.Sprintf("%d", p.PlanID),
+		Alias: Alias(p),
 	})
 }
 
-// RechargeOrder 充值订单表结构体
+// RechargeOrder 充值订单表（适配 Telegram Stars 上报）
 type RechargeOrder struct {
-	OrderID       string        `gorm:"column:order_id;type:varchar(22);primaryKey" json:"order_id"`                                                                         // 订单ID，主键，自增
-	UserID        string        `gorm:"column:user_id;type:varchar(13);not null;index:idx_recharge_orders_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
-	PlanID        *int          `gorm:"column:plan_id;index:idx_recharge_orders_plan;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"plan_id"`                          // 方案ID
-	TokenAmount   int           `gorm:"column:token_amount;not null" json:"token_amount"`                                                                                    // 本次订单获得的代币数量
-	AmountPaid    float64       `gorm:"column:amount_paid;type:decimal(10,2);not null" json:"amount_paid"`                                                                   // 支付金额(元)
-	PaymentMethod string        `gorm:"column:payment_method;type:varchar(20);not null" json:"payment_method"`                                                               // 支付方式
-	Status        int8          `gorm:"column:status;not null;default:0" json:"status"`                                                                                      // 订单状态：0=待支付，1=支付成功，2=支付失败，3=已退款
-	TransactionID *string       `gorm:"column:transaction_id;type:varchar(100)" json:"transaction_id"`                                                                       // 第三方交易号
-	CreatedAt     time.Time     `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                                                                         // 订单创建时间
-	PaidAt        *time.Time    `gorm:"column:paid_at" json:"paid_at"`                                                                                                       // 支付完成时间
-	UpdatedAt     time.Time     `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`                                                                         // 更新时间
-	User          User          `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"-"`                                           // 关联用户信息
-	Plan          *RechargePlan `gorm:"foreignKey:PlanID;references:PlanID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                          // 关联充值方案信息
+	OrderID         string    `gorm:"column:order_id;type:varchar(100);primaryKey" json:"order_id"`
+	UserID          int64     `gorm:"column:user_id;not null;index" json:"user_id"`
+	PlanID          string    `gorm:"column:plan_id;type:varchar(100)" json:"plan_id"`
+	Points          int       `gorm:"column:points;not null" json:"points"`
+	Stars           int       `gorm:"column:stars;not null" json:"stars"`
+	PaymentChargeID string    `gorm:"column:payment_charge_id;type:varchar(100)" json:"payment_charge_id"`
+	PaidAt          string    `gorm:"column:paid_at;type:varchar(50)" json:"paid_at"`
+	CreatedAt       time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 }
 
-func (t RechargeOrder) MarshalJSON() ([]byte, error) {
-	type Alias RechargeOrder // 创建别名以避免递归调用
-
-	planName := ""
-	if t.Plan != nil {
-		planName = *t.Plan.Description
-	}
-
-	return json.Marshal(struct {
-		Alias
-		PlanName string  `json:"plan_name"`
-		UserName *string `json:"nickname"`
-	}{
-		Alias:    Alias(t),
-		PlanName: planName,
-		UserName: t.User.Nickname,
-	})
-}
-
-// Refund 退款记录表结构体
-type Refund struct {
-	RefundID     int64         `gorm:"column:refund_id;primaryKey;autoIncrement" json:"refund_id"`                                                                     // 退款ID，主键，自增
-	OrderID      string        `gorm:"column:order_id;type:varchar(22);not null;index:idx_refunds_order;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order_id"` // 原订单ID
-	UserID       string        `gorm:"column:user_id;type:varchar(13);not null;index:idx_refunds_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"`    // 用户ID
-	RefundAmount float64       `gorm:"column:refund_amount;type:decimal(10,2);not null" json:"refund_amount"`                                                          // 退款金额(元)
-	RefundTokens int           `gorm:"column:refund_tokens;not null" json:"refund_tokens"`                                                                             // 收回代币数
-	RefundMethod string        `gorm:"column:refund_method;type:varchar(20);not null" json:"refund_method"`                                                            // 退款方式
-	Status       int8          `gorm:"column:status;not null;default:0" json:"status"`                                                                                 // 退款状态：0=处理中，1=成功，2=失败
-	AdminID      *int          `gorm:"column:admin_id;index:idx_refunds_admin;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin_id"`                          // 操作管理员ID
-	Reason       *string       `gorm:"column:reason;type:varchar(255)" json:"reason"`                                                                                  // 退款原因说明
-	RefundTime   time.Time     `gorm:"column:refund_time;not null;autoCreateTime" json:"refund_time"`                                                                  // 退款完成时间
-	User         User          `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user,omitempty"`                         // 关联用户信息
-	Order        RechargeOrder `gorm:"foreignKey:OrderID;references:OrderID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order,omitempty"`                      // 关联订单信息
-	Admin        *AdminUser    `gorm:"foreignKey:AdminID;references:AdminID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin,omitempty"`                     // 关联管理员信息
-}
-
-// TokenConsumeRule 代币消耗功能表结构体
-type TokenConsumeRule struct {
-	FeatureID   int     `gorm:"column:feature_id;primaryKey;autoIncrement" json:"feature_id"`       // 功能ID，主键，自增
-	FeatureName string  `gorm:"column:feature_name;type:varchar(100);not null" json:"feature_name"` // 功能名称
-	FeatureDesc *string `gorm:"column:feature_desc;type:varchar(255)" json:"feature_desc"`          // 功能描述
-	TokenCost   int     `gorm:"column:token_cost;not null" json:"token_cost"`                       // 使用一次该功能消耗的代币数
-	FeatureCode *string `gorm:"column:feature_code;type:varchar(50)" json:"feature_code"`           // 功能代码
-	Status      int8    `gorm:"column:status;not null;default:1" json:"status"`                     // 功能状态：1=启用，0=停用
-	Class       string  `gorm:"column:class;type:varchar(50)" json:"classify"`
-}
-
-// TokenRecord 用户代币记录表结构体
+// TokenRecord 积分变动记录表
 type TokenRecord struct {
-	RecordID     int64             `gorm:"column:record_id;primaryKey;autoIncrement" json:"id"`                                                                               // 记录ID，主键，自增
-	UserID       string            `gorm:"column:user_id;type:varchar(13);not null;index:idx_token_records_user;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"user_id"` // 用户ID
-	ChangeAmount int               `gorm:"column:change_amount;not null" json:"change_amount"`                                                                                // 代币变动数
-	BalanceAfter int               `gorm:"column:balance_after;not null" json:"balance_after"`                                                                                // 变动后余额
-	ChangeType   string            `gorm:"column:change_type;type:varchar(20);not null" json:"source"`                                                                        // 变动类型
-	WorkID       string            `gorm:"column:work_id;type:varchar(10);index:idx_work_id;default:''" json:"work_id"`                                                       // 任务 id
-	TaskID       *int              `gorm:"column:task_id;index:idx_token_records_task;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"task_id"`                          // 任务ID来源
-	FeatureID    *int              `gorm:"column:feature_id;index:idx_token_records_feature;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"feature_id"`                 // 功能ID来源
-	OrderID      *string           `gorm:"column:order_id;type:varchar(22);index:idx_token_records_order;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"order_id"`      // 订单ID来源
-	AdminID      *int64            `gorm:"column:admin_id;index:idx_token_records_admin;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"admin_id"`                       // 管理员ID来源
-	Remark       *string           `gorm:"column:remark;type:varchar(255)" json:"remark"`                                                                                     // 备注说明
-	ChangeTime   time.Time         `gorm:"column:change_time;not null;autoCreateTime" json:"created_at"`                                                                      // 变动时间
-	User         User              `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"-"`                                         // 关联用户信息
-	Task         *RewardTask       `gorm:"foreignKey:TaskID;references:TaskID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                        // 关联任务信息
-	Feature      *TokenConsumeRule `gorm:"foreignKey:FeatureID;references:FeatureID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                  // 关联功能信息
-	Order        *RechargeOrder    `gorm:"foreignKey:OrderID;references:OrderID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                      // 关联订单信息
-	Admin        *AdminUser        `gorm:"foreignKey:AdminID;references:AdminID;constraint:OnDelete:SET NULL,OnUpdate:CASCADE" json:"-"`                                      // 关联管理员信息
+	RecordID    int64     `gorm:"column:record_id;primaryKey;autoIncrement" json:"-"`
+	UserID      int64     `gorm:"column:user_id;not null;index" json:"user_id"`
+	Type        string    `gorm:"column:type;type:varchar(20);not null" json:"type"`
+	Amount      int       `gorm:"column:amount;not null" json:"amount"`
+	Balance     int       `gorm:"column:balance;not null" json:"balance"`
+	Title       string    `gorm:"column:title;type:varchar(100)" json:"title"`
+	Description string    `gorm:"column:description;type:varchar(255)" json:"description"`
+	OrderID     string    `gorm:"column:order_id;type:varchar(100)" json:"order_id"`
+	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 }
 
-type MessageSubscribe struct {
-	Id           int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	UserID       string    `gorm:"column:user_id;type:varchar(13);not null;index:idx_user_template,unique" json:"user_id"`         // 用户ID
-	TemplateID   string    `gorm:"column:template_id;type:varchar(50);not null;index:idx_user_template,unique" json:"template_id"` // 模板ID
-	SubscribeCnt int       `gorm:"column:subscribe_cnt;not null;default:0" json:"subscribe_cnt"`                                   // 订阅次数
-	CreatedAt    time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                                    // 订单创建时间
-	UpdatedAt    time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`
-	User         User      `gorm:"foreignKey:UserID;references:UserID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"-"`
-}
-
-// RewardTask 代币任务配置表结构体
-type RewardTask struct {
-	TaskID          int        `gorm:"column:task_id;primaryKey;autoIncrement" json:"task_id"`                            // 任务ID，主键，自增
-	TaskKey         string     `gorm:"column:task_key;type:varchar(50);not null;uniqueIndex:uk_task_key" json:"task_key"` // 任务唯一标识
-	TaskName        string     `gorm:"column:task_name;type:varchar(100);not null" json:"task_name"`                      // 任务名称
-	TaskDesc        *string    `gorm:"column:task_desc;type:varchar(255)" json:"task_desc"`                               // 任务描述
-	TokenReward     int        `gorm:"column:token_reward;not null" json:"token_reward"`                                  // 完成一次任务获得的代币数
-	DailyLimit      int        `gorm:"column:daily_limit;not null;default:0" json:"daily_limit"`                          // 每日奖励上限
-	IntervalSeconds int        `gorm:"column:interval_seconds;not null;default:0" json:"interval_seconds"`                // 两次完成任务的最小间隔秒数
-	ValidFrom       *time.Time `gorm:"column:valid_from;type:date" json:"-"`                                              // 任务生效时间
-	ValidTo         *time.Time `gorm:"column:valid_to;type:date" json:"-"`                                                // 任务截止时间
-	Repeatable      int8       `gorm:"column:repeatable;not null;default:1" json:"repeatable"`                            // 是否可重复完成：1=是，0=否
-	Action          string     `gorm:"column:action;type:varchar(100);not null" json:"action"`
-	ActionText      string     `gorm:"column:action_text;type:varchar(100);not null" json:"action_text"`
-	Params          string     `gorm:"column:params;type:varchar(255)" json:"params"`     // 任务参数，JSON格式
-	LogoId          string     `gorm:"column:logo_id;type:varchar(50)" json:"logo_id"`    // 任务图标ID
-	LogoUrl         string     `gorm:"column:logo_url;type:varchar(150)" json:"logo_url"` // 任务图标URL
-	Status          int8       `gorm:"column:status;not null;default:1" json:"status"`    // 任务状态：1=启用，0=停用
-	DailyFinish     int        `gorm:"-" json:"daily_finish"`                             // 今日完成次数
-}
-
-// TableName 指定表名
-func (MessageSubscribe) TableName() string {
-	return "message_subscribe"
-}
-
-func (t RewardTask) MarshalJSON() ([]byte, error) {
-	type Alias RewardTask // 创建别名以避免递归调用
-	type Logo struct {
-		Id  string `json:"id"`
-		Url string `json:"url"`
-	}
-	var validFrom, validTo string
-	if t.ValidFrom != nil {
-		validFrom = t.ValidFrom.Format(time.DateOnly)
-	}
-	if t.ValidTo != nil {
-		validTo = t.ValidTo.Format(time.DateOnly)
-	}
-	var url, id string
-	if t.LogoUrl != "" {
-		url = t.LogoUrl
-	}
-	if t.LogoId != "" {
-		id = t.LogoId
-	}
-
+// MarshalJSON 自定义序列化，将 RecordID 转为 string
+func (r TokenRecord) MarshalJSON() ([]byte, error) {
+	type Alias TokenRecord
 	return json.Marshal(struct {
+		ID string `json:"id"`
 		Alias
-		ValidFrom string `json:"valid_from"`
-		ValidTo   string `json:"valid_to"`
-		Logo      Logo   `json:"logo"`
 	}{
-		Alias:     Alias(t),
-		ValidFrom: validFrom,
-		ValidTo:   validTo,
-		Logo: Logo{
-			Id:  id,
-			Url: url,
-		},
+		ID:    fmt.Sprintf("%d", r.RecordID),
+		Alias: Alias(r),
 	})
 }
 
-// SystemConfig 系统配置表结构体
-type SystemConfig struct {
-	ConfigKey   string  `gorm:"column:config_key;type:varchar(50);primaryKey;not null" json:"config_key"` // 配置键，主键
-	ConfigValue string  `gorm:"column:config_value;type:varchar(100);not null" json:"config_value"`       // 配置值
-	Description *string `gorm:"column:description;type:varchar(100)" json:"description"`                  // 配置描述
-}
-
-// PaymentNotifyRecord 支付回调通知记录
-type PaymentNotifyRecord struct {
-	RecordID      int64          `gorm:"column:record_id;primaryKey;autoIncrement" json:"record_id"`
-	OrderID       string         `gorm:"column:order_id;type:varchar(22);not null;uniqueIndex:uk_order_transaction" json:"order_id"`
-	TransactionID string         `gorm:"column:transaction_id;type:varchar(64);not null;uniqueIndex:uk_order_transaction" json:"transaction_id"`
-	NotifyType    string         `gorm:"column:notify_type;type:varchar(32);not null" json:"notify_type"`
-	NotifyTime    time.Time      `gorm:"column:notify_time;not null;autoCreateTime" json:"notify_time"`
-	ProcessStatus int8           `gorm:"column:process_status;not null;default:0" json:"process_status"`
-	RetryCount    int            `gorm:"column:retry_count;not null;default:0" json:"retry_count"`
-	ErrorMessage  *string        `gorm:"column:error_message;type:varchar(255)" json:"error_message"`
-	ProcessTime   *time.Time     `gorm:"column:process_time" json:"process_time"`
-	CreatedAt     time.Time      `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`
-	UpdatedAt     time.Time      `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`
-	Order         *RechargeOrder `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE" json:"order,omitempty"`
-}
-
-// TaskCompletionRecord 任务完成记录
-type TaskCompletionRecord struct {
-	ID          int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	UserID      string    `gorm:"column:user_id;type:varchar(13);not null" json:"user_id"`
-	TaskID      int       `gorm:"column:task_id;not null" json:"task_id"`
-	TokenReward int       `gorm:"column:token_reward;not null" json:"token_reward"`
-	CompletedAt time.Time `gorm:"column:completed_at;not null;autoCreateTime" json:"completed_at"`
-	CreatedAt   time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`
-}
-
-// Notification 通知
-type Notification struct {
-	ID        int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	UserID    string    `gorm:"column:user_id;type:varchar(13);not null" json:"user_id"`
-	Type      string    `gorm:"column:type;not null;size:32" json:"type"`
-	Title     string    `gorm:"column:title;not null;size:128" json:"title"`
-	Content   string    `gorm:"column:content;not null;type:text" json:"content"`
-	Status    int8      `gorm:"column:status;not null;default:0" json:"status"`
-	CreatedAt time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`
-}
-
-// InviteRecord 邀请记录表结构体
-type InviteRecord struct {
-	RecordID    int64     `gorm:"column:record_id;primaryKey;autoIncrement" json:"record_id"`                             // 记录ID，主键，自增
-	InviterID   string    `gorm:"column:inviter_id;size:13;not null;index:idx_invite_inviter(13)" json:"inviter_id"`      // 邀请人ID
-	InviteeID   string    `gorm:"column:invitee_id;size:13;not null;uniqueIndex:uk_invite_invitee(13)" json:"invitee_id"` // 被邀请人ID
-	TokenReward int       `gorm:"column:token_reward;not null" json:"token_reward"`                                       // 邀请奖励代币数
-	Status      int8      `gorm:"column:status;not null;default:0" json:"status"`                                         // 状态：0=待发放，1=已发放，2=发放失败
-	CreatedAt   time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"`                            // 创建时间
-	UpdatedAt   time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"`                            // 更新时间
-	Inviter     User      `gorm:"foreignKey:InviterID;references:UserID" json:"inviter,omitempty"`                        // 邀请人信息
-	Invitee     User      `gorm:"foreignKey:InviteeID;references:UserID" json:"invitee,omitempty"`                        // 被邀请人信息
-}
-
-type BackendNotify struct {
-	ID         int64     `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	TemplateID string    `gorm:"column:template_id;type:varchar(50);not null;index:idx_user_template,unique" json:"template_id"` // 模板ID
-	Type       string    `gorm:"column:type;not null;type:varchar(50)" json:"type"`                                              // 通知类型
-	Title      string    `gorm:"column:title;not null;type:varchar(50)" json:"title"`                                            // 通知标题
-	Page       string    `gorm:"column:page;not null;type:varchar(50)" json:"page"`                                              // 跳转到的小程序路径
-	Data       string    `gorm:"column:data;not null;type:varchar(50)" json:"data"`
-	Status     int8      `gorm:"column:status;not null;default:0" json:"status"`              // 状态：0=待发送，1=发送中，2=发送完成
-	LastId     string    `gorm:"column:last_id;type:varchar(13);not null" json:"last_id"`     // 发送中的上一个 id
-	CreatedAt  time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"` // 创建时间
-	UpdatedAt  time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"` // 更新时间
-}
-
-type Goods struct {
-	ID     int     `gorm:"column:id;primaryKey;autoIncrement" json:"id"` // 功能ID，主键，自增
-	Name   string  `gorm:"column:name;not null;size:255" json:"name"`
-	Code   string  `gorm:"column:code;type:varchar(100);not null" json:"code"` // 商品 code
-	Desc   *string `gorm:"column:desc;type:varchar(255)" json:"desc"`          // 商品描述
-	PicId  string  `gorm:"column:pic_id;type:varchar(50)" json:"pic_id"`       // 图片 ID
-	PicUrl string  `gorm:"column:pic_url;type:varchar(50)" json:"pic_url"`     // 图片 ID
-	Status int     `gorm:"column:status;not null;default:1" json:"status"`     // 状态：1=启用，0=停用
-	Prices []Price `gorm:"foreignKey:GoodsID;references:ID;constraint:OnDelete:CASCADE;" json:"prices"`
-}
-
-type Price struct {
-	ID        int       `gorm:"column:id;primaryKey;autoIncrement" json:"id"`                // 功能ID，主键，自增
-	PriceText string    `gorm:"column:price_text;type:varchar(255)" json:"price_text"`       // 商品描述
-	Price     int       `gorm:"column:price;not null" json:"price"`                          // 单价
-	GoodsID   int       `gorm:"column:goods_id" json:"goods_id"`                             // 商品 ID；外键
-	Status    int       `gorm:"column:status;not null;default:1" json:"status"`              // 状态：1=启用，0=停用
-	CreatedAt time.Time `gorm:"column:created_at;not null;autoCreateTime" json:"created_at"` // 创建时间
-	UpdatedAt time.Time `gorm:"column:updated_at;not null;autoUpdateTime" json:"updated_at"` // 更新时间
-}
-
-func (Goods) TableName() string {
-	return "goods"
-}
-
-func (Price) TableName() string {
-	return "prices"
-}
-
-func (BackendNotify) TableName() string {
-	return "backend_notify"
-}
-
-// TableName 指定表名
-func (User) TableName() string {
-	return "users"
-}
-
-func (AdminUser) TableName() string {
-	return "admin_users"
-}
-
-func (UserAuth) TableName() string {
-	return "user_auth"
-}
-
-func (UserLoginLog) TableName() string {
-	return "user_login_log"
-}
-
-func (RechargePlan) TableName() string {
-	return "recharge_plans"
-}
-
-func (RechargeOrder) TableName() string {
-	return "recharge_orders"
-}
-
-func (Refund) TableName() string {
-	return "refunds"
-}
-
-func (TokenConsumeRule) TableName() string {
-	return "token_consume_rules"
-}
-
-func (TokenRecord) TableName() string {
-	return "token_records"
-}
-
-func (RewardTask) TableName() string {
-	return "reward_tasks"
-}
-
-func (SystemConfig) TableName() string {
-	return "system_config"
-}
-
-func (PaymentNotifyRecord) TableName() string {
-	return "payment_notify_records"
-}
-
-func (TaskCompletionRecord) TableName() string {
-	return "task_completion_records"
-}
-
-func (Notification) TableName() string {
-	return "notifications"
-}
-
-func (InviteRecord) TableName() string {
-	return "invite_records"
-}
-
-// StringPtr 创建字符串指针
-func StringPtr(s string) *string {
-	return &s
-}
+func (User) TableName() string         { return "users" }
+func (RechargePlan) TableName() string  { return "recharge_plans" }
+func (RechargeOrder) TableName() string { return "recharge_orders" }
+func (TokenRecord) TableName() string   { return "token_records" }

@@ -59,50 +59,6 @@ type Config struct {
 		DB       int    `yaml:"db"`       // Redis数据库编号
 		PoolSize int    `yaml:"poolSize"` // Redis连接池大小
 	} `yaml:"redis"`
-
-	Wechat struct {
-		MiniProgram struct {
-			AppID     string `yaml:"appId"`     // 小程序AppID
-			AppSecret string `yaml:"appSecret"` // 小程序AppSecret
-		} `yaml:"miniProgram"`
-		Pay struct {
-			AppID       string `yaml:"appId"` // 支付AppID
-			MchID       string `yaml:"mchId"` // 商户号
-			MchSerialNo string `yaml:"mchSerialNo"`
-			MchApiKey   string `yaml:"mchApiKey"`  // 商户API密钥
-			NotifyUrl   string `yaml:"notifyUrl"`  // 支付回调通知地址
-			CertFile    string `yaml:"certFile"`   // 证书文件路径
-			KeyFile     string `yaml:"keyFile"`    // 密钥文件路径
-			RootCaFile  string `yaml:"rootCaFile"` // 根证书文件路径
-		} `yaml:"pay"`
-	} `yaml:"wechat"`
-
-	Alipay struct {
-		AppID      string `yaml:"appId"`      // 支付宝应用ID
-		PrivateKey string `yaml:"privateKey"` // 应用私钥
-		PublicKey  string `yaml:"publicKey"`  // 支付宝公钥
-		NotifyUrl  string `yaml:"notifyUrl"`  // 支付回调通知地址
-		ReturnUrl  string `yaml:"returnUrl"`  // 支付完成返回地址
-		IsProd     bool   `yaml:"isProd"`     // 是否生产环境
-	} `yaml:"alipay"`
-
-	DrawApi struct {
-		UploadFileUrl string `yaml:"upload_file_url"`
-	} `yaml:"draw_api"` // 绘图API配置
-	SubMessage SubMessageBusiness `yaml:"subMessage"` // 订阅消息配置
-}
-
-// SubMessageBusiness 业务相关的订阅消息
-type SubMessageBusiness struct {
-	TemplateId string `yaml:"templateId"`
-}
-
-// SubMessageUser 用户相关的订阅消息
-type SubMessageUser struct {
-	TemplateId string `yaml:"templateId"` // 模版ID
-	Page       string `yaml:"page"`       // 跳转页面
-	Type       string `yaml:"type"`       // 消息类型
-	Title      string `yaml:"title"`      // 消息标题
 }
 
 // LoadConfig 加载配置文件
@@ -269,14 +225,6 @@ func validateConfig(config *Config) error {
 		return fmt.Errorf("invalid max age: %d", config.Logging.MaxAge)
 	}
 
-	// 验证JWT配置
-	if config.JWT.Secret == "" {
-		return fmt.Errorf("JWT secret is required")
-	}
-	if config.JWT.ExpireTime <= 0 {
-		return fmt.Errorf("invalid JWT expire time: %v", config.JWT.ExpireTime)
-	}
-
 	// 验证Redis配置
 	if config.Redis.Host == "" {
 		return fmt.Errorf("redis host is required")
@@ -286,26 +234,6 @@ func validateConfig(config *Config) error {
 	}
 	if config.Redis.PoolSize <= 0 {
 		return fmt.Errorf("invalid redis pool size: %d", config.Redis.PoolSize)
-	}
-
-	// 验证微信支付配置
-	if config.Wechat.Pay.AppID == "" {
-		return fmt.Errorf("wechat pay app id is required")
-	}
-	if config.Wechat.Pay.MchID == "" {
-		return fmt.Errorf("wechat pay merchant id is required")
-	}
-	if config.Wechat.Pay.MchApiKey == "" {
-		return fmt.Errorf("wechat pay merchant api key is required")
-	}
-	if config.Wechat.Pay.NotifyUrl == "" {
-		return fmt.Errorf("wechat pay notify url is required")
-	}
-	if config.Wechat.Pay.CertFile == "" {
-		return fmt.Errorf("wechat pay cert file is required")
-	}
-	if config.Wechat.Pay.KeyFile == "" {
-		return fmt.Errorf("wechat pay key file is required")
 	}
 
 	return nil

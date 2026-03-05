@@ -1,396 +1,62 @@
 package model
 
 import (
-	stdErrors "errors"
-	"github.com/reusedev/uportal-api/pkg/consts"
-	"github.com/reusedev/uportal-api/pkg/errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"time"
 )
 
-var (
-	BalanceErr = stdErrors.New("insufficient balance")
-)
-
-// CreateTokenConsumptionRule 创建Token消费规则
-func CreateTokenConsumptionRule(db *gorm.DB, rule *TokenConsumeRule) error {
-	return db.Create(rule).Error
-}
-
-// CreateGood 创建商品
-func CreateGood(db *gorm.DB, good *Goods) error {
-	return db.Create(good).Error
-}
-
-// GetTokenConsumptionRule 获取Token消费规则
-func GetTokenConsumptionRule(db *gorm.DB, id int) (*TokenConsumeRule, error) {
-	var rule TokenConsumeRule
-	err := db.First(&rule, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &rule, nil
-}
-
-// GetTokenConsumptionRuleByService 根据服务类型获取Token消费规则
-func GetTokenConsumptionRuleByService(db *gorm.DB, serviceType string) (*TokenConsumeRule, error) {
-	var rule TokenConsumeRule
-	err := db.Where("feature_code = ? AND status = 1", serviceType).First(&rule).Error
-	if err != nil {
-		return nil, err
-	}
-	return &rule, nil
-}
-
-// GetGoodByService 根据服务类型获取Token消费规则
-func GetGoodByService(db *gorm.DB, serviceType string) (*Price, error) {
-	var good Price
-	err := db.Where("code = ? AND status = 1", serviceType).First(&good).Error
-	if err != nil {
-		return nil, err
-	}
-	return &good, nil
-}
-
-// UpdateTokenConsumptionRule 更新Token消费规则
-func UpdateTokenConsumptionRule(db *gorm.DB, id int, updates map[string]interface{}) error {
-	return db.Model(&TokenConsumeRule{}).Where("feature_id = ?", id).Updates(updates).Error
-}
-
-// DeleteTokenConsumptionRule 删除Token消费规则
-func DeleteTokenConsumptionRule(db *gorm.DB, id int) error {
-	return db.Delete(&TokenConsumeRule{}, id).Error
-}
-
-// ListTokenConsumptionRules 获取Token消费规则列表（后台管理用，返回所有规则）
-func ListTokenConsumptionRules(db *gorm.DB) ([]*TokenConsumeRule, int64, error) {
-	var rules []*TokenConsumeRule
-	var total int64
-
-	err := db.Model(&TokenConsumeRule{}).Count(&total).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	err = db.Find(&rules).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return rules, total, nil
-}
-
-// ListGoods
-func ListGoods(db *gorm.DB) ([]*Goods, int64, error) {
-	var goods []*Goods
-	var total int64
-
-	err := db.Model(&Goods{}).Count(&total).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	err = db.Preload("Prices").Find(&goods).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return goods, total, nil
-}
-
-// GetTokenConsumptionRules 获取Token消费规则列表
-func GetTokenConsumptionRules(db *gorm.DB, class string) ([]*TokenConsumeRule, error) {
-	var rules []*TokenConsumeRule
-
-	err := db.Model(&TokenConsumeRule{}).Where("class = ? AND status = ?", class, 1).Find(&rules).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return rules, nil
-}
-
-// GetGoods
-func GetGoods(db *gorm.DB) ([]*Goods, error) {
-	var goods []*Goods
-	err := db.Model(&Goods{}).Preload("Prices").Where("status = ?", 1).Find(&goods).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return goods, nil
-}
-
-// CreateRechargePlan 创建充值套餐
-func CreateRechargePlan(db *gorm.DB, plan *RechargePlan) error {
-	return db.Create(plan).Error
-}
-
-// GetRechargePlan 获取充值套餐
-func GetRechargePlan(db *gorm.DB, id int64) (*RechargePlan, error) {
-	var plan RechargePlan
-	err := db.First(&plan, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &plan, nil
-}
-
-// UpdateRechargePlan 更新充值套餐
-func UpdateRechargePlan(db *gorm.DB, id int64, updates map[string]interface{}) error {
-	return db.Model(&RechargePlan{}).Where("plan_id = ?", id).Updates(updates).Error
-}
-
-// DeleteRechargePlan 删除充值套餐
-func DeleteRechargePlan(db *gorm.DB, id int64) error {
-	return db.Delete(&RechargePlan{}, id).Error
-}
-
-// ListRechargePlans 获取充值套餐列表
-func ListRechargePlans(db *gorm.DB, status *int8) ([]*RechargePlan, error) {
-	var plans []*RechargePlan
-	tx := db
-	if status != nil {
-		tx = tx.Where("status = ?", *status)
-	}
-	err := tx.Find(&plans).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return plans, nil
-}
-
-// CreateTokenRecord 创建代币记录
-func CreateTokenRecord(db *gorm.DB, record *TokenRecord) error {
-	return db.Create(record).Error
-}
-
-// GetTokenRecords 获取用户的代币记录列表
-func GetTokenRecords(db *gorm.DB, userID string, start, limit int) ([]*TokenRecord, error) {
-	var records []*TokenRecord
-	tx := db.Where("user_id = ?", userID)
-	if start > 0 {
-		tx = tx.Where("record_id < ?", start)
-	}
-	err := tx.Order("change_time DESC").Limit(limit).
-		Find(&records).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return records, nil
-}
-
-// GetUserTokenBalance 获取用户Token余额
-func GetUserTokenBalance(db *gorm.DB, userID string) (int64, error) {
+// GetUserBalance 获取用户积分余额
+func GetUserBalance(db *gorm.DB, userID int64) (int, error) {
 	var user User
 	err := db.Select("token_balance").Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		return 0, err
 	}
-	return int64(user.TokenBalance), nil
+	return user.TokenBalance, nil
 }
 
-// UpdateUserTokenBalance 更新用户代币余额
-func UpdateUserTokenBalance(db *gorm.DB, userID string, changeAmount int) error {
-	var user User
-	err := db.Transaction(func(tx *gorm.DB) error {
-		// 获取用户当前余额
-		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", userID).First(&user).Error
-		if err != nil {
-			return err
-		}
-
-		// 更新用户余额
-		newBalance := user.TokenBalance + changeAmount
-		if newBalance < 0 {
-			return errors.New(errors.ErrCodeInsufficientBalance, "代币余额不足", nil)
-		}
-
-		return tx.Model(&User{}).Where("id = ?", userID).
-			Update("token_balance", newBalance).Error
-	})
-
-	return err
-}
-
-// GetUserTokenIsBuy 获取用户Token余额
-func GetUserTokenIsBuy(db *gorm.DB, userID string, price int) (int, bool, error) {
-	var isBuy int
-	// 广告主
-	var adUser bool
-	err := db.Transaction(func(tx *gorm.DB) error {
-		var user User
-		err := tx.Where("id = ?", userID).First(&user).Error
-		if err != nil {
-			return err
-		}
-		if user.TokenBalance >= price {
-			isBuy = 1
-		}
-		if user.InviterID != nil && *user.InviterID == consts.Advertiser {
-			adUser = true
-		}
-		return nil
-	})
-	return isBuy, adUser, err
-}
-
-// FindTokenRecord
-func FindTokenRecord(db *gorm.DB, userID, workId string) error {
-
-	var record TokenRecord
-	return db.Where("user_id = ? AND work_id = ?", userID, workId).First(&record).Error
-}
-
-// ConsumeToken 消费Token
-func ConsumeToken(db *gorm.DB, userID string, amount int64, description, workId string) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		// 获取用户当前余额
-		balance, err := GetUserTokenBalance(tx, userID)
-		if err != nil {
-			return err
-		}
-
-		// 检查余额是否足够
-		if balance < amount {
-			return BalanceErr
-		}
-
-		// 更新用户余额
-		err = UpdateUserTokenBalance(tx, userID, -int(amount))
-		if err != nil {
-			return err
-		}
-
-		// 创建Token记录
-		record := &TokenRecord{
-			UserID:       userID,
-			ChangeAmount: -int(amount),
-			BalanceAfter: int(balance - amount),
-			ChangeType:   "CONSUME",
-			Remark:       &description,
-			WorkID:       workId,
-			ChangeTime:   time.Now(),
-		}
-		return CreateTokenRecord(tx, record)
-	})
-}
-
-// AddToken 增加Token
-func AddToken(db *gorm.DB, userID string, amount int64, recordType int, orderID string, description string) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		// 获取用户当前余额
-		balance, err := GetUserTokenBalance(tx, userID)
-		if err != nil {
-			return err
-		}
-
-		// 更新用户余额
-		err = UpdateUserTokenBalance(tx, userID, int(amount))
-		if err != nil {
-			return err
-		}
-
-		// 创建Token记录
-		record := &TokenRecord{
-			UserID:       userID,
-			ChangeAmount: int(amount),
-			BalanceAfter: int(balance + amount),
-			ChangeType:   getChangeType(recordType),
-			Remark:       &description,
-			ChangeTime:   time.Now(),
-		}
-		if orderID != "" {
-			record.OrderID = &orderID
-		}
-		return CreateTokenRecord(tx, record)
-	})
-}
-
-// getChangeType 获取变动类型
-func getChangeType(recordType int) string {
-	switch recordType {
-	case 1:
-		return "RECHARGE"
-	case 2:
-		return "CONSUME"
-	case 3:
-		return "REWARD"
-	case 4:
-		return "REFUND"
-	default:
-		return "OTHER"
+// GetTokenRecords 获取用户积分变动记录（cursor 分页）
+func GetTokenRecords(db *gorm.DB, userID int64, prev int64, limit int) ([]*TokenRecord, error) {
+	var records []*TokenRecord
+	tx := db.Where("user_id = ?", userID)
+	if prev > 0 {
+		tx = tx.Where("record_id < ?", prev)
 	}
+	err := tx.Order("record_id DESC").Limit(limit).Find(&records).Error
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
 }
 
-// CreateTokenConsumptionRecord 创建代币消费记录
-func CreateTokenConsumptionRecord(db *gorm.DB, userID string, featureID int, amount int, remark string) error {
+// AddPoints 在事务中给用户增加积分并写入变动记录
+func AddPoints(db *gorm.DB, userID int64, amount int, recordType, title, desc, orderID string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		// 获取用户当前余额
+		// 锁定用户行，获取当前余额
 		var user User
-		err := tx.Where("id = ?", userID).First(&user).Error
-		if err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", userID).First(&user).Error; err != nil {
 			return err
 		}
 
-		// 检查余额是否足够
-		if user.TokenBalance < amount {
-			return errors.New(errors.ErrCodeInsufficientBalance, "代币余额不足", nil)
-		}
-
-		// 更新用户余额
-		newBalance := user.TokenBalance - amount
-		err = tx.Model(&User{}).Where("id = ?", userID).
-			Update("token_balance", newBalance).Error
-		if err != nil {
-			return err
-		}
-
-		// 创建消费记录
-		record := &TokenRecord{
-			UserID:       userID,
-			ChangeAmount: -amount,
-			BalanceAfter: newBalance,
-			ChangeType:   "consume",
-			FeatureID:    &featureID,
-			Remark:       &remark,
-		}
-
-		return tx.Create(record).Error
-	})
-}
-
-// CreateTokenRewardRecord 创建代币奖励记录
-func CreateTokenRewardRecord(db *gorm.DB, userID string, taskID int, amount int, remark string) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		// 获取用户当前余额
-		var user User
-		err := tx.Where("id = ?", userID).First(&user).Error
-		if err != nil {
-			return err
-		}
-
-		// 更新用户余额
 		newBalance := user.TokenBalance + amount
-		err = tx.Model(&User{}).Where("id = ?", userID).
-			Update("token_balance", newBalance).Error
-		if err != nil {
+
+		// 更新余额
+		if err := tx.Model(&User{}).Where("id = ?", userID).
+			Update("token_balance", newBalance).Error; err != nil {
 			return err
 		}
 
-		// 创建奖励记录
+		// 写入积分变动记录
 		record := &TokenRecord{
-			UserID:       userID,
-			ChangeAmount: amount,
-			BalanceAfter: newBalance,
-			ChangeType:   "reward",
-			TaskID:       &taskID,
-			Remark:       &remark,
+			UserID:      userID,
+			Type:        recordType,
+			Amount:      amount,
+			Balance:     newBalance,
+			Title:       title,
+			Description: desc,
+			OrderID:     orderID,
 		}
-
 		return tx.Create(record).Error
 	})
 }

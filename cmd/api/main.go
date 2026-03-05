@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/reusedev/uportal-api/pkg/wechat_token"
 	"log"
 	"net/http"
 	"os"
@@ -14,12 +13,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 
 	"github.com/reusedev/uportal-api/internal/handler"
 	"github.com/reusedev/uportal-api/internal/middleware"
 	"github.com/reusedev/uportal-api/internal/model"
-	"github.com/reusedev/uportal-api/internal/service"
 	"github.com/reusedev/uportal-api/pkg/config"
 )
 
@@ -77,25 +74,22 @@ func main() {
 	}
 	defer model.CloseRedis()
 
-	wechat_token.TokenJob()
-
-	// 6. 创建Gin引擎
+	// 5. 创建Gin引擎
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.New()
 
-	// 7. 注册中间件
-	// 注意：中间件的注册顺序很重要
-	engine.Use(middleware.Recovery(logs.Business())) // 恢复中间件应该最先注册
-	engine.Use(middleware.Logger(logs.Business()))   // 日志中间件
+	// 6. 注册中间件
+	engine.Use(middleware.Recovery(logs.Business()))
+	engine.Use(middleware.Logger(logs.Business()))
 	engine.Use(middleware.CORS())
 	engine.Any("/", func(c *gin.Context) {
 		c.AbortWithStatus(http.StatusOK)
-	}) // CORS中间件
+	})
 
-	// 8. 注册路由
-	registerRoutes(engine, model.DB, cfg)
+	// 注册路由
+	registerRoutes(engine)
 
-	// 9. 启动服务器
+	// 7. 启动服务器
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      engine,
@@ -103,14 +97,13 @@ func main() {
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
-	// 10. 优雅关闭
+	// 8. 优雅关闭
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logs.Business().Fatal("Server error", zap.Error(err))
 		}
 	}()
 
-	// 等待中断信号
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
@@ -118,82 +111,16 @@ func main() {
 	logs.Business().Info("Shutting down server...")
 }
 
-// registerRoutes 注册路由
-func registerRoutes(engine *gin.Engine, db *gorm.DB, cfg *config.Config) {
-	// 初始化服务
-	wechatSvc := service.NewWechatService(cfg)
-	authService := service.NewAuthService(db, wechatSvc)
-	tokenService := service.NewTokenService(db)
-	orderService := service.NewOrderService(db)
-	inviteService := service.NewInviteService(db)
-	taskService := service.NewTaskService(db, model.RedisClient, logs.Business(), cfg)
-	paymentService, err := service.NewPaymentService(db, model.RedisClient, orderService, cfg)
-	if err != nil {
-		logs.Business().Error("Init payment service error", zap.Error(err))
-	}
-	alipayService, err := service.NewAlipayService(db, orderService, cfg)
-	if err != nil {
-		logs.Business().Error("Init alipay service error", zap.Error(err))
-	}
-	notifyService := service.NewNotifyService(db)
+// registerRoutes 注册所有路由
+func registerRoutes(engine *gin.Engine) {
+	db := model.DB
 
-	// 初始化处理器
-	authHandler := handler.NewAuthHandler(authService)
-	inviteHandler := handler.NewInviteHandler(inviteService)
-	tokenHandler := handler.NewTokenHandler(tokenService)
-	orderHandler := handler.NewOrderHandler(orderService)
-	paymentHandler := handler.NewPaymentHandler(paymentService, alipayService)
-	taskHandler := handler.NewTaskHandler(taskService)
-	notifyHandler := handler.NewNotifyHandler(notifyService)
-	// 注册路由
+	pointsHandler := handler.NewPointsHandler(db)
+	paymentHandler := handler.NewPaymentHandler(db)
+	userHandler := handler.NewUserHandler(db)
+
 	api := engine.Group("/api")
-	{
-		// 登陆
-		handler.RegisterUser(api, authHandler)
-
-		// 更新身份认证信息
-		user := api.Group("profile", middleware.Auth())
-		handler.RegisterUserRoutes(user, authHandler)
-		// 邀请
-		invite := api.Group("invite", middleware.Auth())
-		handler.RegisterInviteRoutes(invite, inviteHandler)
-
-		// 获取作品二维码
-		work := api.Group("works", middleware.Auth())
-		handler.RegisterWorkRoutes(work, inviteHandler)
-
-		// 代币相关路由
-		token := api.Group("/points", middleware.Auth())
-		handler.RegisterTokenRoutes(token, tokenHandler)
-
-		rule := api.Group("/consume")
-		handler.RegisterConsumeRuleRoutes(rule, taskHandler)
-
-		good := api.Group("/goods")
-		handler.RegisterGoodRoutes(good, taskHandler)
-
-		// 云端交互
-		cloud := api.Group("/cloud")
-		handler.RegisterCloudRoutes(cloud, tokenHandler, notifyHandler, inviteHandler)
-
-		// 订单相关路由
-		order := api.Group("/orders", middleware.Auth())
-		handler.RegisterOrderRoutes(order, orderHandler, middleware.Auth())
-
-		// 支付相关路由
-		payment := api.Group("/payment", middleware.Auth())
-		handler.RegisterPaymentRoutes(payment, paymentHandler, tokenHandler)
-
-		// 支付回调接口
-		payments := api.Group("/payments")
-		handler.RegisterPaymentNotifyRoutes(payments, paymentHandler)
-
-		// 用户任务相关路由
-		tasks := api.Group("/reward-tasks", middleware.Auth())
-		handler.RegisterTaskRoutes(tasks, taskHandler)
-
-		// 通知
-		notify := api.Group("/notification", middleware.Auth())
-		handler.RegisterNotifyRoutes(notify, notifyHandler)
-	}
+	handler.RegisterPointsRoutes(api.Group("/points"), pointsHandler)
+	handler.RegisterPaymentRoutes(api.Group("/payment"), paymentHandler)
+	handler.RegisterUserRoutes(api.Group("/user"), userHandler)
 }
